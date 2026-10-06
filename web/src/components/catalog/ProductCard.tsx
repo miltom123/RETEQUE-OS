@@ -1,132 +1,75 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, Check } from 'lucide-react';
 import { Product } from '../../data/catalog';
 import { formatMoney } from '../../lib/money';
 import { productUnitPrice, useProductActions } from '../../lib/productActions';
+import { useUiStore } from '../../store/uiStore';
 import { ImageWithFallback } from '../ui/ImageWithFallback';
 
 interface ProductCardProps {
   product: Product;
+  /** Presentación seleccionada desde el selector de la sección (10 / 20 unid.). */
   forcedPresentation?: '10' | '20';
+  index?: number;
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, forcedPresentation }) => {
-  const { quickAdd, openProduct } = useProductActions();
-  const [selectedPresId, setSelectedPresId] = useState<string>(
-    forcedPresentation || (product.presentations ? product.presentations[0].id : '')
-  );
+/**
+ * Tarjeta cuadrada para tequeños y pizzas.
+ * Clic en la tarjeta → configurador. Botón "+" → agregar rápido con la presentación activa.
+ */
+export const ProductCard: React.FC<ProductCardProps> = ({ product, forcedPresentation, index = 0 }) => {
+  const { quickAdd } = useProductActions();
+  const openConfigurator = useUiStore((s) => s.openConfigurator);
   const [added, setAdded] = useState(false);
 
-  // Sincroniza la presentación cuando cambia el filtro de la categoría
-  useEffect(() => {
-    if (forcedPresentation && product.presentations) {
-      setSelectedPresId(forcedPresentation);
-    }
-  }, [forcedPresentation, product.presentations]);
-
-  const price = productUnitPrice(product, selectedPresId);
-  const isTequeno = product.category === 'tequenos';
+  const presId = forcedPresentation || product.presentations?.[0]?.id;
+  const price = productUnitPrice(product, presId);
+  const isSpecial = product.subcategory === 'especiales' && product.category === 'tequenos';
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
-    quickAdd(product, selectedPresId);
+    quickAdd(product, presId);
     setAdded(true);
-    setTimeout(() => setAdded(false), 1200);
+    setTimeout(() => setAdded(false), 1100);
   };
 
   return (
     <article
-      onClick={() => openProduct(product)}
-      className="bg-white rounded-xl sm:rounded-2xl border border-[#ECECEC] overflow-hidden shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+      onClick={() => openConfigurator(product)}
+      className="reveal group flex flex-col gap-2 cursor-pointer"
+      style={{ '--d': index % 7 } as React.CSSProperties}
     >
-      <div className="relative aspect-[16/10] sm:aspect-[4/3] bg-neutral-100 overflow-hidden">
+      <div className="relative aspect-square rounded-xl overflow-hidden bg-surface-3">
         <ImageWithFallback
           src={product.image}
           alt={product.name}
           fallbackLabel={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.07]"
           loading="lazy"
           decoding="async"
         />
-        {isTequeno && (
-          <span className="absolute bottom-2 left-2 bg-white/95 text-neutral-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Ver opciones
+        {isSpecial && (
+          <span className="absolute top-2 left-2 bg-white/95 text-ink text-[10px] font-extrabold tracking-[.06em] uppercase px-2 py-1 rounded-md">
+            Especial
           </span>
         )}
+        <button
+          type="button"
+          onClick={handleAdd}
+          aria-label={`Agregar ${product.name} al pedido`}
+          className={`absolute right-2 bottom-2 w-[34px] h-[34px] rounded-[10px] flex items-center justify-center shadow-[0_6px_14px_-6px_rgba(0,0,0,.35)] transition-all duration-200 hover:scale-[1.08] active:scale-[.92] ${
+            added ? 'bg-[#16A34A] text-white' : 'bg-white text-ink'
+          }`}
+        >
+          {added ? <Check className="w-4 h-4 stroke-[3]" /> : <Plus className="w-4 h-4 stroke-[2.8]" />}
+        </button>
       </div>
-
-      <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between gap-2.5">
-        <div>
-          <h3 className="font-bold text-xs sm:text-sm text-neutral-900 leading-snug line-clamp-1 group-hover:text-brand-red transition-colors">
-            {product.name}
-          </h3>
-
-          {product.ingredients && product.ingredients.length > 0 ? (
-            <p className="text-[11px] text-neutral-500 line-clamp-2 mt-1 leading-relaxed">
-              {product.ingredients.join(', ')}
-            </p>
-          ) : product.category === 'pizzas' ? (
-            <p className="text-[11px] text-neutral-500 mt-0.5">Familiar 35 cm</p>
-          ) : product.description ? (
-            <p className="text-[11px] text-neutral-500 line-clamp-1 mt-1">{product.description}</p>
-          ) : null}
-
-          {product.presentations && product.presentations.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-2" role="group" aria-label="Presentación">
-              {product.presentations.map((pres) => {
-                const isSelected = pres.id === selectedPresId;
-                return (
-                  <button
-                    key={pres.id}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPresId(pres.id);
-                    }}
-                    className={`text-[10px] sm:text-[11px] font-bold px-2 py-1 rounded-md transition-all ${
-                      isSelected
-                        ? 'bg-brand-red text-white shadow-sm'
-                        : 'bg-white text-neutral-600 border border-neutral-200 hover:border-neutral-300'
-                    }`}
-                  >
-                    {pres.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between pt-1 border-t border-neutral-100 mt-auto">
-          <span className="font-extrabold text-sm sm:text-base text-neutral-900">{formatMoney(price)}</span>
-
-          <div className="flex items-center gap-1.5">
-            {isTequeno && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openProduct(product);
-                }}
-                className="text-[11px] font-bold text-[#C5161D] bg-[#FFF0F1] hover:bg-[#FFE2E4] px-2.5 py-1.5 rounded-lg transition-colors"
-              >
-                Elegir
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={handleAdd}
-              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 shadow-sm active:scale-90 ${
-                added ? 'bg-whatsapp text-white' : 'bg-brand-red hover:bg-brand-red-dark text-white'
-              }`}
-              aria-label={`Agregar ${product.name} al pedido`}
-            >
-              {added ? <Check className="w-4 h-4 stroke-[3]" /> : <Plus className="w-4 h-4 stroke-[2.8]" />}
-            </button>
-          </div>
-        </div>
+      <div className="flex flex-col gap-0.5 px-0.5">
+        <h3 className="m-0 text-[13.5px] font-bold leading-tight">{product.name}</h3>
+        {product.category === 'pizzas' && product.ingredients && (
+          <span className="text-xs text-ink-muted line-clamp-1">{product.ingredients.join(', ')}</span>
+        )}
+        <span className="text-sm font-extrabold">{formatMoney(price)}</span>
       </div>
     </article>
   );

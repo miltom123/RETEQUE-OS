@@ -20,7 +20,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({ children }) => {
   const openCart = useCartStore((s) => s.openCart);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F9FAFB]">
+    <div className="min-h-screen flex flex-col bg-surface">
       <a
         href="#contenido"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[10000] focus:bg-white focus:text-neutral-900 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg"
@@ -30,7 +30,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({ children }) => {
 
       <Navbar />
 
-      <main id="contenido" className="flex-1 max-w-[1640px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:pb-6">
+      <main id="contenido" className="flex-1 max-w-[1360px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-0 pb-28 md:pb-6">
         {children}
       </main>
 

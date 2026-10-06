@@ -109,7 +109,7 @@ export const SearchBox: React.FC<SearchBoxProps> = ({ autoFocus = false }) => {
             }
           }}
           placeholder="¿Qué se te antoja hoy? Tequeños, pizzas, promos…"
-          className="w-full h-11 md:h-10 pl-10 pr-9 rounded-full bg-white text-neutral-900 placeholder:text-neutral-400 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#FFEB3B] shadow-inner"
+          className="w-full h-[38px] pl-10 pr-9 bg-surface-2 rounded-[10px] border border-transparent text-neutral-900 placeholder:text-neutral-400 text-sm font-medium focus:outline-none focus:bg-white focus:ring-2 focus:ring-brand-red/15 focus:border-brand-red"
         />
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" aria-hidden="true" />
         {term && (

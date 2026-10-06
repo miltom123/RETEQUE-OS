@@ -43,11 +43,11 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[10010] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 fade-in text-left">
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+    <div className="fixed inset-0 z-[10010] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="modal-in bg-surface rounded-[18px] max-w-lg w-full p-6 shadow-2xl space-y-4 text-left">
+        <div className="flex items-center justify-between pb-3 border-b border-line-soft">
           <div>
-            <h3 className="text-lg font-black text-neutral-900">
+            <h3 className="text-lg font-extrabold tracking-tight text-ink">
               Datos para tu pedido en Tacna
             </h3>
             <p className="text-xs text-neutral-500 mt-0.5">
@@ -66,37 +66,37 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
         <div className="space-y-3 text-xs">
           <div>
             <label className="block font-bold text-neutral-700 mb-1">
-              Nombre completo <span className="text-[#C5161D]">*</span>
+              Nombre completo <span className="text-[#D31728]">*</span>
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setField('fullName', e.target.value)}
               placeholder="Ej. Milton Flores"
-              className={`w-full h-10 px-3 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-                errors.fullName ? 'border-[#C5161D] focus:ring-[#C5161D]/20' : 'border-neutral-200 focus:border-[#C5161D]'
+              className={`w-full h-10 px-3 rounded-[10px] border text-sm focus:outline-none focus:ring-2 ${
+                errors.fullName ? 'border-[#D31728] focus:ring-[#D31728]/20' : 'border-neutral-200 focus:border-[#D31728]'
               }`}
             />
             {errors.fullName && (
-              <p className="text-[11px] text-[#C5161D] mt-1">{errors.fullName}</p>
+              <p className="text-[11px] text-[#D31728] mt-1">{errors.fullName}</p>
             )}
           </div>
 
           <div>
             <label className="block font-bold text-neutral-700 mb-1">
-              Celular / WhatsApp <span className="text-[#C5161D]">*</span>
+              Celular / WhatsApp <span className="text-[#D31728]">*</span>
             </label>
             <input
               type="tel"
               value={phone}
               onChange={(e) => setField('phone', e.target.value)}
               placeholder="Ej. 912 266 950"
-              className={`w-full h-10 px-3 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-                errors.phone ? 'border-[#C5161D] focus:ring-[#C5161D]/20' : 'border-neutral-200 focus:border-[#C5161D]'
+              className={`w-full h-10 px-3 rounded-[10px] border text-sm focus:outline-none focus:ring-2 ${
+                errors.phone ? 'border-[#D31728] focus:ring-[#D31728]/20' : 'border-neutral-200 focus:border-[#D31728]'
               }`}
             />
             {errors.phone && (
-              <p className="text-[11px] text-[#C5161D] mt-1">{errors.phone}</p>
+              <p className="text-[11px] text-[#D31728] mt-1">{errors.phone}</p>
             )}
           </div>
 
@@ -108,7 +108,7 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
                 onClick={() => setField('deliveryType', 'delivery')}
                 className={`p-2.5 rounded-xl border-2 flex items-center justify-center gap-2 font-bold cursor-pointer ${
                   deliveryType === 'delivery'
-                    ? 'border-[#C5161D] bg-[#FFF0F1] text-[#C5161D]'
+                    ? 'border-[#D31728] bg-[#FFF0F1] text-[#D31728]'
                     : 'border-neutral-200 text-neutral-600'
                 }`}
               >
@@ -120,7 +120,7 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
                 onClick={() => setField('deliveryType', 'recojo')}
                 className={`p-2.5 rounded-xl border-2 flex items-center justify-center gap-2 font-bold cursor-pointer ${
                   deliveryType === 'recojo'
-                    ? 'border-[#C5161D] bg-[#FFF0F1] text-[#C5161D]'
+                    ? 'border-[#D31728] bg-[#FFF0F1] text-[#D31728]'
                     : 'border-neutral-200 text-neutral-600'
                 }`}
               >
@@ -133,19 +133,19 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
           {deliveryType === 'delivery' && (
             <div>
               <label className="block font-bold text-neutral-700 mb-1">
-                Dirección en Tacna <span className="text-[#C5161D]">*</span>
+                Dirección en Tacna <span className="text-[#D31728]">*</span>
               </label>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setField('address', e.target.value)}
                 placeholder="Ej. Av. San Martín 450, Tacna"
-                className={`w-full h-10 px-3 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-                  errors.address ? 'border-[#C5161D] focus:ring-[#C5161D]/20' : 'border-neutral-200 focus:border-[#C5161D]'
+                className={`w-full h-10 px-3 rounded-[10px] border text-sm focus:outline-none focus:ring-2 ${
+                  errors.address ? 'border-[#D31728] focus:ring-[#D31728]/20' : 'border-neutral-200 focus:border-[#D31728]'
                 }`}
               />
               {errors.address && (
-                <p className="text-[11px] text-[#C5161D] mt-1">{errors.address}</p>
+                <p className="text-[11px] text-[#D31728] mt-1">{errors.address}</p>
               )}
             </div>
           )}
@@ -155,7 +155,7 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
         <div className="bg-[#FFF8ED] border border-[#F5E4CE] rounded-2xl p-3.5 space-y-1.5 text-left text-xs">
           <div className="flex items-center justify-between font-black text-neutral-900 border-b border-[#F5E4CE]/80 pb-1.5">
             <span>{quantity} x {productName}</span>
-            <span className="text-[#C5161D]">{formatMoney(grandTotalPrice)}</span>
+            <span className="text-[#D31728]">{formatMoney(grandTotalPrice)}</span>
           </div>
           {hasPizza && (
             <p className="text-neutral-600">

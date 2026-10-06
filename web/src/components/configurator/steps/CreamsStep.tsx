@@ -22,26 +22,26 @@ export const CreamsStep: React.FC<CreamsStepProps> = ({
   onCreamDelta,
 }) => {
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+    <div className="shrink-0 bg-white border border-line-soft rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-neutral-50 transition-colors cursor-pointer"
+        className="w-full px-3.5 py-3.5 flex items-center justify-between text-left hover:bg-surface transition-colors cursor-pointer"
       >
         <div>
-          <h3 className="font-black text-sm sm:text-base text-neutral-900">
+          <h3 className="font-extrabold text-[14.5px] text-ink">
             Elige tus Cremas de 2 oz
           </h3>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-[12.5px] text-ink-muted mt-0.5">
             {totalSelectedCreams}/{targetCreams} cremas incluidas
           </p>
         </div>
         <div className="flex items-center gap-2">
           <span
-            className={`font-bold text-xs px-2.5 py-1 rounded ${
+            className={`font-bold text-[11.5px] px-2.5 py-1 rounded-md ${
               isCreamsCompleted
-                ? 'bg-[#E8F8EE] text-[#16B959]'
-                : 'bg-[#FFF0F1] text-[#C5161D]'
+                ? 'bg-[#E8F8EE] text-[#0F7A3D]'
+                : 'bg-brand-red-light text-brand-red-dark'
             }`}
           >
             {isCreamsCompleted ? 'Completado' : `Faltan ${targetCreams - totalSelectedCreams}`}
@@ -51,7 +51,7 @@ export const CreamsStep: React.FC<CreamsStepProps> = ({
       </button>
 
       {isOpen && (
-        <div className="p-4 pt-0 border-t border-neutral-100 divide-y divide-neutral-100">
+        <div className="px-3.5 pb-2 divide-y divide-surface-3">
           {CREAMS.map((cream) => {
             const count = creamCounts[cream.id] || 0;
             return (
@@ -68,24 +68,24 @@ export const CreamsStep: React.FC<CreamsStepProps> = ({
                 </div>
 
                 {count > 0 ? (
-                  <div className="inline-flex items-center bg-neutral-100 rounded-lg p-0.5">
+                  <div className="inline-flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => onCreamDelta(cream.id, -1)}
-                      className="w-6 h-6 flex items-center justify-center bg-[#C5161D] text-white rounded font-bold hover:bg-[#A3001E]"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center bg-ink text-white font-bold hover:bg-black transition-colors cursor-pointer"
                     >
-                      <Minus className="w-3 h-3" />
+                      <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="w-7 text-center font-black text-neutral-900 text-xs">
+                    <span className="w-6 text-center font-extrabold text-ink text-[13.5px]">
                       {count}
                     </span>
                     <button
                       type="button"
                       onClick={() => onCreamDelta(cream.id, 1)}
                       disabled={totalSelectedCreams >= targetCreams}
-                      className="w-6 h-6 flex items-center justify-center bg-[#C5161D] text-white rounded font-bold hover:bg-[#A3001E] disabled:opacity-40"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center border border-[#E0DCD5] bg-white text-ink font-bold hover:border-ink disabled:opacity-35 transition-colors cursor-pointer"
                     >
-                      <Plus className="w-3 h-3" />
+                      <Plus className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ) : (
@@ -93,7 +93,7 @@ export const CreamsStep: React.FC<CreamsStepProps> = ({
                     type="button"
                     onClick={() => onCreamDelta(cream.id, 1)}
                     disabled={totalSelectedCreams >= targetCreams}
-                    className="w-7 h-7 rounded-lg border border-neutral-200 hover:border-[#C5161D] text-neutral-500 hover:text-[#C5161D] flex items-center justify-center disabled:opacity-30"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center border border-[#E0DCD5] bg-white text-ink font-bold hover:border-ink disabled:opacity-35 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>

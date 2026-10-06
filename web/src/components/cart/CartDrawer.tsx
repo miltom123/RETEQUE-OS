@@ -112,24 +112,24 @@ export const CartDrawer: React.FC = () => {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] overflow-hidden" role="dialog" aria-modal="true" aria-label="Tu pedido">
-      <div onClick={closeCart} className="absolute inset-0 bg-black/60 backdrop-blur-sm fade-in" />
+      <div onClick={closeCart} className="absolute inset-0 bg-black/50 backdrop-blur-[3px] fade-in" />
 
-      <div className="absolute inset-y-0 right-0 max-w-md w-full bg-white shadow-2xl flex flex-col z-10 drawer-in">
+      <div className="absolute inset-y-0 right-0 max-w-[440px] w-full bg-surface shadow-2xl flex flex-col z-10 drawer-in">
         {/* Cabecera */}
-        <div className="p-4 sm:p-5 flex items-center justify-between bg-[#C5161D] text-white">
+        <div className="px-5 py-4 flex items-center justify-between bg-white border-b border-line-soft text-ink">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5" aria-hidden="true" />
-            <h2 className="font-black text-base sm:text-lg">
-              Tu pedido {totalCount > 0 && <span className="font-bold text-white/80">({totalCount})</span>}
+            <h2 className="font-extrabold text-[17px] tracking-tight">
+              Tu pedido {totalCount > 0 && <span className="font-bold text-ink-muted">({totalCount})</span>}
             </h2>
           </div>
           <button
             type="button"
             onClick={closeCart}
-            className="p-2 hover:bg-white/15 rounded-lg transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-full bg-surface-2 hover:bg-[#E3E0DA] flex items-center justify-center text-ink-soft transition-colors cursor-pointer"
             aria-label="Cerrar pedido"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -143,7 +143,7 @@ export const CartDrawer: React.FC = () => {
               <button
                 type="button"
                 onClick={closeCart}
-                className="mt-2 inline-flex items-center justify-center h-10 px-5 rounded-xl bg-[#C5161D] text-white text-sm font-bold cursor-pointer"
+                className="mt-2 inline-flex items-center justify-center h-10 px-[18px] rounded-[10px] bg-brand-red hover:bg-brand-red-dark text-white text-sm font-bold cursor-pointer"
               >
                 Ver la carta
               </button>
@@ -164,7 +164,7 @@ export const CartDrawer: React.FC = () => {
               <button
                 type="button"
                 onClick={handleClear}
-                className="text-xs font-bold text-neutral-500 hover:text-[#C5161D] underline underline-offset-2 cursor-pointer"
+                className="text-xs font-bold text-neutral-500 hover:text-[#D31728] underline underline-offset-2 cursor-pointer"
               >
                 Vaciar pedido
               </button>

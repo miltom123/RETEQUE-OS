@@ -36,7 +36,7 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
   };
 
   return (
-    <div className="p-4 border-t border-neutral-200 bg-white space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div className="p-4 border-t border-line-soft bg-white space-y-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
       {/* Sección Cupón de Descuento */}
       {appliedCouponCode ? (
         <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-xl text-xs">
@@ -62,7 +62,7 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
               value={inputCode}
               onChange={(e) => setInputCode(e.target.value.toUpperCase())}
               placeholder="¿Tienes un cupón? (ej. BIENVENIDO10)"
-              className="w-full h-9 pl-8 pr-2.5 rounded-lg border border-neutral-200 text-xs uppercase font-medium placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-[#C5161D] focus:ring-1 focus:ring-[#C5161D]/20"
+              className="w-full h-9 pl-8 pr-2.5 rounded-lg border border-neutral-200 text-xs uppercase font-medium placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-[#D31728] focus:ring-1 focus:ring-[#D31728]/20"
             />
           </div>
           <button
@@ -75,7 +75,7 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
       )}
 
       {couponMessage && (
-        <p className={`text-[11px] font-medium ${couponMessage.error ? 'text-[#C5161D]' : 'text-emerald-600'}`}>
+        <p className={`text-[11px] font-medium ${couponMessage.error ? 'text-[#D31728]' : 'text-emerald-600'}`}>
           {couponMessage.text}
         </p>
       )}
@@ -96,7 +96,7 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
 
         <div className="flex items-center justify-between pt-1">
           <span className="text-neutral-900 font-black">Total productos</span>
-          <span className="text-lg font-black text-[#C5161D]">{formatMoney(grandTotal)}</span>
+          <span className="text-lg font-extrabold text-ink">{formatMoney(grandTotal)}</span>
         </div>
       </div>
 
@@ -113,7 +113,7 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
             <button
               type="button"
               onClick={onClear}
-              className="h-10 rounded-xl bg-[#16B959] hover:bg-[#13A24D] text-white text-xs font-black cursor-pointer"
+              className="h-10 rounded-[10px] bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-black cursor-pointer"
             >
               Ya lo envié, vaciar
             </button>
@@ -130,7 +130,7 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
         <button
           type="button"
           onClick={onSend}
-          className="w-full h-12 bg-[#16B959] hover:bg-[#13A24D] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+          className="w-full h-12 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm rounded-[10px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
         >
           <MessageCircle className="w-5 h-5 fill-white" aria-hidden="true" />
           <span>Enviar pedido por WhatsApp</span>

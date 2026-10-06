@@ -1,180 +1,114 @@
 import React, { useState } from 'react';
-import { Flame, Sparkles, UtensilsCrossed, Pizza, Coffee, Cookie, Droplet } from 'lucide-react';
 import { HeroBanner } from '../components/home/HeroBanner';
+import { CategoryNav, ExtraTab, scrollToSection } from '../components/home/CategoryNav';
+import { FeaturedPromoCard } from '../components/home/FeaturedPromoCard';
+import { ExtrasSection } from '../components/home/ExtrasSection';
+import { SegmentedControl } from '../components/home/SegmentedControl';
 import { BenefitsStrip } from '../components/layout/BenefitsStrip';
 import { ProductCard } from '../components/catalog/ProductCard';
 import { PromotionCard } from '../components/catalog/PromotionCard';
-import { PRODUCTS, Product } from '../data/catalog';
-import { PROMOTIONS } from '../data/promotions';
+import { PRODUCTS } from '../data/catalog';
+import { PROMOTIONS, PromotionCategory } from '../data/promotions';
+import { useReveal } from '../hooks/useReveal';
 
-type SectionId = 'todos' | 'promociones' | 'tequenos' | 'pizzas' | 'bebidas' | 'pastelitos' | 'cremas';
+type PromoFilter = 'all' | PromotionCategory;
 
-interface SectionMeta {
-  id: Exclude<SectionId, 'todos'>;
-  title: string;
-  subtitle: string;
-  icon: React.ComponentType<{ className?: string }>;
-  tag?: string;
-}
+const FEATURED = PROMOTIONS.filter((p) => p.featuredHome);
+const COMBOS = PROMOTIONS.filter((p) => !p.featuredHome);
+const TEQUENOS = PRODUCTS.filter((p) => p.category === 'tequenos');
+const PIZZAS = PRODUCTS.filter((p) => p.category === 'pizzas');
 
-const SECTIONS: SectionMeta[] = [
-  {
-    id: 'tequenos',
-    title: 'Tequeños artesanales por porción',
-    subtitle: 'Crujientes, dorados y rellenos al máximo. Disponibles en porciones de 10 y 20 unidades.',
-    icon: Sparkles,
-    tag: 'Porción de 10 o 20 unid.',
-  },
-  {
-    id: 'pizzas',
-    title: 'Pizzas familiares 35 cm',
-    subtitle: 'Masa crocante artesanal, salsa pomodoro de la casa y queso mozarella.',
-    icon: Pizza,
-    tag: 'Tamaño familiar 35 cm',
-  },
-  {
-    id: 'pastelitos',
-    title: 'Pastelitos crujientes',
-    subtitle: 'Masa hojaldrada dorada rellena de abundante queso derretido.',
-    icon: Cookie,
-  },
-  {
-    id: 'bebidas',
-    title: 'Bebidas heladas',
-    subtitle: 'Gaseosas bien heladas y chicha morada artesanal para acompañar tus tequeños.',
-    icon: Coffee,
-  },
-  {
-    id: 'cremas',
-    title: 'Cremas y salsas artesanales (2 oz)',
-    subtitle: 'El secreto de un buen tequeño: sumérgelos en nuestras salsas caseras.',
-    icon: Droplet,
-  },
+const PROMO_FILTERS: { id: PromoFilter; label: string }[] = [
+  { id: 'all', label: 'Todas' },
+  { id: 'tequenos', label: 'Tequeños' },
+  { id: 'pizza-tequenos', label: 'Pizza + tequeños' },
+  { id: 'familiares', label: 'Para compartir' },
 ];
 
-const CATEGORY_TABS: { id: SectionId; label: string; icon: React.ComponentType<{ className?: string }>; badge?: string }[] = [
-  { id: 'todos', label: 'Todo el menú', icon: UtensilsCrossed },
-  { id: 'promociones', label: 'Promociones y combos', icon: Flame, badge: 'Ahorro' },
-  { id: 'tequenos', label: 'Tequeños', icon: Sparkles },
-  { id: 'pizzas', label: 'Pizzas familiares 35 cm', icon: Pizza },
-  { id: 'bebidas', label: 'Bebidas', icon: Coffee },
-  { id: 'pastelitos', label: 'Pastelitos', icon: Cookie },
-  { id: 'cremas', label: 'Cremas', icon: Droplet },
-];
+const SectionHeader: React.FC<{ id: string; title: string; subtitle?: string; children?: React.ReactNode }> = ({ id, title, subtitle, children }) => (
+  <div className="reveal flex justify-between items-center gap-3 flex-wrap mb-4">
+    <div className="flex items-baseline gap-3 flex-wrap">
+      <h2 id={id} className="m-0 text-[22px] tracking-[-.025em] font-extrabold">{title}</h2>
+      {subtitle && <span className="text-[13px] text-ink-muted">{subtitle}</span>}
+    </div>
+    {children}
+  </div>
+);
 
 export const HomePage: React.FC = () => {
-  const [selectedCategory, setSelectedCategory] = useState<SectionId>('todos');
+  const [promoFilter, setPromoFilter] = useState<PromoFilter>('all');
+  const [size, setSize] = useState<'10' | '20'>('10');
+  const [extra, setExtra] = useState<ExtraTab>('pastelitos');
 
-  const productsByCategory = (category: Product['category']) =>
-    PRODUCTS.filter((p) => p.category === category);
+  useReveal([promoFilter, extra]);
 
-  const show = (id: SectionId) => selectedCategory === 'todos' || selectedCategory === id;
+  const combos = COMBOS.filter((p) => promoFilter === 'all' || p.category === promoFilter);
 
   return (
-    <div className="space-y-8">
-      <HeroBanner />
+    <div>
+      <HeroBanner onSeePromos={() => scrollToSection('sec-favoritas')} />
 
-      {/* Filtro por categoría (se queda visible al hacer scroll, debajo del encabezado) */}
-      <div className="sticky top-16 z-30 bg-[#F9FAFB]/95 backdrop-blur-md py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 border-b border-neutral-200/80">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" role="tablist" aria-label="Secciones de la carta">
-          {CATEGORY_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isSelected = selectedCategory === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={isSelected}
-                onClick={() => setSelectedCategory(tab.id)}
-                className={`flex items-center gap-2 text-xs sm:text-sm font-bold px-4 py-2.5 rounded-full whitespace-nowrap transition-all ${
-                  isSelected
-                    ? 'bg-[#C5161D] text-white shadow-md shadow-[#C5161D]/20 scale-[1.02]'
-                    : 'bg-white text-neutral-700 hover:text-neutral-900 border border-neutral-200 hover:border-neutral-300'
-                }`}
-              >
-                <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-[#C5161D]'}`} />
-                <span>{tab.label}</span>
-                {tab.badge && (
-                  <span
-                    className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                      isSelected ? 'bg-white text-[#C5161D]' : 'bg-[#FFF0F1] text-[#C5161D]'
-                    }`}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      <div className="mt-8">
+        <CategoryNav extra={extra} onSelectExtra={setExtra} />
+      </div>
+
+      <section id="sec-favoritas" aria-labelledby="sec-favoritas-title" className="pt-8">
+        <SectionHeader id="sec-favoritas-title" title="Promos de tequeños" subtitle="Incluyen cremas y gaseosa · tú eliges los sabores" />
+        <div className="grid gap-3.5 [grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))]">
+          {FEATURED.map((p, i) => (
+            <FeaturedPromoCard key={p.id} promotion={p} index={i} />
+          ))}
         </div>
-      </div>
+      </section>
 
-      <div className="space-y-12">
-        {show('promociones') && (
-          <section className="space-y-4" aria-labelledby="sec-promociones">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-lg bg-[#FFF0F1] text-[#C5161D]">
-                    <Flame className="w-5 h-5 fill-[#C5161D]" aria-hidden="true" />
-                  </span>
-                  <h2 id="sec-promociones" className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
-                    Promociones y combos
-                  </h2>
-                </div>
-                <p className="text-xs text-neutral-500 mt-1">
-                  Combos completos para compartir. Elige tus sabores de tequeños, cremas y bebidas favoritas.
-                </p>
-              </div>
-              <span className="hidden sm:inline-block text-xs font-bold text-[#C5161D] bg-[#FFF0F1] px-3 py-1.5 rounded-full shrink-0">
-                {PROMOTIONS.length} promociones
-              </span>
-            </div>
+      <section id="sec-promos" aria-labelledby="sec-promos-title" className="pt-11">
+        <SectionHeader id="sec-promos-title" title="Combos y promociones">
+          <SegmentedControl
+            ariaLabel="Filtrar combos"
+            value={promoFilter}
+            onChange={setPromoFilter}
+            options={PROMO_FILTERS.map((f) => ({
+              ...f,
+              count: f.id === 'all' ? COMBOS.length : COMBOS.filter((p) => p.category === f.id).length,
+            }))}
+          />
+        </SectionHeader>
+        <div className="grid gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,200px),1fr))]">
+          {combos.map((p, i) => (
+            <PromotionCard key={p.id} promotion={p} index={i} />
+          ))}
+        </div>
+      </section>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-              {PROMOTIONS.map((promo) => (
-                <PromotionCard key={promo.id} promotion={promo} />
-              ))}
-            </div>
-          </section>
-        )}
+      <section id="sec-tequenos" aria-labelledby="sec-tequenos-title" className="pt-11">
+        <SectionHeader id="sec-tequenos-title" title="Tequeños por porción" subtitle="Crujientes, dorados y rellenos al máximo">
+          <SegmentedControl
+            ariaLabel="Porción"
+            value={size}
+            onChange={setSize}
+            options={[
+              { id: '10', label: '10 unid.' },
+              { id: '20', label: '20 unid.' },
+            ]}
+          />
+        </SectionHeader>
+        <div className="grid gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,165px),1fr))]">
+          {TEQUENOS.map((p, i) => (
+            <ProductCard key={p.id} product={p} forcedPresentation={size} index={i} />
+          ))}
+        </div>
+      </section>
 
-        {SECTIONS.map((section) => {
-          if (!show(section.id)) return null;
-          const products = productsByCategory(section.id);
-          if (products.length === 0) return null;
-          const Icon = section.icon;
-          return (
-            <section key={section.id} className="space-y-4" aria-labelledby={`sec-${section.id}`}>
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 rounded-lg bg-[#FFF0F1] text-[#C5161D]">
-                      <Icon className="w-5 h-5" />
-                    </span>
-                    <h2 id={`sec-${section.id}`} className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
-                      {section.title}
-                    </h2>
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-1">{section.subtitle}</p>
-                </div>
-                {section.tag && (
-                  <span className="hidden sm:inline-block text-xs font-bold text-[#C5161D] bg-[#FFF0F1] px-3 py-1.5 rounded-full shrink-0">
-                    {section.tag}
-                  </span>
-                )}
-              </div>
+      <section id="sec-pizzas" aria-labelledby="sec-pizzas-title" className="pt-11">
+        <SectionHeader id="sec-pizzas-title" title="Pizzas familiares 35 cm" subtitle="Masa crocante artesanal, salsa pomodoro de la casa y queso mozarella" />
+        <div className="grid gap-3.5 [grid-template-columns:repeat(auto-fill,minmax(min(100%,165px),1fr))]">
+          {PIZZAS.map((p, i) => (
+            <ProductCard key={p.id} product={p} index={i} />
+          ))}
+        </div>
+      </section>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+      <ExtrasSection value={extra} onChange={setExtra} />
 
       <BenefitsStrip />
     </div>

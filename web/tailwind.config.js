@@ -26,6 +26,18 @@ export default {
           light: '#98A2B3',
         },
         line: '#EAEAEA',
+        // Rediseño 2026-10: neutros cálidos minimalistas
+        ink: {
+          DEFAULT: '#141414',
+          soft: '#55555A',
+          muted: '#6B6B6B',
+        },
+        surface: {
+          DEFAULT: '#FAFAF8',
+          2: '#F0EEEA',
+          3: '#F2EFEA',
+        },
+        'line-soft': '#ECEAE6',
       },
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'Outfit', 'system-ui', 'sans-serif'],
@@ -33,13 +45,23 @@ export default {
       },
       boxShadow: {
         card: '0 2px 12px -2px rgba(0, 0, 0, 0.05), 0 1px 4px -1px rgba(0, 0, 0, 0.02)',
-        'card-hover': '0 8px 24px -4px rgba(211, 23, 40, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
+        'card-hover': '0 14px 30px -18px rgba(0, 0, 0, 0.25)',
         header: '0 2px 10px 0 rgba(0, 0, 0, 0.08)',
       },
       borderRadius: {
-        'xl': '12px',
+        xl: '12px',
         '2xl': '16px',
         '3xl': '20px',
+      },
+      keyframes: {
+        'rq-bump': {
+          '0%': { transform: 'scale(1)' },
+          '40%': { transform: 'scale(1.35)' },
+          '100%': { transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        'rq-bump': 'rq-bump .4s ease-out',
       },
     },
   },

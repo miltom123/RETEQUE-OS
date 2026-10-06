@@ -456,25 +456,25 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-[#FAF8F5] w-full max-w-2xl max-h-[92vh] sm:max-h-[88vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200 border border-neutral-200/80">
+    <div className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="modal-in relative bg-surface w-full max-w-[620px] max-h-[92vh] sm:max-h-[90vh] rounded-t-[18px] sm:rounded-[18px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)] flex flex-col overflow-hidden">
         
         {/* Sticky Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-neutral-200 px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="shrink-0 z-10 bg-white border-b border-line-soft px-[18px] py-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <img
               src={productOrPromo.image}
               alt={productOrPromo.name}
-              className="w-12 h-12 object-cover rounded-xl border border-neutral-200 shrink-0"
+              className="w-[46px] h-[46px] object-cover rounded-[10px] shrink-0"
             />
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FFF0F1] text-[#C5161D]">
+                <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-brand-red whitespace-nowrap">
                   {isPromo ? 'Promo Especial' : productOrPromo.category || 'Carta'}
                 </span>
-                <span className="text-xs font-bold text-neutral-400">Personaliza tu orden</span>
+                <span className="hidden sm:inline text-[11px] font-bold uppercase tracking-[0.08em] text-brand-red whitespace-nowrap">· Personaliza tu orden</span>
               </div>
-              <h2 className="text-base sm:text-lg font-black text-neutral-900 leading-tight line-clamp-1">
+              <h2 className="text-[17px] font-extrabold tracking-tight text-ink leading-tight truncate">
                 {productOrPromo.name}
               </h2>
             </div>
@@ -483,28 +483,28 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
           <button
             type="button"
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer shrink-0"
+            className="w-[34px] h-[34px] rounded-full bg-surface-2 hover:bg-[#E3E0DA] flex items-center justify-center text-ink-soft transition-colors cursor-pointer shrink-0"
             aria-label="Cerrar modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 pb-32 sm:pb-28">
+        <div className="flex-1 min-h-0 overflow-y-auto px-[18px] py-4 space-y-2.5 [&>*]:shrink-0">
           
           {/* Description & presentation badge */}
           {productOrPromo.description && (
-            <div className="bg-white border border-neutral-200 p-3.5 rounded-2xl text-xs text-neutral-600">
-              <span className="font-bold text-neutral-900">Incluye: </span>
+            <div className="bg-white border border-line-soft px-3.5 py-[11px] rounded-xl text-[13px] text-ink-soft leading-relaxed">
+              <span className="font-bold text-ink">Incluye: </span>
               {productOrPromo.description}
             </div>
           )}
 
           {/* Regular Tequeños presentation switch (10 vs 20 unid.) */}
           {!isPromo && productOrPromo.presentations && productOrPromo.presentations.length > 1 && (
-            <div className="bg-white border border-neutral-200 p-3.5 rounded-2xl space-y-2">
-              <label className="text-xs font-black text-neutral-900 block">
+            <div className="bg-white border border-line-soft px-3.5 py-3 rounded-xl space-y-2">
+              <label className="text-[13px] font-extrabold text-ink block">
                 Selecciona la porción:
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -515,14 +515,14 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
                       key={pres.id}
                       type="button"
                       onClick={() => setSelectedPresentation(pres.label)}
-                      className={`p-2.5 rounded-xl border text-left flex items-center justify-between transition-all cursor-pointer ${
+                      className={`px-3 py-2.5 rounded-[10px] border-[1.5px] text-left flex items-center justify-between transition-all cursor-pointer ${
                         isSelected
-                          ? 'border-[#C5161D] bg-[#FFF0F1] text-neutral-900 font-bold'
-                          : 'border-neutral-200 hover:border-neutral-300 text-neutral-600'
+                          ? 'border-brand-red bg-brand-red-light text-ink font-bold'
+                          : 'border-line-soft hover:border-[#E0DCD5] text-ink font-bold'
                       }`}
                     >
-                      <span className="text-xs">{pres.label}</span>
-                      <span className="text-xs font-black text-[#C5161D]">{formatMoney(pres.price)}</span>
+                      <span className="text-[13px]">{pres.label}</span>
+                      <span className="text-[13px] font-bold text-brand-red">{formatMoney(pres.price)}</span>
                     </button>
                   );
                 })}
@@ -593,6 +593,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
           grandTotalPrice={grandTotalPrice}
           onAddToCart={handleAddToCart}
           onComprarAhora={handleComprarAhora}
+          canSubmit={isFlavorsCompleted && isCreamsCompleted}
         />
 
         {/* Direct WhatsApp Checkout Sub-Modal */}

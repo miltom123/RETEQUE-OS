@@ -22,7 +22,7 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #FFFDF9;
+  background-color: #FAFAF8;
   color: var(--text-main);
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -80,4 +80,40 @@ a:focus:not(:focus-visible) {
 
 @media (prefers-reduced-motion: reduce) {
   .drawer-in, .drawer-in-left, .fade-in, .toast-in { animation: none; }
+}
+
+
+/* Entrada al hacer scroll (ver hooks/useReveal.ts) */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+    border-color 0.25s, box-shadow 0.25s;
+  transition-delay: calc(var(--d, 0) * 55ms), calc(var(--d, 0) * 55ms), 0s, 0s;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Elevación de tarjetas al pasar el mouse */
+.card-lift {
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s, opacity 0.6s;
+}
+.card-lift.is-visible:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -18px rgba(0, 0, 0, 0.25);
+  border-color: #e0dcd5;
+}
+
+/* Paneles: configurador (sube) y carrito (entra por la derecha) */
+@keyframes rq-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.modal-in { animation: rq-up 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .modal-in { animation: none; }
 }

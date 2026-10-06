@@ -16,7 +16,7 @@ export const CartItemRow: React.FC<CartItemRowProps> = ({
   onRemoveItem,
 }) => {
   return (
-    <li className="p-3 rounded-xl border border-neutral-200 bg-neutral-50/50 space-y-2">
+    <li className="p-3 rounded-xl border border-line-soft bg-white space-y-2">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
           <ImageWithFallback
@@ -36,7 +36,7 @@ export const CartItemRow: React.FC<CartItemRowProps> = ({
         <button
           type="button"
           onClick={() => onRemoveItem(item.lineId)}
-          className="text-neutral-400 hover:text-[#C5161D] p-2 -m-1 rounded-lg cursor-pointer"
+          className="text-neutral-400 hover:text-[#D31728] p-2 -m-1 rounded-lg cursor-pointer"
           aria-label={`Quitar ${item.name}`}
         >
           <Trash2 className="w-4 h-4" />
@@ -44,7 +44,7 @@ export const CartItemRow: React.FC<CartItemRowProps> = ({
       </div>
 
       {item.selectedOptions && item.selectedOptions.length > 0 && (
-        <ul className="text-[11px] text-[#C5161D] font-medium pl-1 space-y-0.5">
+        <ul className="text-[11.5px] text-ink-soft font-medium pl-1 space-y-0.5">
           {item.selectedOptions.map((opt, idx) => (
             <li key={idx}>• {opt}</li>
           ))}
@@ -53,11 +53,11 @@ export const CartItemRow: React.FC<CartItemRowProps> = ({
       {item.notes && <p className="text-[11px] text-neutral-600 pl-1">📝 {item.notes}</p>}
 
       <div className="flex items-center justify-between pt-2 border-t border-neutral-200/60">
-        <div className="inline-flex items-center bg-white border border-neutral-200 rounded-lg p-0.5" role="group" aria-label="Cantidad">
+        <div className="inline-flex items-center gap-1.5" role="group" aria-label="Cantidad">
           <button
             type="button"
             onClick={() => onUpdateQuantity(item.lineId, -1)}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-neutral-700 hover:bg-neutral-100 cursor-pointer"
+            className="w-7 h-7 flex items-center justify-center rounded-lg bg-ink text-white hover:bg-black cursor-pointer"
             aria-label="Quitar uno"
           >
             <Minus className="w-3.5 h-3.5" />
@@ -68,7 +68,7 @@ export const CartItemRow: React.FC<CartItemRowProps> = ({
           <button
             type="button"
             onClick={() => onUpdateQuantity(item.lineId, 1)}
-            className="w-8 h-8 flex items-center justify-center rounded-md bg-[#C5161D] text-white hover:bg-[#A3001E] cursor-pointer"
+            className="w-7 h-7 flex items-center justify-center rounded-lg border border-[#E0DCD5] bg-white text-ink hover:border-ink cursor-pointer"
             aria-label="Agregar uno"
           >
             <Plus className="w-3.5 h-3.5" />

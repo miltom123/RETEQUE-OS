@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, Search, ShoppingCart, X, MessageCircle } from 'lucide-react';
+import { Menu, Search, X } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
 import { useUiStore } from '../../store/uiStore';
 import { siteConfig } from '../../config/site';
@@ -18,11 +18,10 @@ export const Navbar: React.FC = () => {
   const setSearchOpen = useUiStore((s) => s.setSearchOpen);
   const [bump, setBump] = useState(false);
 
-  // Pequeño "salto" del contador cuando cambia la cantidad del pedido.
   useEffect(() => {
     if (totalCount === 0) return;
     setBump(true);
-    const t = setTimeout(() => setBump(false), 350);
+    const t = setTimeout(() => setBump(false), 400);
     return () => clearTimeout(t);
   }, [totalCount]);
 
@@ -31,83 +30,70 @@ export const Navbar: React.FC = () => {
   }, [pathname, setSearchOpen]);
 
   return (
-    <header className="sticky top-0 z-40 shadow-md">
-      {/* Barra superior roja */}
-      <div className="bg-[#C5161D] text-white">
-        <div className="max-w-[1640px] mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2 sm:gap-6">
-          <div className="flex items-center gap-1 sm:gap-4 shrink-0">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden p-2 -ml-1 hover:bg-white/15 rounded-lg transition-colors"
-              aria-label="Abrir menú"
-            >
-              <Menu className="w-6 h-6 stroke-[2.5]" />
-            </button>
+    <header className="sticky top-0 z-40 bg-surface/90 backdrop-blur-md [backdrop-filter:saturate(1.4)_blur(12px)]">
+      <div className="max-w-[1360px] mx-auto px-4 sm:px-6 h-[60px] flex items-center gap-4">
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(true)}
+          className="md:hidden p-2 -ml-1 rounded-lg hover:bg-surface-2 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
 
-            <Link to="/" className="flex items-center gap-2.5 group" aria-label="Retequeños, ir al inicio">
-              <img
-                src="/assets/brand/logo-retequenos.png"
-                alt=""
-                className="h-10 sm:h-11 w-auto object-contain rounded-md drop-shadow-sm group-hover:scale-105 transition-transform"
-              />
-              <span className="hidden xl:inline-block font-script text-white text-2xl pt-1 opacity-95">
-                {siteConfig.slogan}
-              </span>
-            </Link>
-          </div>
+        <Link to="/" className="flex items-center gap-2.5 shrink-0" aria-label="Retequeños, ir al inicio">
+          <img src="/assets/brand/logo-retequenos.png" alt="" className="h-[34px] w-[34px] object-cover rounded-lg" />
+          <span className="font-extrabold text-base tracking-[-.02em] text-ink">{siteConfig.name}</span>
+        </Link>
 
-          <div className="flex-1 max-w-xl hidden md:block">
+        <div className="flex-1 hidden md:flex justify-center min-w-0">
+          <div className="w-full max-w-[420px]">
             <SearchBox />
           </div>
-
-          <div className="flex items-center gap-0.5 sm:gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => openWhatsApp('¡Hola Retequeños! Me gustaría hacer un pedido.')}
-              className="hidden lg:flex items-center gap-1.5 bg-[#16B959] hover:bg-[#13A24D] text-white px-3.5 py-2 rounded-full text-xs font-bold transition-colors"
-            >
-              <MessageCircle className="w-3.5 h-3.5 fill-white" aria-hidden="true" />
-              <span>WhatsApp {siteConfig.whatsappDisplay}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSearchOpen(!isSearchOpen)}
-              className="md:hidden p-2 hover:bg-white/15 rounded-lg transition-colors"
-              aria-label={isSearchOpen ? 'Cerrar búsqueda' : 'Buscar en la carta'}
-              aria-expanded={isSearchOpen}
-            >
-              {isSearchOpen ? <X className="w-6 h-6" /> : <Search className="w-6 h-6 stroke-[2.3]" />}
-            </button>
-
-            <button
-              type="button"
-              onClick={openCart}
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl hover:bg-white/15 transition-colors"
-              aria-label={`Abrir pedido, ${totalCount} ${totalCount === 1 ? 'producto' : 'productos'}`}
-            >
-              <span className="relative">
-                <ShoppingCart className="w-6 h-6 stroke-[2.2]" aria-hidden="true" />
-                <span
-                  className={`absolute -top-1.5 -right-2 bg-[#FFEB3B] text-neutral-900 font-black text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center shadow-sm transition-transform duration-200 ${
-                    bump ? 'scale-125' : ''
-                  }`}
-                >
-                  {totalCount}
-                </span>
-              </span>
-              <span className="hidden sm:inline font-black text-xs sm:text-sm">{formatMoney(subtotal)}</span>
-            </button>
-          </div>
         </div>
+        <div className="flex-1 md:hidden" />
 
-        {isSearchOpen && (
-          <div className="md:hidden px-3 pb-3">
-            <SearchBox autoFocus />
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => openWhatsApp('¡Hola Retequeños! Me gustaría hacer un pedido.')}
+          className="hidden lg:flex items-center gap-2 text-[13.5px] font-semibold text-ink px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors whitespace-nowrap"
+        >
+          <span className="w-[7px] h-[7px] rounded-full bg-whatsapp shadow-[0_0_0_3px_rgba(22,185,89,.18)]" aria-hidden="true" />
+          {siteConfig.whatsappDisplay}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSearchOpen(!isSearchOpen)}
+          className="md:hidden p-2 rounded-lg hover:bg-surface-2 transition-colors"
+          aria-label={isSearchOpen ? 'Cerrar búsqueda' : 'Buscar en la carta'}
+          aria-expanded={isSearchOpen}
+        >
+          {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
+        </button>
+
+        <button
+          type="button"
+          onClick={openCart}
+          className="flex items-center gap-2 bg-ink hover:bg-brand-red text-white text-[13.5px] font-bold px-3.5 py-[9px] rounded-[10px] transition-all active:scale-[.97] whitespace-nowrap"
+          aria-label={`Abrir pedido, ${totalCount} ${totalCount === 1 ? 'producto' : 'productos'}`}
+        >
+          <span className="hidden sm:inline">{formatMoney(subtotal)}</span>
+          <span
+            className={`min-w-5 h-5 px-1.5 rounded-full text-[11.5px] font-extrabold inline-flex items-center justify-center ${
+              totalCount ? 'bg-brand-red' : 'bg-white/20'
+            } ${bump ? 'animate-rq-bump' : ''}`}
+          >
+            {totalCount}
+          </span>
+        </button>
       </div>
+
+      {isSearchOpen && (
+        <div className="md:hidden px-4 pb-3">
+          <SearchBox autoFocus />
+        </div>
+      )}
     </header>
   );
 };

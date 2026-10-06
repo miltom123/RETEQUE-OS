@@ -20,27 +20,27 @@ export const PizzaStep: React.FC<PizzaStepProps> = ({
   onSelectFlavor,
 }) => {
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+    <div className="shrink-0 bg-white border border-line-soft rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-neutral-50 transition-colors cursor-pointer"
+        className="w-full px-3.5 py-3.5 flex items-center justify-between text-left hover:bg-surface transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#FFF0F1] flex items-center justify-center text-[#C5161D]">
+          <div className="w-8 h-8 rounded-lg bg-brand-red-light flex items-center justify-center text-brand-red">
             <PizzaIcon className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-black text-sm sm:text-base text-neutral-900">
+            <h3 className="font-extrabold text-[14.5px] text-ink">
               {targetPizzasCount === 2 ? 'Elige los Sabores de tus 2 Pizzas' : 'Elige el Sabor de tu Pizza Familiar (35 cm)'}
             </h3>
-            <p className="text-xs text-neutral-500 mt-0.5">
+            <p className="text-[12.5px] text-ink-muted mt-0.5">
               {pizzasSummaryText}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="bg-[#E8F8EE] text-[#16B959] font-bold text-xs px-2.5 py-1 rounded">
+          <span className="bg-[#E8F8EE] text-[#0F7A3D] font-bold text-[11.5px] px-2.5 py-1 rounded-md">
             Completado
           </span>
           {isOpen ? <ChevronUp className="w-5 h-5 text-neutral-400" /> : <ChevronDown className="w-5 h-5 text-neutral-400" />}
@@ -48,7 +48,7 @@ export const PizzaStep: React.FC<PizzaStepProps> = ({
       </button>
 
       {isOpen && (
-        <div className="p-4 pt-0 border-t border-neutral-100 divide-y divide-neutral-100">
+        <div className="px-3.5 pb-2 divide-y divide-surface-3">
           {Array.from({ length: targetPizzasCount }).map((_, slotIdx) => (
             <div key={slotIdx} className="py-3 space-y-2">
               <div className="text-xs font-bold text-neutral-700">
@@ -64,7 +64,7 @@ export const PizzaStep: React.FC<PizzaStepProps> = ({
                       onClick={() => onSelectFlavor(flavor.id, slotIdx)}
                       className={`p-2.5 rounded-xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
                         isSelected
-                          ? 'border-[#C5161D] bg-[#FFF0F1] text-neutral-900 shadow-sm'
+                          ? 'border-[#D31728] bg-[#FFF0F1] text-neutral-900 shadow-sm'
                           : 'border-neutral-200 hover:border-neutral-300 text-neutral-700 bg-white'
                       }`}
                     >
@@ -82,7 +82,7 @@ export const PizzaStep: React.FC<PizzaStepProps> = ({
                       </div>
                       <div
                         className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
-                          isSelected ? 'border-[#C5161D] bg-[#C5161D]' : 'border-neutral-300'
+                          isSelected ? 'border-[#D31728] bg-[#D31728]' : 'border-neutral-300'
                         }`}
                       >
                         {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}

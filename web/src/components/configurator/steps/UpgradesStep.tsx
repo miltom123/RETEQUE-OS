@@ -17,20 +17,20 @@ export const UpgradesStep: React.FC<UpgradesStepProps> = ({
   onUpgradeDelta,
 }) => {
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-sm">
+    <div className="shrink-0 bg-white border border-line-soft rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-neutral-50 transition-colors cursor-pointer"
+        className="w-full px-3.5 py-3.5 flex items-center justify-between text-left hover:bg-surface transition-colors cursor-pointer"
       >
         <div>
-          <h3 className="font-black text-sm sm:text-base text-neutral-900">
+          <h3 className="font-extrabold text-[14.5px] text-ink">
             Adicionales y Cremas Extra
           </h3>
-          <p className="text-xs text-neutral-500 mt-0.5">Elige porciones adicionales</p>
+          <p className="text-[12.5px] text-ink-muted mt-0.5">Elige porciones adicionales</p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="border border-neutral-300 text-neutral-700 font-bold text-xs px-2.5 py-1 rounded">
+          <span className="border border-neutral-300 text-neutral-700 font-bold text-[11.5px] px-2.5 py-1 rounded-md">
             Opcional
           </span>
           {isOpen ? <ChevronUp className="w-5 h-5 text-neutral-400" /> : <ChevronDown className="w-5 h-5 text-neutral-400" />}
@@ -38,7 +38,7 @@ export const UpgradesStep: React.FC<UpgradesStepProps> = ({
       </button>
 
       {isOpen && (
-        <div className="p-4 pt-0 border-t border-neutral-100 divide-y divide-neutral-100 max-h-72 overflow-y-auto">
+        <div className="px-3.5 pb-2 divide-y divide-surface-3 max-h-72 overflow-y-auto">
           {UPGRADES.map((upgrade) => {
             const count = upgradeCounts[upgrade.id] || 0;
             return (
@@ -60,21 +60,21 @@ export const UpgradesStep: React.FC<UpgradesStepProps> = ({
                 </div>
 
                 {count > 0 ? (
-                  <div className="inline-flex items-center bg-neutral-100 rounded-lg p-0.5 shrink-0">
+                  <div className="inline-flex items-center gap-1.5 shrink-0">
                     <button
                       type="button"
                       onClick={() => onUpgradeDelta(upgrade.id, -1)}
-                      className="w-5 h-5 flex items-center justify-center bg-[#C5161D] text-white rounded font-bold"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center bg-ink text-white font-bold hover:bg-black transition-colors cursor-pointer"
                     >
-                      -
+                      −
                     </button>
-                    <span className="w-6 text-center font-bold text-neutral-900 text-xs">
+                    <span className="w-6 text-center font-extrabold text-ink text-[13.5px]">
                       {count}
                     </span>
                     <button
                       type="button"
                       onClick={() => onUpgradeDelta(upgrade.id, 1)}
-                      className="w-5 h-5 flex items-center justify-center bg-[#C5161D] text-white rounded font-bold"
+                      className="w-7 h-7 rounded-lg flex items-center justify-center border border-[#E0DCD5] bg-white text-ink font-bold hover:border-ink transition-colors cursor-pointer"
                     >
                       +
                     </button>
@@ -83,7 +83,7 @@ export const UpgradesStep: React.FC<UpgradesStepProps> = ({
                   <button
                     type="button"
                     onClick={() => onUpgradeDelta(upgrade.id, 1)}
-                    className="w-6 h-6 bg-[#C5161D] hover:bg-[#A3001E] text-white rounded-lg flex items-center justify-center transition-all cursor-pointer shrink-0"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center border border-[#E0DCD5] bg-white text-ink font-bold hover:border-ink disabled:opacity-35 transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
