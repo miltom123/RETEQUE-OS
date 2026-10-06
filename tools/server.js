@@ -15,18 +15,22 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const { UsersRepository, publicUser } = require('./users.repository');
+const { buildReport, exportReport } = require('./reports');
 
 // Configuración de rutas y puertos
 const ROOT_DIR = path.resolve(__dirname, '..');
 const APP_DIR = path.join(ROOT_DIR, 'app');
 const DATA_DIR = path.join(ROOT_DIR, 'data');
 const DB_FILE = path.join(DATA_DIR, 'orders.db.json');
+const usersRepo = new UsersRepository(DATA_DIR);
 
 // Parseo de argumentos de línea de comandos
 const args = process.argv.slice(2);
 let PORT = 3000;
 let BIND_ALL = false;
 let ADMIN_PIN = process.env.RTQ_ADMIN_PIN || '2026';
+let legacyPinEnabled = Boolean(process.env.RTQ_ADMIN_PIN);
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '-p' || args[i] === '--port') {
@@ -34,6 +38,7 @@ for (let i = 0; i < args.length; i++) {
   } else if (args[i] === '-Lan' || args[i] === '--lan') {
     BIND_ALL = true;
   } else if (args[i] === '--pin') {
+    legacyPinEnabled = true;
     ADMIN_PIN = args[++i] || '2026';
   }
 }
@@ -111,11 +116,11 @@ function timingSafeEqualStrings(a, b) {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-function createAdminSession() {
+function createAdminSession(user = { username: 'administrador', role: 'admin', name: 'Administrador' }) {
   const token = crypto.randomBytes(32).toString('hex');
   const now = Date.now();
   const expiresAt = now + 24 * 60 * 60 * 1000; // 24 horas
-  activeSessions.set(token, { createdAt: now, expiresAt });
+  activeSessions.set(token, { createdAt: now, expiresAt, user });
   return { token, expiresAt };
 }
 
@@ -127,7 +132,20 @@ function isValidAdminSession(token) {
     activeSessions.delete(token);
     return false;
   }
+  const user = usersRepo.find(session.user.username);
+  if (!user || !user.active) { activeSessions.delete(token); return false; }
+  session.user = publicUser(user);
   return true;
+}
+
+function peruDay(value = Date.now()) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  return ['year', 'month', 'day'].map(type => parts.find(part => part.type === type).value).join('-');
+}
+function canAccessOrder(user, order) {
+  return user.role === 'admin' || Boolean(order.createdAt && peruDay(order.createdAt) === peruDay());
 }
 
 // Semilla inicial de pedidos si la base de datos no existe
@@ -260,6 +278,7 @@ class OrderRepository {
           const qty = Math.max(1, parseInt(it.qty, 10) || 1);
           const price = Math.round((Math.max(0, parseFloat(it.price) || 0) + Number.EPSILON) * 100) / 100;
           return {
+            productId: it.productId ? sanitizeId(it.productId) : null,
             name: sanitizeString(it.name || 'Ítem'),
             qty,
             price,
@@ -292,7 +311,7 @@ class OrderRepository {
       id: sanitizeId(order.id),
       customer: sanitizeString(order.customer || 'Cliente'),
       phone: sanitizeString(order.phone || ''),
-      channel: ['web', 'app', 'whatsapp'].includes(order.channel) ? order.channel : 'app',
+      channel: ['web', 'app', 'whatsapp', 'caja'].includes(order.channel) ? order.channel : 'app',
       mode: ['delivery', 'pickup'].includes(order.mode) ? order.mode : 'delivery',
       status: ['new', 'kitchen', 'delivery', 'delivered'].includes(order.status) ? order.status : 'new',
       priority: Boolean(order.priority),
@@ -305,6 +324,7 @@ class OrderRepository {
       time: 'Recién recibido',
       elapsedMinutes: 0,
       createdAt: order.createdAt || new Date().toISOString(),
+      createdBy: order.createdBy || null,
       items,
       subtotal,
       deliveryFee,
@@ -617,6 +637,77 @@ const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   let pathname = decodeURIComponent(parsedUrl.pathname);
 
+  const currentToken = extractToken(req);
+  const currentUser = isValidAdminSession(currentToken) ? activeSessions.get(currentToken).user : null;
+  const adminOnly = pathname.startsWith('/api/users') || pathname.startsWith('/api/reports') ||
+    (pathname.startsWith('/api/catalog') && req.method !== 'GET') ||
+    (pathname === '/api/config' && req.method !== 'GET');
+  if (adminOnly && !currentUser) return sendJson(res, 401, { error: 'Inicia sesión.' });
+  if (adminOnly && currentUser.role !== 'admin') return sendJson(res, 403, { error: 'Esta acción es exclusiva del administrador.' });
+
+  if (pathname === '/api/reports' || pathname === '/api/reports/export') {
+    if (req.method !== 'GET') return sendJson(res, 405, { error: 'Método no permitido.' });
+    try {
+      const report = buildReport(repo.getAll(), catalogRepo.getAll(), parsedUrl.searchParams);
+      if (pathname === '/api/reports') return sendJson(res, 200, report);
+      const type = parsedUrl.searchParams.get('type') || 'details';
+      const content = exportReport(report, type);
+      res.writeHead(200, {
+        'Content-Type': type === 'json' ? 'application/json; charset=utf-8' : 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="retequenos-${type}-${peruDay()}.${type === 'json' ? 'json' : 'csv'}"`,
+        'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'
+      });
+      return res.end(content);
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+  if (pathname === '/api/users') {
+    if (req.method === 'GET') return sendJson(res, 200, usersRepo.list());
+    if (req.method === 'POST') {
+      try {
+        const body = await readJsonBody(req);
+        if (body.role && body.role !== 'cashier') return sendJson(res, 400, { error: 'Solo puedes crear usuarios de caja.' });
+        return sendJson(res, 201, { ok: true, user: usersRepo.add(body.username, body.name, body.password) });
+      } catch (error) { return sendJson(res, 400, { error: error.message }); }
+    }
+    return sendJson(res, 405, { error: 'Método no permitido.' });
+  }
+  if (pathname.startsWith('/api/users/') && req.method === 'PATCH') {
+    try {
+      const username = pathname.slice('/api/users/'.length);
+      const body = await readJsonBody(req);
+      const user = usersRepo.setActive(username, body.active);
+      if (!user.active) for (const [token, session] of activeSessions) { if (session.user.username === user.username) activeSessions.delete(token); }
+      return sendJson(res, 200, { ok: true, user });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+  if (pathname === '/api/caja/pedidos' && req.method === 'POST') {
+    if (!currentUser) return sendJson(res, 401, { error: 'Inicia sesión para registrar pedidos.' });
+    try {
+      const body = await readJsonBody(req);
+      if (typeof body.customer !== 'string' || !body.customer.trim() || body.customer.length > 100) throw new Error('Ingresa el nombre del cliente.');
+      if (!['pickup', 'delivery'].includes(body.mode)) throw new Error('Modalidad inválida.');
+      if (!['Efectivo', 'Yape', 'Plin', 'Transferencia'].includes(body.payMethod)) throw new Error('Selecciona el medio de pago.');
+      if (!Array.isArray(body.items) || !body.items.length || body.items.length > 50) throw new Error('Agrega entre 1 y 50 productos.');
+      const catalog = catalogRepo.getAll();
+      const items = body.items.map(item => {
+        const product = catalog.find(product => product.id === item.productId);
+        if (!product || product.stock === false) throw new Error('Un producto ya no está disponible. Actualiza la carta.');
+        if (!Number.isInteger(item.qty) || item.qty < 1 || item.qty > 99) throw new Error('La cantidad debe ser de 1 a 99.');
+        return { productId: product.id, name: product.name, qty: item.qty, price: product.promo != null ? Number(product.promo) : Number(product.price), sauces: String(item.sauces || '').slice(0, 200) };
+      });
+      const fee = body.mode === 'pickup' ? 0 : Number(body.deliveryFee);
+      if (!Number.isFinite(fee) || fee < 0 || fee > 100) throw new Error('El costo de delivery debe estar entre 0 y 100 soles.');
+      if (body.mode === 'delivery' && (typeof body.address !== 'string' || !body.address.trim())) throw new Error('Ingresa la dirección del delivery.');
+      const subtotal = items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.qty, 0) / 100;
+      const order = repo.insert({ id: 'RTQ-' + crypto.randomBytes(6).toString('hex').toUpperCase(), customer: body.customer,
+        phone: String(body.phone || '').slice(0, 30), items, mode: body.mode, deliveryFee: fee, subtotal, total: subtotal + fee,
+        discount: 0, status: 'new', payMethod: body.payMethod, payVerified: body.payVerified === true,
+        address: String(body.address || '').slice(0, 300), notes: String(body.notes || '').slice(0, 500), createdAt: new Date().toISOString(),
+        createdBy: currentUser.username, channel: 'caja' });
+      return sendJson(res, 201, { ok: true, order });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
   // --------------------------------------------------------------------------
   // API: Autenticación Admin
   // --------------------------------------------------------------------------
@@ -630,20 +721,23 @@ const server = http.createServer(async (req, res) => {
 
       const body = await readJsonBody(req);
       const inputPin = String(body.pin || '').trim();
+      const user = usersRepo.authenticate(body.username, body.password);
+      const validCredentials = Boolean(user);
 
-      if (timingSafeEqualStrings(inputPin, ADMIN_PIN)) {
+      if (validCredentials || (legacyPinEnabled && !body.username && timingSafeEqualStrings(inputPin, ADMIN_PIN))) {
         recordLoginAttempt(clientIp, true);
-        const session = createAdminSession();
+        const session = createAdminSession(user || undefined);
         res.setHeader('Set-Cookie', `rtq_admin_token=${session.token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=86400`);
         return sendJson(res, 200, {
           ok: true,
           message: 'Autenticación exitosa',
           token: session.token,
-          expiresAt: session.expiresAt
+          expiresAt: session.expiresAt,
+          user: activeSessions.get(session.token).user
         });
       } else {
         recordLoginAttempt(clientIp, false);
-        return sendJson(res, 401, { ok: false, error: 'PIN de administrador incorrecto' });
+        return sendJson(res, 401, { ok: false, error: 'Usuario o contraseña incorrectos' });
       }
     } catch (e) {
       return sendJson(res, 400, { ok: false, error: e.message });
@@ -653,7 +747,7 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/auth/verify' && req.method === 'GET') {
     const token = extractToken(req);
     const isValid = isValidAdminSession(token);
-    return sendJson(res, 200, { authenticated: isValid });
+    return sendJson(res, 200, { authenticated: isValid, user: isValid ? activeSessions.get(token).user : null });
   }
 
   if (pathname === '/api/auth/logout' && req.method === 'POST') {
@@ -679,7 +773,9 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      const orders = repo.getAll();
+      const user = activeSessions.get(token).user;
+      if (user.role !== 'admin' && parsedUrl.searchParams.get('scope') === 'all') return sendJson(res, 403, { error: 'Solo el administrador puede consultar el historial completo.' });
+      const orders = repo.getAll().filter(order => canAccessOrder(user, order));
       return sendJson(res, 200, orders);
     }
 
@@ -697,6 +793,10 @@ const server = http.createServer(async (req, res) => {
           return sendJson(res, 400, { ok: false, error: 'Cuerpo de pedido inválido' });
         }
 
+        if (currentUser && currentUser.role === 'cashier') return sendJson(res, 403, { error: 'Registra pedidos de caja desde /api/caja/pedidos.' });
+        if (repo.getById(sanitizeId(payload.id))) return sendJson(res, 409, { error: 'El pedido ya existe.' });
+        payload.createdAt = new Date().toISOString();
+        payload.createdBy = null;
         const newOrder = repo.insert(payload);
         console.log(`[PEDIDO CREADO] ${newOrder.id} - ${newOrder.customer} - Total: S/ ${newOrder.total.toFixed(2)} (${newOrder.channel})`);
         return sendJson(res, 201, { ok: true, order: newOrder });
@@ -729,6 +829,7 @@ const server = http.createServer(async (req, res) => {
         createdAt: ord.createdAt
       });
     }
+    if (!canAccessOrder(activeSessions.get(token).user, ord)) return sendJson(res, 403, { error: 'Caja solo puede consultar pedidos del día.' });
     return sendJson(res, 200, ord);
   }
 
@@ -744,9 +845,16 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { ok: false, error: 'ID de pedido no especificado' });
     }
 
+    const order = repo.getById(orderId);
+    if (order && !canAccessOrder(activeSessions.get(token).user, order)) return sendJson(res, 403, { error: 'Caja solo puede gestionar pedidos del día.' });
     try {
       const body = await readJsonBody(req);
       if (body.status) {
+        if (order && body.status === 'kitchen' && /yape|plin|transfer/i.test(order.payMethod || '') && !order.payVerified) return sendJson(res, 400, { error: 'Verifica el pago antes de mandar a cocina.' });
+        if (currentUser.role === 'cashier' && order) {
+          const next = { new: ['kitchen'], kitchen: order.mode === 'pickup' ? ['delivered'] : ['delivery'], delivery: ['delivered'], delivered: [] };
+          if (!next[order.status]?.includes(body.status)) return sendJson(res, 400, { error: 'Ese cambio de estado no está permitido para caja.' });
+        }
         const updated = repo.updateStatus(orderId, body.status);
         if (updated) {
           return sendJson(res, 200, { ok: true, order: updated });
@@ -847,20 +955,37 @@ const server = http.createServer(async (req, res) => {
   }
 
   // --------------------------------------------------------------------------
-  // Servidor de Archivos Estáticos (app/) con protección contra Path Traversal
+  // Servidor de Archivos Estáticos con soporte para Web SPA y Admin
   // --------------------------------------------------------------------------
-  if (pathname === '/' || pathname === '/index.html' || pathname === '/app' || pathname === '/mobile') {
-    pathname = '/index.html';
-  } else if (pathname === '/admin' || pathname === '/admin/') {
+  const webDist = path.join(__dirname, '..', 'web', 'dist');
+  let filePath = null;
+  let rootDir = APP_DIR;
+
+  if (pathname === '/admin' || pathname === '/admin/') {
     pathname = '/admin.html';
   }
 
-  // Resuelve la ruta canónica y verifica que no escape de APP_DIR
-  const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-  let filePath = path.join(APP_DIR, safePath);
+  const isWebRoute = pathname === '/' || pathname === '/index.html' ||
+    pathname.startsWith('/app') || pathname.startsWith('/mobile') ||
+    pathname.startsWith('/assets') || pathname === '/vite.svg' || pathname === '/manifest.json' || pathname === '/favicon.ico';
+
+  if (isWebRoute && fs.existsSync(webDist)) {
+    rootDir = webDist;
+    const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
+    const candidateFile = path.join(webDist, safePath);
+    if (fs.existsSync(candidateFile) && !fs.statSync(candidateFile).isDirectory()) {
+      filePath = candidateFile;
+    } else {
+      filePath = path.join(webDist, 'index.html');
+    }
+  } else {
+    rootDir = APP_DIR;
+    const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
+    filePath = path.join(APP_DIR, safePath);
+  }
 
   // Verificación estricta contra Path Traversal
-  if (!filePath.startsWith(APP_DIR)) {
+  if (!filePath.startsWith(rootDir)) {
     res.writeHead(403, { 'Content-Type': 'text/plain; charset=UTF-8' });
     res.end('403 Acceso Denegado');
     return;
@@ -909,7 +1034,8 @@ server.listen(PORT, bindHost, () => {
   console.log(`✓ Servidor activo en:    http://localhost:${PORT}`);
   console.log(`✓ Panel Administrador:   http://localhost:${PORT}/admin`);
   console.log(`✓ API REST Pedidos:      http://localhost:${PORT}/api/pedidos`);
-  console.log(`✓ PIN de Administrador:  ${ADMIN_PIN}`);
+  console.log('✓ Acceso del equipo:     administrador / caja');
+  if (legacyPinEnabled) console.log('✓ Acceso PIN heredado:   habilitado expresamente');
   console.log(`✓ Persistencia en disco: ${DB_FILE}`);
 
   if (BIND_ALL && localIp) {

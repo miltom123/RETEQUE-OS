@@ -565,6 +565,31 @@ window.saveWeekSchedule = saveWeekSchedule;
 window.navigateWeek = navigateWeek;
 window.openAddOfferModal = openAddOfferModal;
 window.focusNewCouponForm = focusNewCouponForm;
+window.prepareSuggestedCoupon = function(coupon) {
+  if (window.currentUser?.role !== 'admin') return;
+  editingCouponCode = null;
+  currentAudience = 'Todos';
+  focusNewCouponForm();
+  const today = new Date();
+  const end = new Date(today.getTime() + (coupon.days - 1) * 86400000);
+  const date = value => new Intl.DateTimeFormat('es-PE', { timeZone: 'America/Lima', day: '2-digit', month: '2-digit', year: 'numeric' }).format(value);
+  let code = coupon.code, suffix = 2;
+  while (DETAILED_COUPONS.some(item => item.code.toUpperCase() === code.toUpperCase())) code = coupon.code + suffix++;
+  const fields = {
+    'form-code': code, 'form-name': coupon.name, 'form-benefit-type': 'percent',
+    'form-discount-val': `${coupon.percent}%`, 'form-min-order': `S/ ${coupon.minimum.toFixed(2)}`,
+    'form-total-limit': coupon.limit, 'form-user-limit': 1, 'form-start-date': date(today),
+    'form-end-date': date(end), 'form-start-time': '00:00', 'form-end-time': '23:59', 'form-status': 'Borrador'
+  };
+  Object.entries(fields).forEach(([id, value]) => { const input = document.getElementById(id); if (input) input.value = value; });
+  document.querySelectorAll('.co-audience-pill').forEach(button => button.classList.toggle('active', button.textContent.trim() === 'Todos'));
+  document.querySelectorAll('input[name="days"]').forEach(input => input.checked = true);
+  document.querySelectorAll('input[name="applyTo"]').forEach(input => input.checked = input.value === 'all');
+  ['form-stackable', 'form-send-push', 'form-public-app'].forEach(id => { const input = document.getElementById(id); if (input) input.checked = false; });
+  document.getElementById('form-coupon-title').textContent = 'Revisar propuesta basada en ventas';
+  updateLivePreview();
+  showToast('Propuesta preparada sin activar. Revisa costos, reglas y código antes de guardarla.');
+};
 window.handleGlobalSearch = handleGlobalSearch;
 window.toggleTableFilterMenu = toggleTableFilterMenu;
 window.exportCouponsCSV = exportCouponsCSV;

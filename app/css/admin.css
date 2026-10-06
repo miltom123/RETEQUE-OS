@@ -10,3 +10,6 @@
 @import url('admin/dashboard.css');
 @import url('admin/kanban.css');
 @import url('admin/promos.css');
+@import url('admin/access-history.css?v=20261003d');
+@import url('admin/users-cash.css?v=roles2');
+@import url('admin/reports.css?v=reports2');

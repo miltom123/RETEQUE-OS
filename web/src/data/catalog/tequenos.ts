@@ -1,4 +1,5 @@
 import { Product } from './types';
+import { CREMAS_EXTRAS } from './cremas';
 
 export const TEQUENOS_PRODUCTS: Product[] = [
   // ================= TEQUEÑOS CLÁSICOS =================
@@ -10,6 +11,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'clasicos',
     description: 'Con el sabor y la receta original de siempre ♡',
     image: '/assets/products/tequenos/queso.jpg',
+    basePrice: 16.00,
     gallery: [
       '/assets/products/tequenos/queso-detail-main.jpg',
       '/assets/products/tequenos/queso-thumb-1.jpg',
@@ -32,6 +34,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'clasicos',
     description: 'Rellenos con jamón inglés premium y queso fundente.',
     image: '/assets/products/tequenos/jamon-queso.jpg',
+    basePrice: 16.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 16.00 },
       { id: '20', label: '20 unid.', price: 28.00 },
@@ -47,6 +50,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'clasicos',
     description: 'Crujientes con trozos de tocino ahumado y abundante queso.',
     image: '/assets/products/tequenos/tocino-queso.jpg',
+    basePrice: 17.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 17.00 },
       { id: '20', label: '20 unid.', price: 29.00 },
@@ -62,6 +66,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'clasicos',
     description: 'La combinación favorita con delicioso hotdog y queso derretido.',
     image: '/assets/products/tequenos/hotdog-queso.jpg',
+    basePrice: 16.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 16.00 },
       { id: '20', label: '20 unid.', price: 28.00 },
@@ -77,6 +82,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'clasicos',
     description: 'Mezcla irresistible de queso paria, mozarella y edam.',
     image: '/assets/products/tequenos/tres-quesos.jpg',
+    basePrice: 17.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 17.00 },
       { id: '20', label: '20 unid.', price: 28.00 },
@@ -94,6 +100,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'especiales',
     description: 'Relleno de cremosa receta tradicional de ají de gallina criollo.',
     image: '/assets/products/tequenos/aji-de-gallina.jpg',
+    basePrice: 17.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 17.00 },
       { id: '20', label: '20 unid.', price: 29.00 },
@@ -108,6 +115,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'especiales',
     description: 'Relleno con exquisito chocolate derretido, el dulce perfecto.',
     image: '/assets/products/tequenos/chocolate.jpg',
+    basePrice: 17.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 17.00 },
       { id: '20', label: '20 unid.', price: 31.00 },
@@ -122,6 +130,7 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'especiales',
     description: 'Intenso queso cheddar fundido y extra cremoso.',
     image: '/assets/products/tequenos/queso-cheddar.jpg',
+    basePrice: 18.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 18.00 },
       { id: '20', label: '20 unid.', price: 34.00 },
@@ -136,11 +145,11 @@ export const TEQUENOS_PRODUCTS: Product[] = [
     subcategory: 'especiales',
     description: 'Combinación explosiva de jamón seleccionado y queso cheddar.',
     image: '/assets/products/tequenos/jamon-cheddar.jpg',
+    basePrice: 19.00,
     presentations: [
       { id: '10', label: '10 unid.', price: 19.00 },
       { id: '20', label: '20 unid.', price: 36.00 },
     ],
     extras: CREMAS_EXTRAS,
   },
-
 ];

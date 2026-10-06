@@ -14,17 +14,41 @@
   <link rel="icon" type="image/png" href="assets/logo-retequenos.png">
   
   <!-- Master Admin Stylesheet (Modular Architecture) -->
-  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/admin.css?v=dashboard-restored1">
   
   <!-- Chart.js (Local Vendor + CDN Fallback) -->
-  <script src="js/admin/vendor/chart.umd.min.js"></script>
+  <script src="js/admin/vendor/chart.umd.min.js?v=dashboard-restored1"></script>
   <script>
     if (typeof Chart === 'undefined') {
       document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"><\/script>');
     }
   </script>
 </head>
-<body>
+<body class="auth-locked">
+  <section id="login-screen" class="login-screen" aria-labelledby="login-title">
+    <div class="login-brand">
+      <div class="login-eyebrow">RETEQUEÑOS · HUB OPERATIVO</div>
+      <img class="login-logo" src="assets/logo-retequenos.png" alt="Logotipo de Retequeños">
+      <div class="login-wordmark" aria-label="Retequeños"><span aria-hidden="true" style="--i:0">R</span><span aria-hidden="true" style="--i:1">e</span><span aria-hidden="true" style="--i:2">t</span><span aria-hidden="true" style="--i:3">e</span><span aria-hidden="true" style="--i:4">q</span><span aria-hidden="true" style="--i:5">u</span><span aria-hidden="true" style="--i:6">e</span><span aria-hidden="true" style="--i:7">ñ</span><span aria-hidden="true" style="--i:8">o</span><span aria-hidden="true" style="--i:9">s</span></div>
+      <p>El sabor que nos une.<br>El equipo que lo hace posible.</p>
+      <div class="login-brand-footer">HECHO CON PASIÓN, EN TACNA.</div>
+    </div>
+    <div class="login-panel">
+      <form id="login-form" class="login-card">
+        <span class="login-kicker">BIENVENIDO AL EQUIPO</span>
+        <h1 id="login-title">Todo listo para<br>un gran día.</h1>
+        <p>Ingresa a tu espacio de trabajo para gestionar la operación de Retequeños.</p>
+        <label for="login-username">Usuario</label>
+        <input id="login-username" name="username" autocomplete="username" placeholder="administrador o caja" required maxlength="40">
+        <label for="login-password">Contraseña</label>
+        <div class="login-password-wrap"><input id="login-password" name="password" type="password" autocomplete="current-password" placeholder="Ingresa tu contraseña" required><button id="toggle-password" type="button" aria-label="Mostrar contraseña" aria-pressed="false">Ver</button></div>
+        <div id="login-error" class="login-error" role="alert"></div>
+        <button id="login-submit" type="submit" class="btn btn-primary">Ingresar al sistema <span aria-hidden="true">→</span></button>
+        <div class="login-access-note">Acceso exclusivo para el equipo de Retequeños.</div>
+      </form>
+      <div class="login-panel-footer">RETEQUEÑOS OS <span>Operación con sabor.</span></div>
+    </div>
+  </section>
 
   <!-- Sidebar -->
   <aside id="sidebar">
@@ -40,6 +64,7 @@
     </div>
 
     <div class="nav-section" style="font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:#6E6864; font-weight:800; padding:18px 20px 8px;">OPERACIÓN PRINCIPAL</div>
+<ul class="nav-list"><li class="nav-item"><button class="nav-btn" data-tab="tab-cash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M7 7V3h10v4M7 12h3M14 12h3M7 16h10"/></svg><span>Caja · Hoy</span></button></li></ul>
     <ul class="nav-list">
       <li class="nav-item">
         <button class="nav-btn active" data-tab="tab-dashboard">
@@ -62,6 +87,7 @@
       </li>
     </ul>
 
+<ul class="nav-list"><li class="nav-item"><button class="nav-btn" data-tab="tab-history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-7M3 3v6h6M12 7v5l3 2"/></svg><span>Historial de pedidos</span></button></li></ul>
     <div class="nav-section" style="font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:#6E6864; font-weight:800; padding:18px 20px 8px;">CRECIMIENTO & VENTAS</div>
     <ul class="nav-list">
       <li class="nav-item">
@@ -89,21 +115,15 @@
     <div class="nav-section" style="font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:#6E6864; font-weight:800; padding:18px 20px 8px;">MÁS MÓDULOS</div>
     <ul class="nav-list">
       <li class="nav-item">
-        <button class="nav-btn" data-tab="tab-reports" onclick="showToast('Módulo de Reportes avanzados en desarrollo')">
+        <button class="nav-btn" data-tab="tab-reports">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
           <span>Reportes</span>
         </button>
       </li>
       <li class="nav-item">
-        <button class="nav-btn" data-tab="tab-users" onclick="showToast('Gestión de Usuarios y Permisos')">
+        <button class="nav-btn" data-tab="tab-users">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           <span>Usuarios</span>
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-btn" data-tab="tab-integrations" onclick="showToast('Integraciones WhatsApp, Yape y Pasarelas')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
-          <span>Integraciones</span>
         </button>
       </li>
     </ul>
@@ -121,13 +141,13 @@
       <!-- User Pill -->
       <div class="user-pill" style="display:flex; align-items:center; justify-content:space-between; padding:8px 8px; background:transparent;">
         <div style="display:flex; align-items:center; gap:10px;">
-          <div class="user-avatar" style="background:#FF2442; color:#fff; font-weight:800; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;">MF</div>
+          <div class="user-avatar" style="background:#FF2442; color:#fff; font-weight:800; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0;">AD</div>
           <div class="user-info">
-            <div class="user-name" style="color:#FFFFFF; font-weight:700; font-size:12.5px;">Milton Flores</div>
-            <div class="user-role" style="color:#9CA3AF; font-size:10.5px;">Superadministrador</div>
+            <div id="session-name" class="user-name" style="color:#FFFFFF; font-weight:700; font-size:12.5px;">Milton Flores</div>
+            <div id="session-role" class="user-role" style="color:#9CA3AF; font-size:10.5px;">Superadministrador</div>
           </div>
         </div>
-        <div style="color:#9CA3AF; cursor:pointer; font-size:15px; padding:2px 4px;">⋮</div>
+        <button id="logout-btn" class="logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">↪</button>
       </div>
     </div>
   </aside>
@@ -167,11 +187,11 @@
           <span>Ver Tienda Web</span>
         </a>
 
-        <button class="btn btn-primary btn-sm" id="topbar-action-btn" onclick="simulateIncomingOrder()">
+        <button class="btn btn-primary btn-sm" id="topbar-action-btn" onclick="document.querySelector('[data-tab=tab-cash]').click()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          <span id="topbar-btn-text">+ Simular Pedido</span>
+          <span id="topbar-btn-text">+ Nuevo pedido</span>
         </button>
-        <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #FF2442, #E61E3B); color:#FFFFFF; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(255,36,66,0.35); flex-shrink:0;">MF</div>
+        <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #FF2442, #E61E3B); color:#FFFFFF; font-weight:800; font-size:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(255,36,66,0.35); flex-shrink:0;" class="session-avatar">AD</div>
       </div>
     </header>
 
@@ -752,6 +772,7 @@
                 <option value="all">Todos</option>
                 <option value="app">App</option>
                 <option value="whatsapp">WhatsApp</option>
+                <option value="caja">Caja</option>
                 <option value="pickup">Recojo</option>
                 <option value="delivery">Delivery</option>
               </select>
@@ -1682,6 +1703,66 @@
 
       </section>
 
+      <section id="tab-history" class="tab-content" aria-label="Historial de pedidos">
+        <div class="history-summary" id="history-summary"></div>
+        <div class="history-card">
+          <div class="history-card-heading"><div><h2>Todos los pedidos</h2><p>Consulta pedidos activos, entregados y cancelados.</p></div><button class="btn btn-outline" id="history-export">Exportar CSV</button></div>
+          <div class="history-filters">
+            <label class="history-search">Buscar pedido o cliente<input id="history-search" type="search" placeholder="Código, nombre o teléfono"></label>
+            <label>Estado<select id="history-status"><option value="">Todos los estados</option><option value="new">Nuevo</option><option value="kitchen">En cocina</option><option value="delivery">En reparto</option><option value="delivered">Entregado</option><option value="cancelled">Cancelado</option></select></label>
+            <label>Desde<input id="history-from" type="date"></label><label>Hasta<input id="history-to" type="date"></label>
+            <button class="btn btn-outline" id="history-reset">Limpiar</button>
+          </div>
+          <p id="history-feedback" role="status"></p>
+          <div class="history-table-wrap"><table class="history-table"><thead><tr><th>Pedido / Fecha</th><th>Cliente</th><th>Modalidad</th><th>Estado</th><th>Pago</th><th>Total</th><th>Detalle</th></tr></thead><tbody id="history-rows"></tbody></table></div>
+          <div class="history-pagination"><span id="history-count" aria-live="polite"></span><div><button id="history-prev" class="btn btn-outline">Anterior</button><button id="history-next" class="btn btn-outline">Siguiente</button></div></div>
+        </div>
+      </section>
+      <section id="tab-users" class="tab-content" aria-label="Usuarios">
+        <div class="history-card users-intro"><h2>Un equipo, dos tipos de acceso</h2><p>El administrador gestiona el negocio. Caja se encarga de los pedidos y cobros del día.</p><div class="role-grid"><div><strong>Administrador</strong><p>Historial completo, métricas, catálogo, promociones y gestión de usuarios.</p></div><div><strong>Caja</strong><p>Nuevos pedidos, pagos, resumen del día y seguimiento de cocina y despacho.</p></div></div></div>
+        <div class="cash-layout">
+          <form id="users-form" class="history-card cash-form"><h2>Agregar usuario de caja</h2><p>Crea una cuenta para cada persona o punto de caja.</p>
+            <label>Nombre<input id="user-name" required maxlength="60" placeholder="Caja de mostrador"></label>
+            <label>Usuario<input id="user-username" required minlength="3" maxlength="32" pattern="[a-z0-9][a-z0-9._-]{2,31}" autocomplete="off" placeholder="caja2"></label>
+            <label>Contraseña<input id="user-password" type="password" required minlength="4" maxlength="128" autocomplete="new-password"></label>
+            <p class="form-feedback" id="users-feedback" role="status"></p><button class="btn btn-primary" type="submit">Crear usuario de caja</button>
+          </form>
+          <div class="history-card"><div class="history-card-heading"><h2>Usuarios del equipo</h2><button class="btn btn-outline" id="users-refresh">Actualizar</button></div><div class="history-table-wrap"><table class="history-table"><thead><tr><th>Nombre / Usuario</th><th>Tipo</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="users-rows"></tbody></table></div></div>
+        </div>
+      </section>
+      <section id="tab-cash" class="tab-content" aria-label="Caja del día">
+        <div id="cash-summary" class="history-summary"></div>
+        <div class="cash-layout">
+          <form id="cash-order-form" class="history-card cash-form">
+            <h2>Nuevo pedido</h2><p>Registra la venta y envía la comanda a cocina.</p>
+            <div class="cash-fields"><label>Cliente<input id="cash-customer" required maxlength="100" placeholder="Nombre del cliente"></label><label>Teléfono<input id="cash-phone" type="tel" maxlength="30" placeholder="Opcional"></label></div>
+            <div class="cash-fields"><label>Modalidad<select id="cash-mode"><option value="pickup">Recojo en tienda</option><option value="delivery">Delivery</option></select></label><label>Medio de pago<select id="cash-payment"><option>Efectivo</option><option>Yape</option><option>Plin</option><option>Transferencia</option></select></label></div>
+            <div id="cash-delivery-fields" hidden class="cash-fields"><label>Dirección<input id="cash-address" maxlength="300"></label><label>Costo de delivery (S/)<input id="cash-fee" type="number" min="0" max="100" step="0.10" value="0"></label></div>
+            <div class="cash-add-row"><label>Producto<select id="cash-product"><option value="">Cargando carta…</option></select></label><label>Cantidad<input id="cash-qty" type="number" min="1" max="99" value="1"></label><button id="cash-add" type="button" class="btn btn-outline">Agregar</button></div>
+            <div id="cash-cart" class="cash-cart"></div>
+            <label>Indicaciones / salsas<textarea id="cash-notes" maxlength="500" rows="2" placeholder="Salsas elegidas, referencias o indicaciones de preparación"></textarea></label>
+            <label class="cash-check"><input id="cash-paid" type="checkbox"> Pago recibido y confirmado</label>
+            <div class="cash-total"><span>Total del pedido</span><strong id="cash-total">S/ 0.00</strong></div>
+            <p id="cash-feedback" class="form-feedback" role="status"></p><button class="btn btn-primary" id="cash-save" type="submit">Registrar pedido</button>
+          </form>
+          <div class="history-card"><div class="history-card-heading"><div><h2>Pedidos de hoy</h2><p id="cash-day-label">Operación diaria · hora de Perú</p></div><button class="btn btn-outline" id="cash-refresh">Actualizar</button></div><p class="cash-scope-note">Los pagos confirmados incluyen ventas pendientes de entrega. Los pedidos sin fecha quedan disponibles para el administrador.</p><div class="history-table-wrap"><table class="history-table"><thead><tr><th>Pedido / Cliente</th><th>Estado / Pago</th><th>Total</th><th>Detalle</th></tr></thead><tbody id="cash-rows"></tbody></table></div></div>
+        </div>
+      </section>
+      <section id="tab-reports" class="tab-content" aria-label="Reportes de ventas">
+        <div class="report-banner"><div><span class="report-eyebrow">DATOS PARA DECIDIR</span><h2>Ventas, detalle y oportunidades</h2><p>Analiza el histórico y descubre qué puedes probar en la próxima campaña.</p></div><button class="btn btn-outline" id="report-refresh">Actualizar</button></div>
+        <div class="history-card report-filters"><label>Desde<input id="report-from" type="date"></label><label>Hasta<input id="report-to" type="date"></label><label>Canal<select id="report-channel"><option value="">Todos los canales</option><option value="caja">Caja</option><option value="app">App</option><option value="web">Web</option><option value="whatsapp">WhatsApp</option></select></label><label>Registros para exportar<select id="report-records"><option value="delivered">Ventas entregadas</option><option value="all">Todos los pedidos y estados</option></select></label><label class="report-check"><input id="report-undated" type="checkbox" checked> Incluir pedidos sin fecha</label><button class="btn btn-outline" id="report-reset">Todo el histórico</button></div>
+        <p class="report-feedback" id="report-feedback" role="status">Cargando reportes…</p>
+        <div class="report-export-bar"><span>Exportar selección:</span><a class="btn btn-outline" id="report-export-details">Detalle por producto · CSV</a><a class="btn btn-outline" id="report-export-orders">Pedidos completos · CSV</a><a class="btn btn-outline" id="report-export-metrics">Métricas y sugerencias · CSV</a><a class="btn btn-primary" id="report-export-json">Informe completo · JSON</a></div>
+        <p class="report-footnote">El detalle genera una fila por producto: suma el importe de línea, no los totales de pedido repetidos. El JSON conserva todos los campos disponibles. Las exportaciones usan los filtros actuales.</p>
+        <div id="report-summary" class="report-kpis"></div>
+        <div class="report-layout"><div class="report-main">
+          <div class="history-card report-panel"><h2>Evolución de ventas entregadas</h2><p>Por fecha de creación del pedido, en hora de Perú. Fechas sin ventas dentro del rango se muestran con cero.</p><div id="report-daily"></div></div>
+          <div class="history-card"><div class="history-card-heading"><div><h2>Productos más vendidos</h2><p>Unidades = presentaciones vendidas; importe bruto antes de descuentos y delivery.</p></div></div><div class="history-table-wrap"><table class="history-table"><thead><tr><th>Producto</th><th>Unidades</th><th>Pedidos</th><th>Importe bruto</th></tr></thead><tbody id="report-products"></tbody></table></div></div>
+          <div class="report-grid-two"><div class="history-card report-panel"><h2>Ventas por canal</h2><div id="report-channels"></div></div><div class="history-card report-panel"><h2>Ventas por medio de pago</h2><div id="report-payments"></div></div></div>
+          <div class="history-card report-panel"><h2>Productos que se compran juntos</h2><div id="report-pairs"></div></div>
+          <div class="history-card"><div class="history-card-heading"><div><h2>Detalle de la selección</h2><p id="report-order-count"></p></div></div><div class="history-table-wrap"><table class="history-table"><thead><tr><th>Pedido / Fecha</th><th>Cliente</th><th>Estado / Pago</th><th>Total</th><th>Detalle</th></tr></thead><tbody id="report-orders"></tbody></table></div><div class="history-pagination"><span id="report-page-label"></span><div><button class="btn btn-outline" id="report-prev">Anterior</button><button class="btn btn-outline" id="report-next">Siguiente</button></div></div></div>
+        </div><aside class="report-suggestions history-card report-panel"><span class="report-eyebrow">PRÓXIMOS PASOS</span><h2>Oportunidades para probar</h2><p id="report-confidence"></p><div id="report-suggestions"></div><p class="report-footnote">Las propuestas se actualizan con las ventas y los filtros. Revisa costos y disponibilidad antes de aplicarlas; ninguna campaña se activa automáticamente.</p></aside></div>
+      </section>
     </main>
   </div>
 
@@ -1697,29 +1778,6 @@
       </div>
       <div class="modal-footer" id="mod-order-footer">
         <!-- Injected via JS -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Autenticación Admin (PIN de Seguridad) -->
-  <div class="modal-backdrop" id="modal-admin-auth" style="z-index:9999;">
-    <div class="modal-box" style="max-width:380px; text-align:center;">
-      <div class="modal-header" style="justify-content:center; border-bottom:none; padding-bottom:0;">
-        <div style="width:52px; height:52px; border-radius:14px; background:#FFF0F1; color:#FF2442; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 10px; box-shadow:0 4px 14px rgba(255,36,66,0.15);">🔐</div>
-      </div>
-      <div style="padding:0 24px 24px;">
-        <h3 style="font-size:18px; font-weight:800; color:var(--text-main); margin-bottom:6px;">Acceso Administrador</h3>
-        <p style="font-size:12.5px; color:var(--text-muted); margin-bottom:20px;">Ingresa el PIN de seguridad para gestionar comandas y sincronizar con la API de cocina.</p>
-        <form id="form-admin-pin" onsubmit="handleAdminLogin(event)">
-          <div style="margin-bottom:16px;">
-            <input type="password" id="input-admin-pin" maxlength="10" placeholder="••••" autocomplete="current-password" autofocus style="width:100%; text-align:center; font-size:26px; letter-spacing:8px; font-weight:800; padding:12px; border:2px solid var(--border); border-radius:12px; outline:none; background:var(--surface);" required />
-            <div id="auth-error-msg" style="color:#EF4444; font-size:12px; font-weight:600; margin-top:8px; display:none;">PIN incorrecto. Inténtalo de nuevo.</div>
-          </div>
-          <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; padding:12px; font-weight:700; font-size:14px;">
-            <span>Desbloquear Hub Operativo</span>
-          </button>
-          <div style="font-size:11.5px; color:var(--text-muted); margin-top:14px;">PIN predeterminado: <strong>2026</strong></div>
-        </form>
       </div>
     </div>
   </div>
@@ -1857,25 +1915,30 @@
 
 
   <!-- Modular Data Stores -->
-  <script src="js/admin/data/catalog.data.js"></script>
-  <script src="js/admin/data/coupons.data.js"></script>
-  <script src="js/admin/data/orders.data.js"></script>
-  <script src="js/admin/data/analytics.data.js"></script>
+  <script src="js/admin/data/catalog.data.js?v=dashboard-restored1"></script>
+  <script src="js/admin/data/coupons.data.js?v=dashboard-restored1"></script>
+  <script src="js/admin/data/orders.data.js?v=dashboard-restored1"></script>
+  <script src="js/admin/data/analytics.data.js?v=dashboard-restored1"></script>
 
   <!-- Services -->
-  <script src="js/admin/services/audio.service.js"></script>
-  <script src="js/admin/services/toast.service.js"></script>
-  <script src="js/admin/services/sync.service.js"></script>
+  <script src="js/admin/services/audio.service.js?v=dashboard-restored1"></script>
+  <script src="js/admin/services/toast.service.js?v=dashboard-restored1"></script>
+  <script src="js/admin/services/sync.service.js?v=dashboard-restored1"></script>
 
   <!-- Feature Modules -->
-  <script src="js/admin/modules/dashboard.module.js"></script>
-  <script src="js/admin/modules/kanban.module.js"></script>
-  <script src="js/admin/modules/catalog.module.js"></script>
-  <script src="js/admin/modules/promos.module.js"></script>
-  <script src="js/admin/modules/customers.module.js"></script>
-  <script src="js/admin/modules/surveys.module.js"></script>
+  <script src="js/admin/modules/dashboard.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/kanban.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/catalog.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/promos.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/customers.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/surveys.module.js?v=dashboard-restored1"></script>
 
   <!-- App Bootstrap & Orchestration -->
-  <script src="js/admin/app.js"></script>
+  <script src="js/admin/modules/history.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/services/auth.service.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/users.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/cash.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/reports.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/app.js?v=dashboard-restored1"></script>
 </body>
 </html>

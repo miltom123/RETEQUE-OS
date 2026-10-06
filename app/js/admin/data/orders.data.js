@@ -388,25 +388,11 @@ const DEFAULT_ORDERS = [
       }
     ];
 
-// Cargar pedidos de localStorage si existen
-let savedOrders = null;
-try {
-  const item = localStorage.getItem('RTQ_ADMIN_ORDERS');
-  if (item) savedOrders = JSON.parse(item);
-} catch (e) {
-  console.warn('[Orders Data] Error al leer localStorage:', e);
-}
-
-let ORDERS = (Array.isArray(savedOrders) && savedOrders.length > 0) ? savedOrders : DEFAULT_ORDERS;
-
+// El servidor es la fuente de verdad; no conservar datos personales en el navegador.
+let ORDERS = [];
+try { localStorage.removeItem('RTQ_ADMIN_ORDERS'); } catch (e) {}
 function saveOrdersData() {
-  try {
-    localStorage.setItem('RTQ_ADMIN_ORDERS', JSON.stringify(ORDERS));
-  } catch (e) {
-    console.error('[Orders Data] Error al guardar en localStorage:', e);
-  }
+  if (window.renderOrderHistory) window.renderOrderHistory();
 }
-
-window.ORDERS = ORDERS;
+Object.defineProperty(window, 'ORDERS', { get: () => ORDERS, set: value => { ORDERS = Array.isArray(value) ? value : []; } });
 window.saveOrdersData = saveOrdersData;
-

@@ -80,5 +80,5 @@ function saveCatalogData() {
   }
 }
 
-window.CATALOG = CATALOG;
+Object.defineProperty(window, 'CATALOG', { get: () => CATALOG, set: value => { CATALOG = Array.isArray(value) ? value : []; } });
 window.saveCatalogData = saveCatalogData;

@@ -58,7 +58,7 @@ export const CartDrawer: React.FC = () => {
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const deliveryFee = deliveryType === 'delivery' ? roundMoney(selectedZone.fee) : 0;
   const discount = appliedCoupon ? appliedCoupon.discount : 0;
-  const grandTotal = roundMoney(Math.max(0, subtotal - discount + deliveryFee));
+  const grandTotal = roundMoney(Math.max(0, subtotal - discount));
 
   const handleApplyCoupon = (code: string) => {
     const res = validateCoupon(code, subtotal);

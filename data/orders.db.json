@@ -1,5 +1,51 @@
 [
   {
+    "id": "RTQ-2056",
+    "customer": "Milton Flores (App Móvil)",
+    "phone": "952741852",
+    "channel": "app",
+    "mode": "delivery",
+    "status": "delivered",
+    "priority": false,
+    "payMethod": "Por coordinar en WhatsApp / Yape",
+    "payVerified": true,
+    "address": "Av. Bolognesi 845, Tacna · Costo de envío a coordinar con repartidor",
+    "reference": "",
+    "gps": "",
+    "notes": "Pedido delivery desde App Móvil. Costo de envío por coordinar con repartidor.",
+    "time": "Entregado a las 20:24",
+    "elapsedMinutes": 1,
+    "createdAt": "2026-10-04T01:17:34.090Z",
+    "createdBy": null,
+    "items": [
+      {
+        "productId": null,
+        "name": "Tequeños de queso (Mayonesa de ajo · Queso)",
+        "qty": 1,
+        "price": 16,
+        "sauces": "Mayonesa de ajo · Queso"
+      },
+      {
+        "productId": null,
+        "name": "Promo Duo (Queso · Mayonesa de ajo y Mayopalta)",
+        "qty": 1,
+        "price": 35.9,
+        "sauces": "Queso · Mayonesa de ajo y Mayopalta"
+      },
+      {
+        "productId": null,
+        "name": "Tequeños de queso (Mayonesa de ajo)",
+        "qty": 1,
+        "price": 16,
+        "sauces": "Mayonesa de ajo"
+      }
+    ],
+    "subtotal": 67.9,
+    "deliveryFee": 0,
+    "discount": 2,
+    "total": 65.9
+  },
+  {
     "id": "RTQ-2064",
     "customer": "Milton Flores",
     "phone": "+51 952 000 111",

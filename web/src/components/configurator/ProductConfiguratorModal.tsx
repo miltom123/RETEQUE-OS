@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { formatMoney, roundMoney } from '../../lib/money';
+import { formatMoney } from '../../lib/money';
 import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { openWhatsApp } from '../../lib/whatsapp';
-import { syncOrderToKDS } from '../../lib/orderSync';
 import type { PromoConfig } from '../../data/promotions';
 
 import {
@@ -179,7 +178,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
   if (!isOpen || !productOrPromo) return null;
 
   // Calculo de precio base
-  let calculatedBasePrice = productOrPromo.price || productOrPromo.basePrice || 0;
+  let calculatedBasePrice = isPromo ? productOrPromo.price : (productOrPromo.basePrice || 0);
   if (!isPromo && selectedPresentation === '20 unid.' && productOrPromo.presentations) {
     const pres20 = productOrPromo.presentations.find((p: any) => p.label.includes('20'));
     if (pres20) calculatedBasePrice = pres20.price;
@@ -404,32 +403,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
     setCheckoutErrors({});
     setIsCheckoutModalOpen(false);
 
-    const ordId = 'RTQ-' + (2100 + Math.floor(Math.random() * 899));
-    const roundedTotal = roundMoney(grandTotalPrice);
-
-    // Sincronización en vivo con el monitor de cocina KDS
-    syncOrderToKDS({
-      id: ordId,
-      customer: fullName.trim(),
-      phone: phone.trim(),
-      channel: 'web',
-      mode: deliveryType,
-      address: deliveryType === 'delivery' ? address.trim() : undefined,
-      reference: reference.trim() || undefined,
-      items: [{
-        name: `${quantity} x ${productOrPromo.name}`,
-        qty: quantity,
-        price: roundedTotal,
-        sauces: Object.entries(creamCounts).map(([id, c]) => `${id} (x${c})`).join(', ')
-      }],
-      subtotal: roundedTotal,
-      deliveryFee: 0,
-      total: roundedTotal,
-      payMethod: 'Yape / Por verificar',
-      notes: generalNotes.trim() || undefined
-    });
-
-    openWhatsApp(buildWhatsAppMessage(ordId));
+    openWhatsApp(buildWhatsAppMessage());
   };
 
   const handleAddToCart = () => {
@@ -471,8 +445,8 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
       image: productOrPromo.image,
       quantity,
       unitPrice: unitTotalPrice,
-      presentationLabel: isPromo ? undefined : selectedPresentation,
-      optionsSummary: optionsList.length > 0 ? optionsList.join(' • ') : undefined,
+      selectedPresentation: isPromo ? undefined : selectedPresentation,
+      selectedOptions: optionsList.length > 0 ? optionsList : undefined,
     });
 
     onClose();

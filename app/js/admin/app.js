@@ -24,6 +24,7 @@ function updateKDSClock() {
 function initNavigation() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!btn.hasAttribute('data-tab') || !window.canAccessTab(btn.dataset.tab)) return;
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       
@@ -33,8 +34,12 @@ function initNavigation() {
       if (tabEl) tabEl.classList.add('active');
 
       const headings = {
+        'tab-reports': ['Reportes & Oportunidades', 'Histórico detallado, métricas reales y propuestas de mejora'],
+        'tab-cash': ['Caja · Operación del día', 'Registra pedidos, confirma pagos y sigue los despachos de hoy'],
+        'tab-users': ['Usuarios & Accesos', 'Administra las cuentas de caja de tu equipo'],
         'tab-dashboard': ['Dashboard & Métricas', 'Visión ejecutiva del negocio en tiempo real'],
         'tab-kanban': ['Monitor de Cocina y Despacho en Vivo', 'Gestiona todos tus pedidos, desde la recepción hasta la entrega'],
+        'tab-history': ['Historial de pedidos', 'Todos tus pedidos, en un solo lugar'],
         'tab-catalog': ['Menú & Control de Stock', 'Administración de productos, precios y disponibilidad'],
         'tab-promos': ['Cupones & Ofertas', 'Motor de promociones y planificador de días especiales'],
         'tab-customers': ['Clientes & Notificaciones Push', 'CRM de fidelización y campañas directas'],
@@ -48,6 +53,12 @@ function initNavigation() {
         if (ps) ps.textContent = headings[tabId][1];
       }
 
+      const topAction = document.getElementById('topbar-action-btn');
+      if (topAction) topAction.hidden = !['tab-dashboard', 'tab-kanban', 'tab-promos'].includes(tabId);
+      if (tabId === 'tab-history' && window.renderOrderHistory) window.renderOrderHistory();
+      if (tabId === 'tab-cash' && window.loadCashCatalog) window.loadCashCatalog();
+      if (tabId === 'tab-users' && window.loadUsers) window.loadUsers();
+      if (tabId === 'tab-reports' && window.loadReports) window.loadReports();
       if (tabId === 'tab-dashboard') {
         setTimeout(() => {
           if (window.initCharts) window.initCharts();
@@ -56,14 +67,14 @@ function initNavigation() {
         }, 50);
         const actBtn = document.getElementById('topbar-action-btn');
         const actTxt = document.getElementById('topbar-btn-text');
-        if (actTxt) actTxt.textContent = '+ Simular Pedido';
-        if (actBtn) actBtn.onclick = window.triggerSimulatedOrder;
+        if (actTxt) actTxt.textContent = '+ Nuevo pedido';
+        if (actBtn) actBtn.onclick = () => document.querySelector('[data-tab="tab-cash"]').click();
       } else if (tabId === 'tab-kanban') {
         if (window.renderKanban) window.renderKanban();
         const actBtn = document.getElementById('topbar-action-btn');
         const actTxt = document.getElementById('topbar-btn-text');
-        if (actTxt) actTxt.textContent = '+ Simular Pedido';
-        if (actBtn) actBtn.onclick = window.triggerSimulatedOrder;
+        if (actTxt) actTxt.textContent = '+ Nuevo pedido';
+        if (actBtn) actBtn.onclick = () => document.querySelector('[data-tab="tab-cash"]').click();
       } else if (tabId === 'tab-promos') {
         const actBtn = document.getElementById('topbar-action-btn');
         const actTxt = document.getElementById('topbar-btn-text');
@@ -75,7 +86,11 @@ function initNavigation() {
 }
 
 // Global App Initialization
-window.addEventListener('DOMContentLoaded', () => {
+let adminStarted = false;
+window.startAdminApp = function() {
+  if (adminStarted) { window.startOrderSync(); return; }
+  adminStarted = true;
+  if (window.startOrderSync) window.startOrderSync();
   if (window.initAudioControls) window.initAudioControls();
   
   initNavigation();
@@ -90,5 +105,5 @@ window.addEventListener('DOMContentLoaded', () => {
   if (window.renderDashboardFeedback) window.renderDashboardFeedback();
   if (window.renderSurveys) window.renderSurveys();
   if (window.initCharts) window.initCharts();
-  if (window.startOrderSync) window.startOrderSync();
-});
+};
+window.addEventListener('DOMContentLoaded', () => window.initAdminAuth());

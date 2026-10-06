@@ -13,6 +13,7 @@
         .replace(/'/g, '&#39;');
     }
 
+    let catalogFilterQuery = '';
     let catalogFilterDebounceTimer = null;
     function filterCatalogTable(val) {
       catalogFilterQuery = (val || '').toLowerCase().trim();

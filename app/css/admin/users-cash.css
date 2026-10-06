@@ -1,0 +1,34 @@
+.users-intro { padding: 24px; margin-bottom: 24px; }
+.users-intro h2, .cash-form h2 { font: 700 21px var(--font-display); margin-bottom: 8px; }
+.users-intro p, .cash-form > p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+.role-grid > div { background: var(--surface-subtle); padding: 18px; border-radius: 10px; border: 1px solid var(--border); }
+.role-grid strong { color: var(--primary-dark); }
+.role-grid p { margin-top: 8px; }
+.cash-layout { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(380px, 1.2fr); gap: 24px; align-items: start; }
+.cash-form { padding: 24px; }
+.cash-form label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; font-weight: 600; margin-top: 16px; min-width: 0; }
+.cash-form input, .cash-form select, .cash-form textarea { width: 100%; min-width: 0; padding: 11px; border-radius: 8px; border: 1px solid var(--border); font: inherit; background: white; }
+.cash-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cash-add-row { display: flex; align-items: end; gap: 8px; }
+.cash-add-row label:first-child { flex: 1; }
+.cash-add-row label:nth-child(2) { width: 65px; }
+.cash-add-row .btn { min-height: 40px; padding: 8px; }
+.cash-cart { border: 1px dashed var(--border); border-radius: 10px; margin: 16px 0; padding: 12px; }
+.cash-cart p { color: var(--text-muted); font-size: 12px; }
+.cash-cart-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 12px; }
+.cash-cart-row span { flex: 1; }
+.cash-form .cash-check { flex-direction: row; align-items: center; gap: 10px; }
+.cash-check input { width: 16px; height: 16px; }
+.cash-total { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px; font-size: 13px; }
+.cash-total strong { font: 700 26px var(--font-display); color: var(--primary-dark); }
+.cash-form .form-feedback { min-height: 24px; font-size: 12px; color: var(--text-secondary); margin: 14px 0; }
+.cash-form > .btn-primary { width: 100%; }
+.cash-scope-note { padding: 0 24px 20px; font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+body[data-role="cashier"] .sidebar-help-card, body[data-role="cashier"] .store-status-pill, body[data-role="cashier"] .header-right a { display: none !important; }
+body[data-role="cashier"] .tab-content:not(#tab-cash):not(#tab-kanban) { display: none !important; }
+body[data-role="cashier"] #tab-kanban .kds-kpi-card:nth-child(5), body[data-role="cashier"] #tab-kanban .kds-pill-badge { display: none; }
+body[data-role="cashier"] #tab-kanban .kds-kpi-grid { grid-template-columns: repeat(5, 1fr); }
+body[data-role="cashier"] #tab-kanban .kds-kpi-card:nth-child(4) .kds-kpi-sub { display: none; }
+@media(max-width: 1200px) { .cash-layout { grid-template-columns: 1fr; } }
+@media(max-width: 600px) { .role-grid, .cash-fields { grid-template-columns: 1fr; } .cash-add-row { flex-wrap: wrap; } }

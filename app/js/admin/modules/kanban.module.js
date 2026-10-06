@@ -105,6 +105,7 @@
         if (typeFilter !== 'all') {
           if (typeFilter === 'app' && ord.channel !== 'app') return false;
           if (typeFilter === 'whatsapp' && ord.channel !== 'whatsapp') return false;
+          if (typeFilter === 'caja' && ord.channel !== 'caja') return false;
           if (typeFilter === 'pickup' && ord.mode !== 'pickup') return false;
           if (typeFilter === 'delivery' && ord.mode !== 'delivery') return false;
         }
@@ -156,7 +157,7 @@
         // Badges: Channel & Payment & Mode
         const channelBadge = ord.channel === 'whatsapp'
           ? `<span class="kds-tag-channel kds-channel-wa">WhatsApp</span>`
-          : `<span class="kds-tag-channel kds-channel-app">App</span>`;
+          : `<span class="kds-tag-channel kds-channel-app">${ord.channel === 'caja' ? 'Caja' : ord.channel === 'web' ? 'Web' : 'App'}</span>`;
 
         let payBadge = '';
         const pm = String(ord.payMethod || '');
@@ -297,29 +298,31 @@
       return `<span class="col-badge badge-blue" style="font-size:10px;">💵 ${escapeHtml(ord.payMethod || 'Efectivo')}${ord.cashWith ? ' · llevar sencillo S/ ' + (ord.cashWith - ord.total).toFixed(2) : ''}</span>`;
     }
 
-    function verifyPayment(id) {
-      const ord = ORDERS.find(o => o.id === id);
-      if (!ord) return;
-      ord.payVerified = true;
-      if (window.saveOrdersData) window.saveOrdersData();
-      renderKanban();
-      if (document.getElementById('modal-order-detail').classList.contains('open')) openOrderDetailModal(id);
-      showToast(`✅ Pago ${ord.payMethod} de ${ord.id} verificado con la captura`);
-
-      // Sincronizar verificación de pago con backend
+    const pendingOrderUpdates = new Set();
+    async function updateOrderOnServer(id, patch) {
+      if (!window.adminAuthenticated || pendingOrderUpdates.has(id)) return null;
+      pendingOrderUpdates.add(id);
       try {
-        const token = window.getAdminToken ? window.getAdminToken() : '';
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-          headers['x-admin-token'] = token;
-        }
-        fetch(`/api/pedidos/${encodeURIComponent(id)}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({ verifyPayment: true })
-        }).catch(() => {});
-      } catch (e) {}
+        const res = await fetch('/api/pedidos/' + encodeURIComponent(id), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch)
+        });
+        const data = await res.json();
+        if (res.status === 401) window.lockAdminApp();
+        if (!res.ok) throw new Error(data.error || 'No se pudo guardar el cambio.');
+        if (!window.adminAuthenticated) return null;
+        const index = ORDERS.findIndex(order => order.id === id);
+        if (index !== -1) ORDERS[index] = data.order;
+        window.saveOrdersData(); renderKanban();
+        if (window.renderCash) window.renderCash();
+        return data.order;
+      } catch (error) { showToast(error.message); return null; }
+      finally { pendingOrderUpdates.delete(id); }
+    }
+    async function verifyPayment(id) {
+      const order = await updateOrderOnServer(id, { verifyPayment: true });
+      if (!order) return;
+      if (document.getElementById('modal-order-detail').classList.contains('open')) openOrderDetailModal(id);
+      showToast('Pago de ' + order.id + ' confirmado y guardado.');
     }
 
     function paymentSummaryHtml(ord) {
@@ -338,50 +341,14 @@
               <div style="margin-top:6px; font-size:11.5px; color:var(--text-muted);">Modalidad: <strong>Contraentrega (${escapeHtml(ord.payMethod || 'Efectivo')})</strong></div>`;
     }
 
-    function moveOrderStatus(id, newStatus) {
-      const ord = ORDERS.find(o => o.id === id);
-      if (ord) {
-        if (newStatus === 'kitchen' && isDigitalPay(ord) && !ord.payVerified) {
-          showToast(`⚠️ ${ord.id}: verifica la captura de ${ord.payMethod} antes de mandar a cocina`);
-          playAlertSound();
-          return;
-        }
-        ord.status = newStatus;
-        if (newStatus === 'kitchen') {
-          ord.time = 'En cocina hace 1 min';
-          ord.elapsedMinutes = 1;
-        }
-        if (newStatus === 'delivery') {
-          ord.time = 'Salió hace 1 min';
-          ord.elapsedMinutes = 1;
-        }
-        if (newStatus === 'delivered') {
-          const now = new Date();
-          const hh = String(now.getHours()).padStart(2, '0');
-          const mm = String(now.getMinutes()).padStart(2, '0');
-          ord.time = `Entregado a las ${hh}:${mm}`;
-        }
-        if (window.saveOrdersData) window.saveOrdersData();
-
-        // Notificar en segundo plano a la API local si está activa con credenciales
-        try {
-          const token = window.getAdminToken ? window.getAdminToken() : '';
-          const headers = { 'Content-Type': 'application/json' };
-          if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-            headers['x-admin-token'] = token;
-          }
-          fetch(`/api/pedidos/${encodeURIComponent(id)}`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify({ status: newStatus })
-          }).catch(() => {});
-        } catch (e) {}
-
-        renderKanban();
-        playAlertSound();
-        showToast(`Pedido ${id} actualizado a ${newStatus === 'kitchen' ? 'COCINA' : newStatus === 'delivery' ? 'DELIVERY' : 'ENTREGADO'}`);
+    async function moveOrderStatus(id, newStatus) {
+      const ord = ORDERS.find(order => order.id === id);
+      if (!ord) return;
+      if (newStatus === 'kitchen' && isDigitalPay(ord) && !ord.payVerified) {
+        showToast('Verifica el pago antes de mandar a cocina.'); return;
       }
+      const updated = await updateOrderOnServer(id, { status: newStatus });
+      if (updated) { playAlertSound(); showToast('Pedido ' + id + ' actualizado y guardado.'); }
     }
 
     function triggerSimulatedOrder() {

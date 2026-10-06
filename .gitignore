@@ -3,9 +3,11 @@ web/node_modules/
 web/dist/
 web/tsconfig.tsbuildinfo
 
+
 # Registros de compilación y parches
 tools/*.log
 data/*.tmp
+data/users.db.json
 
 # Sistema
 Thumbs.db

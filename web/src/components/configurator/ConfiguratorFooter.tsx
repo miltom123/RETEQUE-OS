@@ -1,5 +1,5 @@
 import React from 'react';
-import { Minus, Plus, ShoppingBag, MessageCircle } from 'lucide-react';
+import { Minus, Plus, ShoppingCart, MessageCircle } from 'lucide-react';
 import { formatMoney } from '../../lib/money';
 
 interface ConfiguratorFooterProps {
@@ -53,9 +53,10 @@ export const ConfiguratorFooter: React.FC<ConfiguratorFooterProps> = ({
           type="button"
           onClick={onAddToCart}
           className="flex-1 sm:flex-none sm:min-w-[170px] h-11 px-5 rounded-xl border-2 border-[#C5161D] text-[#C5161D] hover:bg-[#FFF0F1] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-colors"
+          aria-label="Agregar al carrito"
         >
-          <ShoppingBag className="w-4 h-4" />
-          <span>Agregar al pedido</span>
+          <ShoppingCart className="w-4 h-4" />
+          <span>Agregar al carrito</span>
         </button>
 
         <button

@@ -2,7 +2,7 @@ import { CartItem } from '../store/cartStore';
 import { CheckoutStore } from '../store/checkoutStore';
 import { siteConfig } from '../config/site';
 import { formatMoney, roundMoney } from './money';
-import { syncOrderToKDS } from './orderSync';
+import { OrderRequest } from '../types/orderRequest';
 
 export type CustomerData = Omit<CheckoutStore, 'setField' | 'reset'>;
 
@@ -15,78 +15,114 @@ export function openWhatsApp(text: string): void {
   window.open(buildWhatsAppUrl(text), '_blank', 'noopener,noreferrer');
 }
 
+/**
+ * Genera el mensaje formateado estándar para Retequeños según la especificación del Plan.
+ * No simula pagos ni asigna comanda KDS anticipada.
+ */
+export function formatOrderRequestMessage(request: OrderRequest, couponCode?: string): string {
+  const lines: string[] = [
+    '🥟 *PEDIDO RETEQUEÑOS*',
+    '',
+    '👤 *CLIENTE*',
+    `Nombre: ${request.customer.name.trim() || 'No especificado'}`,
+    `Celular: ${request.customer.phone.trim() || 'No especificado'}`,
+    '',
+    '🛒 *PEDIDO*',
+    '',
+  ];
+
+  request.items.forEach((item) => {
+    lines.push(`${item.quantity} × ${item.name}`);
+    if (item.selectedPresentation) {
+      lines.push(`• Presentación: ${item.selectedPresentation}`);
+    }
+    if (item.selectedOptions && item.selectedOptions.length > 0) {
+      lines.push(`• Salsa: ${item.selectedOptions.join(', ')}`);
+    }
+    if (item.notes) {
+      lines.push(`• Extra / Detalle: ${item.notes}`);
+    }
+    lines.push('');
+  });
+
+  if (request.fulfillment.type === 'delivery') {
+    lines.push('🚚 *MODALIDAD*');
+    lines.push('Delivery');
+    lines.push('');
+    lines.push('📍 Dirección:');
+    lines.push(request.fulfillment.address || 'A coordinar');
+    if (request.fulfillment.reference) {
+      lines.push('');
+      lines.push('📌 Referencia:');
+      lines.push(request.fulfillment.reference);
+    }
+  } else {
+    lines.push('🏪 *MODALIDAD*');
+    lines.push('Recojo en tienda');
+    lines.push(`📍 Local: ${siteConfig.address}`);
+  }
+
+  lines.push('');
+  lines.push('💰 *RESUMEN*');
+  lines.push(`Subtotal: ${formatMoney(request.subtotal)}`);
+
+  if (couponCode && request.discount > 0) {
+    lines.push(`Descuento (${couponCode}): -${formatMoney(request.discount)}`);
+  }
+
+  lines.push(`Total productos: ${formatMoney(request.totalProducts)}`);
+
+  if (request.fulfillment.type === 'delivery') {
+    lines.push('');
+    lines.push('Delivery: A coordinar por WhatsApp');
+  }
+
+  if (request.notes && request.notes.trim()) {
+    lines.push('');
+    lines.push('📝 *OBSERVACIONES*');
+    lines.push(request.notes.trim());
+  }
+
+  lines.push('');
+  lines.push('Hola 👋 Quisiera solicitar este pedido.');
+  lines.push('¿Podrían confirmarme disponibilidad, delivery y forma de pago?');
+
+  return lines.join('\n');
+}
+
+/**
+ * Función compatible con el checkout existente de la web y el nuevo frontend móvil.
+ * NO sincroniza automáticamente con el KDS. Solo prepara y abre WhatsApp.
+ */
 export function generateWhatsAppMessage(
   items: CartItem[],
   customer: CustomerData,
   subtotal: number,
-  deliveryFee: number = 0,
-  zoneName?: string,
-  orderId?: string,
+  _deliveryFee: number = 0,
+  _zoneName?: string,
+  _orderId?: string,
   discount: number = 0,
   couponCode?: string
 ): string {
-  const lines: string[] = [
-    '🧀 *¡HOLA RETEQUEÑOS!* 👋',
-  ];
-
-  if (orderId) {
-    lines.push(`🔖 *PEDIDO / COMANDA: ${orderId}*`);
-  }
-
-  lines.push('', 'Quiero realizar el siguiente pedido:', '');
-
-  items.forEach((item) => {
-    const presentation = item.selectedPresentation ? ` (${item.selectedPresentation})` : '';
-    const lineTotal = formatMoney(item.unitPrice * item.quantity);
-    lines.push(`📦 *${item.quantity} x ${item.name}*${presentation} — ${lineTotal}`);
-    if (item.selectedOptions && item.selectedOptions.length > 0) {
-      lines.push(`   [${item.selectedOptions.join(', ')}]`);
-    }
-    if (item.notes) {
-      lines.push(`   📝 Nota: ${item.notes}`);
-    }
-  });
-
   const totalProducts = roundMoney(Math.max(0, subtotal - discount));
-  const grandTotal = roundMoney(Math.max(0, totalProducts + (customer.deliveryType === 'delivery' ? deliveryFee : 0)));
+  const request: OrderRequest = {
+    customer: {
+      name: customer.fullName || '',
+      phone: customer.phone || '',
+    },
+    fulfillment: {
+      type: customer.deliveryType === 'delivery' ? 'delivery' : 'pickup',
+      address: customer.address,
+      reference: customer.reference,
+    },
+    items,
+    notes: customer.generalNotes,
+    subtotal,
+    discount,
+    totalProducts,
+  };
 
-  lines.push('');
-  lines.push(`💵 *SUBTOTAL:* ${formatMoney(subtotal)}`);
-
-  if (couponCode && discount > 0) {
-    lines.push(`🎟 *CUPÓN APLICADO (${couponCode}):* -${formatMoney(discount)}`);
-  }
-
-  if (customer.deliveryType === 'delivery') {
-    lines.push(`🛵 *DELIVERY (${zoneName || 'Tacna'}):* A coordinar con el repartidor`);
-    lines.push(`💰 *TOTAL PRODUCTOS:* ${formatMoney(totalProducts)} *(+ costo de envío según repartidor)*`);
-  } else {
-    lines.push(`🏪 *TIPO DE ENTREGA:* Recojo en tienda (${siteConfig.address}) — S/ 0.00`);
-    lines.push(`💰 *TOTAL A PAGAR:* ${formatMoney(grandTotal)}`);
-  }
-
-  lines.push('');
-  lines.push('👤 *DATOS DEL CLIENTE:*');
-  lines.push(`• Nombre: ${customer.fullName || 'No especificado'}`);
-  lines.push(`• Celular: ${customer.phone || 'No especificado'}`);
-
-  if (customer.deliveryType === 'delivery') {
-    lines.push(`• Distrito / Zona: ${zoneName || 'Cercado'}`);
-    lines.push(`• Dirección: ${customer.address || 'No especificada'}`);
-    if (customer.reference) {
-      lines.push(`• Referencia: ${customer.reference}`);
-    }
-  }
-
-  if (customer.generalNotes) {
-    lines.push('');
-    lines.push(`📝 *Indicaciones:* ${customer.generalNotes}`);
-  }
-
-  lines.push('');
-  lines.push('Deseo confirmar disponibilidad, delivery y realizar el pago por Yape/Plin/Transferencia. ¡Gracias!');
-
-  return lines.join('\n');
+  return formatOrderRequestMessage(request, couponCode);
 }
 
 export function openWhatsAppCheckout(
@@ -98,34 +134,9 @@ export function openWhatsAppCheckout(
   discount: number = 0,
   couponCode?: string
 ): void {
-  const ordId = 'RTQ-' + (2100 + Math.floor(Math.random() * 899));
-  const total = roundMoney(Math.max(0, subtotal - discount + (customer.deliveryType === 'delivery' ? deliveryFee : 0)));
-
-  // 1. Sincronización en segundo plano con el KDS de cocina
-  syncOrderToKDS({
-    id: ordId,
-    customer: customer.fullName || 'Cliente Web',
-    phone: customer.phone || '',
-    channel: 'web',
-    mode: customer.deliveryType,
-    address: customer.address,
-    reference: customer.reference,
-    zone: zoneName,
-    items: items.map((it) => ({
-      name: it.name + (it.selectedPresentation ? ` (${it.selectedPresentation})` : ''),
-      qty: it.quantity,
-      price: it.unitPrice,
-      sauces: it.selectedOptions?.join(', '),
-    })),
-    subtotal,
-    deliveryFee: customer.deliveryType === 'delivery' ? deliveryFee : 0,
-    total,
-    payMethod: 'Yape / Por verificar',
-    notes: (couponCode ? `Cupón: ${couponCode} (-S/ ${discount.toFixed(2)}) · ` : '') + (customer.generalNotes || ''),
-  });
-
-  // 2. Abrir WhatsApp de Retequeños con la comanda y número de pedido
-  openWhatsApp(generateWhatsAppMessage(items, customer, subtotal, deliveryFee, zoneName, ordId, discount, couponCode));
+  // Directamente abrir WhatsApp sin sincronización previa con KDS
+  const message = generateWhatsAppMessage(items, customer, subtotal, deliveryFee, zoneName, undefined, discount, couponCode);
+  openWhatsApp(message);
 }
 
 export function openWhatsAppDirect(customText?: string): void {

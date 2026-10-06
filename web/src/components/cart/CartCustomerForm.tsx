@@ -3,7 +3,6 @@ import { Bike, Store, MapPin } from 'lucide-react';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { siteConfig } from '../../config/site';
 import { TACNA_ZONES, TacnaZone } from '../../config/tacnaZones';
-import { formatMoney } from '../../lib/money';
 
 interface CartCustomerFormProps {
   errors: Record<string, string>;
