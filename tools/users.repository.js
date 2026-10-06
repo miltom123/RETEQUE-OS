@@ -14,8 +14,8 @@ class UsersRepository {
     if (fs.existsSync(this.file)) this.users = JSON.parse(fs.readFileSync(this.file, 'utf8'));
     else {
       this.users = [];
-      this.add('administrador', 'Administrador', '1234', 'admin');
-      this.add('caja', 'Caja principal', '1234', 'cashier');
+      this.add('administrador', 'Administrador', process.env.RTQ_ADMIN_PASSWORD || '1234', 'admin');
+      this.add('caja', 'Caja principal', process.env.RTQ_CAJA_PASSWORD || '1234', 'cashier');
     }
   }
   save() {
