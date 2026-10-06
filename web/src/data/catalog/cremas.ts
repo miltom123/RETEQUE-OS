@@ -45,4 +45,3 @@ export const CREMAS_PRODUCTS: Product[] = [
     basePrice: 2.00,
   },
 ];
-];
