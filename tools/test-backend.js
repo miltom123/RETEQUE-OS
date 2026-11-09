@@ -121,12 +121,23 @@ async function run() {
   const traversal = await request('/..%2f..%2fdata%2fusers.db.json');
   assert.notEqual(traversal.status, 200);
 
-  // 12. Cierre de sesión
+  // 12. Robustez: una URL mal codificada o un error interno no detienen el servidor
+  const malformed = await request('/%E0%A4%A');
+  assert.equal(malformed.status, 400);
+  const originalGetAll = app.repos.catalog.getAll;
+  app.repos.catalog.getAll = () => { throw new Error('fallo simulado'); };
+  const failure = await request('/api/catalog');
+  app.repos.catalog.getAll = originalGetAll;
+  assert.equal(failure.status, 500);
+  assert.equal(failure.body.error, 'Error interno del servidor.', 'No se exponen detalles internos');
+  assert.equal((await request('/api/config')).status, 200, 'El servidor sigue respondiendo');
+
+  // 13. Cierre de sesión
   assert.equal((await request('/api/auth/logout', { method: 'POST', headers: admin.headers })).status, 200);
   assert.equal((await request('/api/pedidos', { headers: admin.headers })).status, 401);
   await new Promise(resolve => server.close(resolve)); server = null;
 
-  // 13. PIN heredado solo si se habilita expresamente; instancias con estado independiente
+  // 14. PIN heredado solo si se habilita expresamente; instancias con estado independiente
   const pinApp = createApp({ dataDir: makeTemp(), legacyPinEnabled: true, adminPin: '4321', logger: silent });
   await new Promise(resolve => pinApp.server.listen(0, '127.0.0.1', resolve));
   server = pinApp.server;
@@ -135,7 +146,7 @@ async function run() {
   assert.equal(app.auth.isValidSession((await pinRes.json()).token), false, 'Las sesiones no se comparten entre instancias');
   await new Promise(resolve => server.close(resolve)); server = null;
 
-  // 14. Riesgo heredado documentado: un orders.db.json ilegible se reemplaza por la semilla
+  // 15. Riesgo heredado documentado: un orders.db.json ilegible se reemplaza por la semilla
   const corruptDir = makeTemp();
   fs.writeFileSync(path.join(corruptDir, 'orders.db.json'), '{ ilegible');
   const corruptApp = createApp({ dataDir: corruptDir, logger: silent });

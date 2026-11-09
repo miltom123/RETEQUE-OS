@@ -56,14 +56,17 @@ const app = createApp({ dataDir: carpetaTemporal, logger: { log() {}, warn() {} 
 | Si `orders.db.json` no se puede leer, se reemplaza por los pedidos de demostración y se pierde el contenido anterior. | `OrderRepository.init` |
 | Las contraseñas iniciales de `administrador` y `caja` son `1234` si no se definen `RTQ_ADMIN_PASSWORD` y `RTQ_CAJA_PASSWORD`. | `tools/users.repository.js` |
 | La autenticación del cliente en la web es simulada; las sesiones del personal viven en memoria y se pierden al reiniciar. | `web/src`, `backend/auth.js` |
-| Una URL mal codificada (por ejemplo `/%E0%A4%A`) lanza `URIError` sin capturar y **detiene el proceso**. Se comprobó en HEAD y en el refactorizado. | `app.js` (`decodeURIComponent`) |
 | `PATCH /api/config` acepta cualquier objeto y lo mezcla con la configuración sin validarlo. | `routes/config.routes.js` |
 | La persistencia en JSON reescribe el archivo completo en cada cambio: no hay transacciones entre archivos ni control de concurrencia entre procesos. | `repositories/` |
 | `tools/test-system.js` y `Ejecutar pruebas.cmd` trabajan sobre `data/` real si se ejecutan directamente. `tools/test-access.js` sí los ejecuta en una copia temporal. | `tools/test-system.js` |
 
+## Resuelto en la etapa de robustez mínima
+
+- Una URL mal codificada (por ejemplo `/%E0%A4%A`) o una cabecera `Host` inválida lanzaban un error sin capturar que **detenía el proceso**. Ahora `app.js` responde 400. Cualquier otro error no controlado de una petición se registra y se responde con 500, sin exponer detalles internos.
+
 ## Siguientes etapas propuestas
 
-1. **Robustez mínima.** Capturar errores en `handleRequest` (incluida la URL mal codificada) y responder 400 o 500 sin detener el proceso. Hacer que `test-system.js` use una copia temporal.
+1. **Robustez mínima (pendiente).** Hacer que `test-system.js` use una copia temporal.
 2. **Admisión de pedidos y precios.** En `POST /api/pedidos`, tomar los precios del catálogo como ya hace caja; ignorar `status`, `payVerified`, `createdBy` y totales enviados por el cliente; rechazar `id` existentes en lugar de reemplazarlos; validar con un esquema explícito. No reemplazar datos ilegibles con la semilla: detener el arranque y avisar.
 3. **PostgreSQL transaccional.** Definir interfaces de repositorio a partir de las clases actuales, agregar una implementación PostgreSQL con migraciones versionadas y transacciones por pedido, y migrar los datos JSON con un script que se pueda verificar. Las rutas no deberían cambiar.
 4. **Autenticación real.** Sesiones persistentes con expiración y revocación, obligar a cambiar las contraseñas iniciales, quitar el PIN heredado, y autenticación de clientes en la web en lugar de la simulada.
