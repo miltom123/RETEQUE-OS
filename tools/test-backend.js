@@ -21,6 +21,7 @@ const { createApp, isAdminOnly } = require('./backend/app');
 const { parseArgs } = require('./backend/config');
 const { canAccessOrder } = require('./backend/auth');
 const { sanitizeId, sanitizeString, sanitizeUrl } = require('./backend/sanitize');
+const { DataFileError } = require('./backend/repositories/json-file');
 assert.deepEqual(hashDir(realDataDir), realDataBefore, 'Importar módulos no debe tocar data/');
 
 let server;
@@ -159,14 +160,25 @@ async function run() {
   assert.equal(app.auth.isValidSession((await pinRes.json()).token), false, 'Las sesiones no se comparten entre instancias');
   await new Promise(resolve => server.close(resolve)); server = null;
 
-  // 15. Riesgo heredado documentado: un orders.db.json ilegible se reemplaza por la semilla
-  const corruptDir = makeTemp();
-  fs.writeFileSync(path.join(corruptDir, 'orders.db.json'), '{ ilegible');
-  const corruptApp = createApp({ dataDir: corruptDir, logger: silent });
-  assert.deepEqual(corruptApp.repos.orders.getAll().map(order => order.id), ['RTQ-2064', 'RTQ-2181', 'RTQ-2052']);
+  // 15. Un archivo de datos ilegible detiene el arranque y queda intacto; uno ausente se crea como antes
+  const unreadable = [
+    ['orders.db.json', '{ ilegible'], ['orders.db.json', '{"no":"es lista"}'],
+    ['catalog.db.json', '[ incompleto'], ['catalog.db.json', '{}'],
+    ['store.config.json', 'no json'], ['store.config.json', '[]']
+  ];
+  for (const [name, content] of unreadable) {
+    const corruptDir = makeTemp();
+    fs.writeFileSync(path.join(corruptDir, name), content);
+    assert.throws(() => createApp({ dataDir: corruptDir, logger: silent }), DataFileError, `${name} ilegible debe detener el arranque`);
+    assert.equal(fs.readFileSync(path.join(corruptDir, name), 'utf8'), content, `${name} no debe modificarse`);
+  }
+  const freshApp = createApp({ dataDir: makeTemp(), logger: silent });
+  assert.deepEqual(freshApp.repos.orders.getAll().map(order => order.id), ['RTQ-2064', 'RTQ-2181', 'RTQ-2052']);
+  assert.deepEqual(freshApp.repos.catalog.getAll(), []);
+  assert.deepEqual(freshApp.repos.config.get(), {});
 
   assert.deepEqual(hashDir(realDataDir), realDataBefore, 'Las pruebas no deben tocar data/');
-  console.log('Backend modular: importación sin efectos, configuración, HTTP, autenticación, caja, reportes, estáticos y riesgos heredados: PASS');
+  console.log('Backend modular: importación sin efectos, configuración, HTTP, autenticación, caja, reportes, estáticos, admisión de pedidos y datos ilegibles: PASS');
 }
 
 run().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {

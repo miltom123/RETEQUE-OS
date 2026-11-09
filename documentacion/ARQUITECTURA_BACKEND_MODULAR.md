@@ -54,10 +54,10 @@ const app = createApp({ dataDir: carpetaTemporal, logger: { log() {}, warn() {} 
 |---|---|
 | Los pedidos que el administrador registra en `POST /api/pedidos` aceptan nombres y precios escritos a mano, sin `productId` ni esquema de validación (el servidor sí recalcula subtotal y total). Se aceptó así porque es personal de confianza, y la app móvil envía precios con opciones que el catálogo no modela. | `routes/orders.routes.js` |
 | No existe una entrada pública de pedidos. La app móvil (`app/js/mobile`, hoy no se carga desde ningún HTML) recibiría 401 si se reactiva. | `app/js/mobile/services/order.service.js` |
-| Si `orders.db.json` no se puede leer, se reemplaza por los pedidos de demostración y se pierde el contenido anterior. | `OrderRepository.init` |
 | Las contraseñas iniciales de `administrador` y `caja` son `1234` si no se definen `RTQ_ADMIN_PASSWORD` y `RTQ_CAJA_PASSWORD`. | `tools/users.repository.js` |
 | La autenticación del cliente en la web es simulada; las sesiones del personal viven en memoria y se pierden al reiniciar. | `web/src`, `backend/auth.js` |
 | `PATCH /api/config` acepta cualquier objeto y lo mezcla con la configuración sin validarlo. | `routes/config.routes.js` |
+| `users.db.json` se crea antes que los demás archivos, así que un arranque detenido por otro archivo ilegible puede dejarlo creado con los usuarios iniciales. Si `users.db.json` es ilegible, el arranque se detiene con el error técnico de JSON, sin el mensaje explicativo. | `tools/users.repository.js`, `backend/app.js` |
 | La persistencia en JSON reescribe el archivo completo en cada cambio: no hay transacciones entre archivos ni control de concurrencia entre procesos. | `repositories/` |
 
 ## Resuelto en la etapa de robustez mínima
@@ -70,6 +70,7 @@ const app = createApp({ dataDir: carpetaTemporal, logger: { log() {}, warn() {} 
 - `POST /api/pedidos` dejó de ser público: sin sesión responde 401 y con sesión de caja 403 (caja usa `/api/caja/pedidos`). Se comprobó antes que ningún cliente activo lo usaba sin sesión: la web tiene el envío desactivado (`web/src/lib/orderSync.ts`), la app móvil no se carga y el simulador del panel envía la cookie del administrador.
 - El servidor fija `status: 'new'`, `payVerified: false`, `createdBy` (usuario de la sesión) y `createdAt`, e ignora lo que envíe el cliente. El canal solo puede ser `web`, `app` o `whatsapp`. El pago se verifica después con `PATCH`.
 - El `id` se decide una sola vez: el enviado si es válido (si ya existe, 409), o uno único generado por el servidor. `OrderRepository.insert` rechaza un `id` existente en lugar de reemplazar el pedido.
+- Si `orders.db.json`, `catalog.db.json` o `store.config.json` existen pero no se pueden leer, el servidor no arranca, muestra qué archivo falló y no lo modifica. Antes, los pedidos se reemplazaban por la semilla, y el catálogo o la configuración quedaban vacíos y se sobrescribían en el siguiente guardado. Solo una instalación sin archivo de pedidos recibe los pedidos de demostración.
 
 ## Siguientes etapas propuestas
 

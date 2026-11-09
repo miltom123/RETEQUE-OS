@@ -11,6 +11,7 @@
 const os = require('os');
 const { parseArgs } = require('./backend/config');
 const { createApp } = require('./backend/app');
+const { DataFileError } = require('./backend/repositories/json-file');
 
 // Detección de IP local para conexión celular
 function getLocalIp() {
@@ -26,26 +27,42 @@ function getLocalIp() {
 }
 
 const { port: PORT, bindAll: BIND_ALL, adminPin, legacyPinEnabled } = parseArgs(process.argv.slice(2), process.env);
-const { server, paths } = createApp({ adminPin, legacyPinEnabled });
 
 // Inicio del servidor
-const bindHost = BIND_ALL ? '0.0.0.0' : '127.0.0.1';
-server.listen(PORT, bindHost, () => {
-  const localIp = getLocalIp();
-  console.log('======================================================');
-  console.log('RETEQUEÑOS OS - SERVIDOR DE PRODUCCIÓN LOCAL');
-  console.log('======================================================');
-  console.log(`✓ Servidor activo en:    http://localhost:${PORT}`);
-  console.log(`✓ Panel Administrador:   http://localhost:${PORT}/admin`);
-  console.log(`✓ API REST Pedidos:      http://localhost:${PORT}/api/pedidos`);
-  console.log('✓ Acceso del equipo:     administrador / caja');
-  if (legacyPinEnabled) console.log('✓ Acceso PIN heredado:   habilitado expresamente');
-  console.log(`✓ Persistencia en disco: ${paths.ordersFile}`);
+function startServer({ server, paths }) {
+  const bindHost = BIND_ALL ? '0.0.0.0' : '127.0.0.1';
+  server.listen(PORT, bindHost, () => {
+    const localIp = getLocalIp();
+    console.log('======================================================');
+    console.log('RETEQUEÑOS OS - SERVIDOR DE PRODUCCIÓN LOCAL');
+    console.log('======================================================');
+    console.log(`✓ Servidor activo en:    http://localhost:${PORT}`);
+    console.log(`✓ Panel Administrador:   http://localhost:${PORT}/admin`);
+    console.log(`✓ API REST Pedidos:      http://localhost:${PORT}/api/pedidos`);
+    console.log('✓ Acceso del equipo:     administrador / caja');
+    if (legacyPinEnabled) console.log('✓ Acceso PIN heredado:   habilitado expresamente');
+    console.log(`✓ Persistencia en disco: ${paths.ordersFile}`);
 
-  if (BIND_ALL && localIp) {
-    console.log(`✓ Acceso desde celular:  http://${localIp}:${PORT} (WiFi local)`);
-  } else if (!BIND_ALL) {
-    console.log(`* Modo local estricto. Para abrir a la red WiFi usa: --lan`);
-  }
-  console.log('======================================================\n');
-});
+    if (BIND_ALL && localIp) {
+      console.log(`✓ Acceso desde celular:  http://${localIp}:${PORT} (WiFi local)`);
+    } else if (!BIND_ALL) {
+      console.log(`* Modo local estricto. Para abrir a la red WiFi usa: --lan`);
+    }
+    console.log('======================================================\n');
+  });
+}
+
+// Un archivo de datos ilegible detiene el arranque con un mensaje claro y sin tocar el archivo
+let app = null;
+try {
+  app = createApp({ adminPin, legacyPinEnabled });
+} catch (error) {
+  if (!(error instanceof DataFileError)) throw error;
+  console.error('======================================================');
+  console.error('RETEQUEÑOS OS - EL SERVIDOR NO SE INICIÓ');
+  console.error(error.message);
+  console.error('======================================================');
+  process.exitCode = 1;
+}
+
+if (app) startServer(app);

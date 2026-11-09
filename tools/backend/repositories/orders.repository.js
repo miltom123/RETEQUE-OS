@@ -1,12 +1,13 @@
 /**
  * Persistencia de pedidos en un archivo JSON con escritura por archivo temporal + rename.
- * Comportamiento conservado de tools/server.js: si el archivo no existe o no es legible,
- * se reinicializa con pedidos de demostración (ver riesgos en documentacion/ARQUITECTURA_BACKEND_MODULAR.md).
+ * Si el archivo no existe se crea con pedidos de demostración; si existe pero no se puede
+ * leer, el arranque se detiene sin modificarlo.
  */
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { sanitizeId, sanitizeString, sanitizeUrl } = require('../sanitize');
+const { readJsonFile } = require('./json-file');
 
 // Semilla inicial de pedidos si la base de datos no existe
 const SEED_ORDERS = [
@@ -92,26 +93,19 @@ class OrderRepository {
   }
 
   init() {
-    try {
-      const dataDir = path.dirname(this.filePath);
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      }
-
-      if (fs.existsSync(this.filePath)) {
-        const raw = fs.readFileSync(this.filePath, 'utf8');
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          this.orders = parsed;
-          this.logger.log(`[DB] Base de datos cargada: ${this.orders.length} pedidos persistidos.`);
-          return;
-        }
-      }
-    } catch (err) {
-      this.logger.warn('[DB] Advertencia al leer base de datos existente, reinicializando:', err.message);
+    const dataDir = path.dirname(this.filePath);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    // Inicializar con seed data
+    // Si el archivo existe pero no se puede usar, readJsonFile detiene el arranque sin modificarlo
+    if (fs.existsSync(this.filePath)) {
+      this.orders = readJsonFile(this.filePath, { isValid: Array.isArray, expected: 'una lista de pedidos' });
+      this.logger.log(`[DB] Base de datos cargada: ${this.orders.length} pedidos persistidos.`);
+      return;
+    }
+
+    // Solo una instalación nueva, sin archivo de pedidos, se inicializa con datos de demostración
     this.orders = [...SEED_ORDERS];
     this.saveSync();
     this.logger.log(`[DB] Base de datos inicializada con ${this.orders.length} pedidos de demostración.`);
