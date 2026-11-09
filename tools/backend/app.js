@@ -31,6 +31,7 @@ const API_ROUTES = [handleReports, handleUsers, handleCaja, handleAuth, handleOr
 
 function isAdminOnly(pathname, method) {
   return pathname.startsWith('/api/users') || pathname.startsWith('/api/reports') ||
+    (pathname === '/api/pedidos' && method === 'POST') ||
     (pathname.startsWith('/api/catalog') && method !== 'GET') ||
     (pathname === '/api/config' && method !== 'GET');
 }

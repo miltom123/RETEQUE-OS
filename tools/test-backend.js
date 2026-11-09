@@ -102,14 +102,27 @@ async function run() {
   assert.equal((await request('/api/pedidos/' + id, json('PATCH', {}, { status: 'delivered' }))).status, 401);
   assert.equal((await request('/api/pedidos')).status, 401);
 
-  // 9. Comportamiento heredado que se conserva a propósito en este lote (riesgo documentado):
-  //    POST /api/pedidos es público y acepta status y payVerified enviados por el cliente.
-  const publicOrder = await request('/api/pedidos', json('POST', {}, { id: 'RTQ-PUBLICO', status: 'delivered', payVerified: true, items: [{ name: 'X', qty: 1, price: 1 }] }));
-  assert.equal(publicOrder.status, 201);
-  assert.equal(publicOrder.body.order.status, 'delivered');
-  assert.equal(publicOrder.body.order.payVerified, true);
-  assert.equal((await request('/api/pedidos', json('POST', {}, { id: 'RTQ-PUBLICO' }))).status, 409);
-  assert.equal((await request('/api/pedidos', json('POST', cashier.headers, { id: 'OTRO' }))).status, 403);
+  // 9. Admisión: POST /api/pedidos exige sesión de administrador y el servidor fija estado, pago y autoría
+  const forged = { id: 'RTQ-PANEL', status: 'delivered', payVerified: true, createdBy: 'otro', channel: 'caja', createdAt: '2000-01-01', items: [{ name: 'X', qty: 1, price: 1 }] };
+  assert.equal((await request('/api/pedidos', json('POST', {}, forged))).status, 401);
+  assert.equal((await request('/api/pedidos', json('POST', cashier.headers, forged))).status, 403);
+  const panelOrder = await request('/api/pedidos', json('POST', admin.headers, forged));
+  assert.equal(panelOrder.status, 201);
+  assert.equal(panelOrder.body.order.status, 'new');
+  assert.equal(panelOrder.body.order.payVerified, false);
+  assert.equal(panelOrder.body.order.createdBy, 'administrador');
+  assert.equal(panelOrder.body.order.channel, 'app');
+  assert.ok(panelOrder.body.order.createdAt.startsWith(new Date().toISOString().slice(0, 4)));
+  const before = (await request('/api/pedidos/RTQ-PANEL', { headers: admin.headers })).body;
+  assert.equal((await request('/api/pedidos', json('POST', admin.headers, { id: 'RTQ-PANEL', customer: 'Reemplazo' }))).status, 409);
+  assert.deepEqual((await request('/api/pedidos/RTQ-PANEL', { headers: admin.headers })).body, before, 'Un id repetido no reemplaza el pedido');
+  // Un id que no es texto o queda vacío recibe un id único del servidor
+  for (const badId of [7, null, "');<>", undefined]) {
+    const created = await request('/api/pedidos', json('POST', admin.headers, { id: badId, items: [] }));
+    assert.equal(created.status, 201); assert.match(created.body.order.id, /^RTQ-[0-9A-F]{12}$/);
+  }
+  assert.equal((await request('/api/pedidos', json('POST', admin.headers, [1, 2]))).status, 400);
+  assert.throws(() => app.repos.orders.insert({ id: 'RTQ-PANEL' }), /ya existe/);
 
   // 10. Métodos no contemplados siguen cayendo al servidor estático, como antes
   const fallThrough = await request('/api/pedidos', { method: 'PUT' });

@@ -48,11 +48,12 @@ const app = createApp({ dataDir: carpetaTemporal, logger: { log() {}, warn() {} 
 - `createApp` sí lee y, si falta algún archivo, escribe en `dataDir`: crea `users.db.json` con los usuarios iniciales y `orders.db.json` con la semilla. Por eso las pruebas deben pasar siempre una carpeta temporal.
 - `tools/test-backend.js` sigue este patrón y verifica que `data/` no cambie.
 
-## Riesgos que siguen abiertos (sin cambios en este lote)
+## Riesgos que siguen abiertos
 
 | Riesgo | Dónde está ahora |
 |---|---|
-| `POST /api/pedidos` es público y acepta precios, `status` y `payVerified` enviados por el cliente. Además, si el `id` no es texto, la comprobación de duplicados y `insert` generan cada una un `RTQ-NNNN` aleatorio distinto; el segundo puede coincidir con un pedido existente y `insert` lo reemplaza. | `routes/orders.routes.js`, `repositories/orders.repository.js` |
+| Los pedidos que el administrador registra en `POST /api/pedidos` aceptan nombres y precios escritos a mano, sin `productId` ni esquema de validación (el servidor sí recalcula subtotal y total). Se aceptó así porque es personal de confianza, y la app móvil envía precios con opciones que el catálogo no modela. | `routes/orders.routes.js` |
+| No existe una entrada pública de pedidos. La app móvil (`app/js/mobile`, hoy no se carga desde ningún HTML) recibiría 401 si se reactiva. | `app/js/mobile/services/order.service.js` |
 | Si `orders.db.json` no se puede leer, se reemplaza por los pedidos de demostración y se pierde el contenido anterior. | `OrderRepository.init` |
 | Las contraseñas iniciales de `administrador` y `caja` son `1234` si no se definen `RTQ_ADMIN_PASSWORD` y `RTQ_CAJA_PASSWORD`. | `tools/users.repository.js` |
 | La autenticación del cliente en la web es simulada; las sesiones del personal viven en memoria y se pierden al reiniciar. | `web/src`, `backend/auth.js` |
@@ -64,9 +65,14 @@ const app = createApp({ dataDir: carpetaTemporal, logger: { log() {}, warn() {} 
 - Una URL mal codificada (por ejemplo `/%E0%A4%A`) o una cabecera `Host` inválida lanzaban un error sin capturar que **detenía el proceso**. Ahora `app.js` responde 400. Cualquier otro error no controlado de una petición se registra y se responde con 500, sin exponer detalles internos.
 - `tools/test-system.js` (y por tanto `Ejecutar pruebas.cmd`) modificaba `data/` real al ejecutarse desde el proyecto. Ahora se copia a una carpeta temporal y se ejecuta allí; si ya está dentro de la carpeta temporal del sistema (como cuando lo lanza `test-access.js`), se ejecuta en el lugar.
 
+## Resuelto en la etapa de admisión de pedidos
+
+- `POST /api/pedidos` dejó de ser público: sin sesión responde 401 y con sesión de caja 403 (caja usa `/api/caja/pedidos`). Se comprobó antes que ningún cliente activo lo usaba sin sesión: la web tiene el envío desactivado (`web/src/lib/orderSync.ts`), la app móvil no se carga y el simulador del panel envía la cookie del administrador.
+- El servidor fija `status: 'new'`, `payVerified: false`, `createdBy` (usuario de la sesión) y `createdAt`, e ignora lo que envíe el cliente. El canal solo puede ser `web`, `app` o `whatsapp`. El pago se verifica después con `PATCH`.
+- El `id` se decide una sola vez: el enviado si es válido (si ya existe, 409), o uno único generado por el servidor. `OrderRepository.insert` rechaza un `id` existente en lugar de reemplazar el pedido.
+
 ## Siguientes etapas propuestas
 
-1. **Admisión de pedidos y precios.** En `POST /api/pedidos`, tomar los precios del catálogo como ya hace caja; ignorar `status`, `payVerified`, `createdBy` y totales enviados por el cliente; rechazar `id` existentes en lugar de reemplazarlos; validar con un esquema explícito. No reemplazar datos ilegibles con la semilla: detener el arranque y avisar.
-2. **PostgreSQL transaccional.** Definir interfaces de repositorio a partir de las clases actuales, agregar una implementación PostgreSQL con migraciones versionadas y transacciones por pedido, y migrar los datos JSON con un script que se pueda verificar. Las rutas no deberían cambiar.
-3. **Autenticación real.** Sesiones persistentes con expiración y revocación, obligar a cambiar las contraseñas iniciales, quitar el PIN heredado, y autenticación de clientes en la web en lugar de la simulada.
-4. **Integración n8n idempotente.** Eventos de pedido emitidos después de confirmar la transacción (patrón *outbox*), con clave de idempotencia por pedido y evento, reintentos con espera creciente y firma de webhooks.
+1. **PostgreSQL transaccional.** Definir interfaces de repositorio a partir de las clases actuales, agregar una implementación PostgreSQL con migraciones versionadas y transacciones por pedido, y migrar los datos JSON con un script que se pueda verificar. Las rutas no deberían cambiar.
+2. **Autenticación real.** Sesiones persistentes con expiración y revocación, obligar a cambiar las contraseñas iniciales, quitar el PIN heredado, y autenticación de clientes en la web en lugar de la simulada.
+3. **Integración n8n idempotente.** Será también la entrada pública de pedidos (web o WhatsApp), con `productId` del catálogo, precios calculados en el servidor y clave de idempotencia. Eventos de pedido emitidos después de confirmar la transacción (patrón *outbox*), con clave de idempotencia por pedido y evento, reintentos con espera creciente y firma de webhooks.
