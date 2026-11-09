@@ -144,7 +144,7 @@ async function run() {
   console.log('Migración de salt/hash scrypt y autenticación existente: PASS');
   const privateBefore=await sql("SELECT md5((COALESCE((SELECT jsonb_agg(to_jsonb(o)) FROM public.orders o),'[]'::jsonb) || COALESCE((SELECT jsonb_agg(to_jsonb(u)) FROM public.staff_users u),'[]'::jsonb))::text)");
   const limited=await migrate(dataDir,{db,catalogConfigOnly:true});
-  assert.deepEqual(limited.source,{products:49,storeConfig:1});
+  assert.deepEqual(limited.source,{products:JSON.parse(fs.readFileSync(path.join(dataDir,'catalog.db.json'),'utf8')).length,storeConfig:1});
   assert.deepEqual(limited.source,limited.destination);
   assert.equal(await sql("SELECT md5((COALESCE((SELECT jsonb_agg(to_jsonb(o)) FROM public.orders o),'[]'::jsonb) || COALESCE((SELECT jsonb_agg(to_jsonb(u)) FROM public.staff_users u),'[]'::jsonb))::text)"),privateBefore);
   console.log('Modo exclusivo catálogo/configuración: sin cambios en pedidos ni usuarios: PASS');

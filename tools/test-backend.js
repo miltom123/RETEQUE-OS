@@ -128,6 +128,19 @@ async function run() {
   if (process.env.RTQ_STORAGE === 'postgres') await assert.rejects(app.repos.orders.insert({ id: 'RTQ-PANEL' }), /ya existe/);
   else assert.throws(() => app.repos.orders.insert({ id: 'RTQ-PANEL' }), /ya existe/);
 
+  // 9b. Catálogo: guardar desde el panel sin `options` conserva presentaciones y extras; si llegan, se normalizan
+  const clasicos = (await request('/api/catalog')).body.find(p => p.id === 'clasicos');
+  assert.equal(clasicos.options.presentations.length, 2);
+  const { options: clasicosOptions, ...clasicosForm } = clasicos;
+  const edited = await request('/api/catalog', json('POST', admin.headers, { ...clasicosForm, price: 16.5 }));
+  assert.equal(edited.status, 200);
+  assert.equal(edited.body.product.price, 16.5);
+  assert.deepEqual(edited.body.product.options, clasicosOptions, 'El formulario del panel no borra las opciones');
+  const cleaned = await request('/api/catalog', json('POST', admin.headers, { ...clasicosForm, options: {
+    presentations: [{ id: '10', label: '<b>10</b>' }, { id: '10', label: 'repetido' }], extras: [{ id: 'x', label: 'X', price: -1 }], otro: [1] } }));
+  assert.deepEqual(cleaned.body.product.options, { presentations: [{ id: '10', label: 'b10/b' }], extras: [{ id: 'x', label: 'X', price: 0 }] });
+  await request('/api/catalog', json('POST', admin.headers, { ...clasicosForm, options: clasicosOptions }));
+
   // 10. Métodos no contemplados siguen cayendo al servidor estático, como antes
   const fallThrough = await request('/api/pedidos', { method: 'PUT' });
   assert.equal(fallThrough.status, 404); assert.match(fallThrough.body, /404 No encontrado/);

@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { SupabaseRpc } = require('./backend/repositories/supabase-rpc');
+const { normalizeOptions } = require('./backend/repositories/catalog.repository');
 
 function invalid(location) { throw new Error(`Dato inválido en ${location}; no se muestra su contenido.`); }
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -50,13 +51,17 @@ function loadSnapshot(directory, options = {}) {
     rows.forEach((r,i) => { if (!object(r)) invalid(`${label}[${i}]`); });
     unique(rows, key, label);
   }
-  const productFields = ['id','name','icon','cat','qty','price','promo','sauces','badge','desc','stock'];
+  const productFields = ['id','name','icon','cat','qty','price','promo','sauces','badge','desc','stock','options'];
   products.forEach((p,i) => {
     keys(p, productFields, `products[${i}]`);
-    for (const k of productFields.filter(k=>!['price','promo','stock'].includes(k))) text(p[k],`products[${i}].${k}`);
+    for (const k of productFields.filter(k=>!['price','promo','stock','options'].includes(k))) text(p[k],`products[${i}].${k}`);
     money(p.price, `products[${i}].price`);
     if (p.promo !== null) money(p.promo, `products[${i}].promo`);
     if (typeof p.stock !== 'boolean') invalid(`products[${i}].stock`);
+    // Las opciones deben estar ya normalizadas: lo que se importa es exactamente lo que el servidor guardaría
+    const options = p.options === undefined ? null : p.options;
+    if (JSON.stringify(normalizeOptions(options)) !== JSON.stringify(options)) invalid(`products[${i}].options`);
+    p.options = options;
   });
   if (!object(config)) invalid('config');
   for (const k of ['name','city','address','hours','whatsappDisplay','whatsappInternational','mapsUrl']) text(config[k],`config.${k}`);

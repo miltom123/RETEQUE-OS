@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { SupabaseRpc } = require('./supabase-rpc');
 const { normalizeOrder } = require('./orders.repository');
 const { normalizeProduct } = require('./catalog.repository');
+const { cleanId } = require('../sanitize');
 const { publicUser } = require('../../users.repository');
 
 // Mismos métodos públicos de los repositorios JSON; en PostgreSQL devuelven promesas.
@@ -28,7 +29,11 @@ class CatalogRepository {
   constructor(db) { this.db = db; }
   getAll() { return this.db.operation('products.list'); }
   getById(id) { return this.db.operation('products.find', { id }); }
-  save(product) { return this.db.operation('products.save', { product: normalizeProduct(product) }); }
+  async save(product) {
+    // Igual que en JSON: sin `options` en el cuerpo se conservan las del producto guardado
+    const existing = product.options === undefined && product.id ? await this.getById(cleanId(product.id)) : null;
+    return this.db.operation('products.save', { product: normalizeProduct(product, existing && existing.options) });
+  }
   toggleStock(id, stock) { return this.db.operation('products.stock', { id, stock: Boolean(stock) }); }
   delete(id) { return this.db.operation('products.delete', { id }); }
 }

@@ -10,7 +10,42 @@
     "sauces": "2 salsas gratis",
     "badge": "MÁS VENDIDO",
     "desc": "Queso fundido en masa crocante tradicional.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 27
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "jamon",
@@ -23,7 +58,42 @@
     "sauces": "2 salsas gratis",
     "badge": "",
     "desc": "Jamón y queso fundido.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 28
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "tocino",
@@ -36,7 +106,42 @@
     "sauces": "2 salsas gratis",
     "badge": "",
     "desc": "Tocino y queso fundido.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 29
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "hotdog",
@@ -49,7 +154,42 @@
     "sauces": "2 salsas gratis",
     "badge": "",
     "desc": "Hotdog y queso fundido.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 28
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "tresquesos",
@@ -62,7 +202,42 @@
     "sauces": "2 salsas gratis",
     "badge": "",
     "desc": "Mezcla de tres quesos fundidos.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 28
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "ajigallina",
@@ -75,7 +250,42 @@
     "sauces": "2 salsas gratis",
     "badge": "RECOMENDADO",
     "desc": "Relleno de ají de gallina.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 29
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "dulces",
@@ -88,7 +298,42 @@
     "sauces": "1 salsa incluida",
     "badge": "NUEVO",
     "desc": "Relleno de chocolate.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 31
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "oregano",
@@ -101,7 +346,42 @@
     "sauces": "2 salsas gratis",
     "badge": "",
     "desc": "Queso con masa especial de orégano.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 27
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "cheddar",
@@ -114,7 +394,42 @@
     "sauces": "2 salsas gratis",
     "badge": "",
     "desc": "Relleno de queso cheddar.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 34
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "jamoncheddar",
@@ -127,7 +442,42 @@
     "sauces": "2 salsas gratis",
     "badge": "",
     "desc": "Jamón y queso cheddar.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "10",
+          "label": "10 unid."
+        },
+        {
+          "id": "20",
+          "label": "20 unid.",
+          "price": 36
+        }
+      ],
+      "extras": [
+        {
+          "id": "mayonesa-ajo",
+          "label": "Mayonesa de ajo",
+          "price": 2
+        },
+        {
+          "id": "salsa-tocino",
+          "label": "Salsa tocino",
+          "price": 2
+        },
+        {
+          "id": "mayopalta",
+          "label": "Mayopalta",
+          "price": 2
+        },
+        {
+          "id": "aji-especial",
+          "label": "Ají especial",
+          "price": 2
+        }
+      ]
+    }
   },
   {
     "id": "combo",
@@ -140,7 +490,31 @@
     "sauces": "2 salsas gratis",
     "badge": "RECOMENDADO",
     "desc": "20 tequeños (2 sabores) + 2 cremas + 2 gaseosas de ½ L.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-solo",
@@ -153,7 +527,31 @@
     "sauces": "2 salsas gratis",
     "badge": "PROMO",
     "desc": "10 tequeños de queso + 2 cremas + 1 gaseosa de ½ L.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-extra",
@@ -166,7 +564,31 @@
     "sauces": "2 salsas gratis",
     "badge": "PROMO",
     "desc": "20 tequeños (2 sabores) + 2 cremas + 1 gaseosa de ½ L.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-familiar",
@@ -179,7 +601,31 @@
     "sauces": "4 cremas incluidas",
     "badge": "PROMO",
     "desc": "40 tequeños (4 sabores) + 4 cremas + 1 gaseosa de 2 L.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-tequepizza",
@@ -192,7 +638,31 @@
     "sauces": "1 salsa incluida",
     "badge": "PROMO",
     "desc": "1 pizza familiar 35 cm + 5 tequeños de queso + 1 crema + 1 gaseosa de 1 L.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-antojo",
@@ -205,7 +675,31 @@
     "sauces": "2 salsas gratis",
     "badge": "PROMO",
     "desc": "Mini empanaditas de ají de gallina, lomo saltado y queso + 1 Coca Cola 600 ml + 2 cremas.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-sazon",
@@ -218,7 +712,31 @@
     "sauces": "4 cremas incluidas",
     "badge": "PROMO",
     "desc": "Mini tequeños de queso + mini empanaditas (ají de gallina, lomo saltado y queso) + 1 Pepsi 1 L + 4 cremas.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-bocados",
@@ -231,7 +749,8 @@
     "sauces": "3 cremas incluidas",
     "badge": "PROMO",
     "desc": "Mini tequeños de queso + mini empanaditas (carne, pollo y queso/jamón) + 3 cremas.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "promo-fiesta",
@@ -244,7 +763,8 @@
     "sauces": "3 cremas incluidas",
     "badge": "PROMO",
     "desc": "Tequeños de queso + mini empanaditas (carne, pollo y queso/jamón) + 3 cremas.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "promo-mundo",
@@ -257,7 +777,31 @@
     "sauces": "2 salsas gratis",
     "badge": "PROMO",
     "desc": "1 pizza familiar (elige sabor) + 20 mini tequeños de queso + 1 Pepsi 1 L + 2 cremas.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-sinlimites",
@@ -270,7 +814,31 @@
     "sauces": "3 cremas incluidas",
     "badge": "PROMO",
     "desc": "1 pizza familiar (elige sabor) + 20 mini empanaditas mixtas (carne, pollo, jamón/queso) + 1 Pepsi 1 L + 3 cremas.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "promo-tentacion",
@@ -283,7 +851,8 @@
     "sauces": "2 salsas gratis",
     "badge": "PROMO",
     "desc": "1 pizza hawaiana familiar + 20 tequeños de jamón/queso + 2 cremas.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "promo-placer",
@@ -296,7 +865,31 @@
     "sauces": "2 salsas gratis",
     "badge": "PROMO",
     "desc": "2 pizzas familiares (elige sabor) + 1 Pepsi 1 L + 2 cremas.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "drinks": [
+        {
+          "id": "inka-cola-600",
+          "label": "Inka Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "coca-cola-600",
+          "label": "Coca-Cola 600 ml",
+          "price": 0
+        },
+        {
+          "id": "pepsi-1l",
+          "label": "Pepsi 1 Litro",
+          "price": 2
+        },
+        {
+          "id": "chicha-morada",
+          "label": "Chicha Morada Artesanal 1/2 L",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-americana",
@@ -309,7 +902,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella y jamón.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-italiana",
@@ -322,7 +949,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, jamón, aceituna negra, pollo y pimentón.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-supermargarita",
@@ -335,7 +996,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, jamón, pimentón y aceituna verde.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-hawaiana",
@@ -348,7 +1043,41 @@
     "sauces": "N/A",
     "badge": "MÁS VENDIDO",
     "desc": "Salsa de tomate, mozarella, jamón y piña.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-peperoni",
@@ -361,7 +1090,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, peperoni y jamón.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-especial",
@@ -374,7 +1137,41 @@
     "sauces": "N/A",
     "badge": "RECOMENDADO",
     "desc": "Salsa de tomate, mozarella, pimentón, tocino ahumado, champiñones y queso parmesano.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-espanola",
@@ -387,7 +1184,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, chorizo, pimentón y aceituna verde.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-vegetariana",
@@ -400,7 +1231,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, aceituna verde y negra, pimentón y champiñón.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-oriental",
@@ -413,7 +1278,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, piña y pollo.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-primavera",
@@ -426,7 +1325,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, jamón y maíz.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-margarita",
@@ -439,7 +1372,41 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Salsa de tomate, mozarella, tomate y aceite de oliva.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "extras": [
+        {
+          "id": "ad-maiz",
+          "label": "Maíz",
+          "price": 3
+        },
+        {
+          "id": "ad-champinones",
+          "label": "Champiñones",
+          "price": 3
+        },
+        {
+          "id": "ad-jamon",
+          "label": "Jamón",
+          "price": 3
+        },
+        {
+          "id": "ad-parmesano",
+          "label": "Queso parmesano",
+          "price": 3
+        },
+        {
+          "id": "ad-tocino",
+          "label": "Tocino",
+          "price": 3
+        },
+        {
+          "id": "ad-aceituna",
+          "label": "Aceituna verde",
+          "price": 3
+        }
+      ]
+    }
   },
   {
     "id": "pizza-adicional",
@@ -452,7 +1419,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Maíz, champiñones, jamón, queso parmesano, tocino o aceituna verde.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "pastel-queso",
@@ -465,7 +1433,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Pastelito relleno de queso.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "pastel-jamonqueso",
@@ -478,7 +1447,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Pastelito relleno de jamón y queso.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "pastel-pizza",
@@ -491,7 +1461,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Pastelito relleno sabor pizza.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "pastel-pollo",
@@ -504,7 +1475,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Pastelito relleno de pollo deshilachado.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "pastel-carne",
@@ -517,7 +1489,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Pastelito relleno de carne deshilachada.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "limonada",
@@ -530,7 +1503,20 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Refresco natural de limón.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "medio",
+          "label": "½ litro"
+        },
+        {
+          "id": "1l",
+          "label": "1 litro",
+          "price": 15
+        }
+      ]
+    }
   },
   {
     "id": "chicha",
@@ -543,7 +1529,20 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Refresco natural de chicha morada.",
-    "stock": true
+    "stock": true,
+    "options": {
+      "presentations": [
+        {
+          "id": "medio",
+          "label": "½ litro"
+        },
+        {
+          "id": "1l",
+          "label": "1 litro",
+          "price": 15
+        }
+      ]
+    }
   },
   {
     "id": "cocacola",
@@ -556,7 +1555,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Gaseosa personal.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "inkakola",
@@ -569,7 +1569,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Gaseosa personal.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "pepsi1l",
@@ -582,7 +1583,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Gaseosa para compartir.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "pepsi2l",
@@ -595,7 +1597,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Gaseosa familiar.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "agua",
@@ -608,7 +1611,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Agua mineral.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "infusiones",
@@ -621,7 +1625,8 @@
     "sauces": "N/A",
     "badge": "",
     "desc": "Infusión caliente.",
-    "stock": true
+    "stock": true,
+    "options": null
   },
   {
     "id": "tartara",
@@ -634,6 +1639,63 @@
     "sauces": "Porción extra",
     "badge": "",
     "desc": "Mayonesa de ajo, salsa tocino, mayopalta o ají especial.",
-    "stock": true
+    "stock": true,
+    "options": null
+  },
+  {
+    "id": "crema-ajo",
+    "name": "Mayonesa de ajo (2 oz)",
+    "icon": "🥣",
+    "cat": "Salsas",
+    "qty": "2 oz",
+    "price": 2,
+    "promo": null,
+    "sauces": "No aplica",
+    "badge": "",
+    "desc": "Salsa artesanal emblemática de la casa",
+    "stock": true,
+    "options": null
+  },
+  {
+    "id": "crema-tocino",
+    "name": "Salsa tocino (2 oz)",
+    "icon": "🥣",
+    "cat": "Salsas",
+    "qty": "2 oz",
+    "price": 2,
+    "promo": null,
+    "sauces": "No aplica",
+    "badge": "",
+    "desc": "Cremosa salsa con auténtico toque ahumado de tocino",
+    "stock": true,
+    "options": null
+  },
+  {
+    "id": "crema-mayopalta",
+    "name": "Mayopalta (2 oz)",
+    "icon": "🥣",
+    "cat": "Salsas",
+    "qty": "2 oz",
+    "price": 2,
+    "promo": null,
+    "sauces": "No aplica",
+    "badge": "",
+    "desc": "Suave y cremosa salsa de palta fresca",
+    "stock": true,
+    "options": null
+  },
+  {
+    "id": "crema-aji",
+    "name": "Ají especial (2 oz)",
+    "icon": "🥣",
+    "cat": "Salsas",
+    "qty": "2 oz",
+    "price": 2,
+    "promo": null,
+    "sauces": "No aplica",
+    "badge": "",
+    "desc": "El toque picante y aromático tradicional",
+    "stock": true,
+    "options": null
   }
 ]

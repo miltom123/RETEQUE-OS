@@ -96,7 +96,7 @@ async function run(){
   console.log('Fechas ausentes, referencias desconocidas, scrypt, RLS y concurrencia: PASS');
   const privateBefore=await sql("SELECT md5(((public.rtq_snapshot()->'orders') || (public.rtq_snapshot()->'users'))::text)");
   const limited=await migrate(dataDir,{db,catalogConfigOnly:true});
-  assert.deepEqual(limited.source,{products:49,storeConfig:1});assert.deepEqual(limited.source,limited.destination);
+  assert.deepEqual(limited.source,{products:JSON.parse(fs.readFileSync(path.join(dataDir,'catalog.db.json'),'utf8')).length,storeConfig:1});assert.deepEqual(limited.source,limited.destination);
   assert.equal(await sql("SELECT md5(((public.rtq_snapshot()->'orders') || (public.rtq_snapshot()->'users'))::text)"),privateBefore);
   console.log('Modo catálogo/configuración: pedidos y usuarios locales intactos: PASS');
   for(const name of ['test-backend.js','test-system.js','test-access.js','test-reports.js'])await suite(name);

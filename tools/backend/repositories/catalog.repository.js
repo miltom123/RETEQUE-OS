@@ -1,7 +1,7 @@
 // Fuente Única de Verdad: Repositorio de Catálogo Maestro de Productos (data/catalog.db.json)
 const fs = require('fs');
 const crypto = require('crypto');
-const { sanitizeId, sanitizeString } = require('../sanitize');
+const { cleanId, sanitizeId, sanitizeString } = require('../sanitize');
 const { readJsonFile } = require('./json-file');
 
 class CatalogRepository {
@@ -35,7 +35,8 @@ class CatalogRepository {
   }
 
   save(product) {
-    const sanitized = normalizeProduct(product);
+    const existing = this.products.find(p => p.id === sanitizeId(product.id || ''));
+    const sanitized = normalizeProduct(product, existing && existing.options);
 
     const idx = this.products.findIndex(p => p.id === sanitized.id);
     if (idx >= 0) {
@@ -64,7 +65,8 @@ class CatalogRepository {
   }
 }
 
-function normalizeProduct(product) {
+// Si el producto llega sin `options` (por ejemplo, desde el formulario del panel), se conservan las que tenía
+function normalizeProduct(product, existingOptions = null) {
     return {
       id: sanitizeId(product.id || `prod_${Date.now()}`),
       name: sanitizeString(product.name || 'Producto'),
@@ -76,9 +78,40 @@ function normalizeProduct(product) {
       sauces: sanitizeString(product.sauces || '2 salsas gratis'),
       badge: sanitizeString(product.badge || ''),
       desc: sanitizeString(product.desc || ''),
-      stock: product.stock !== undefined ? Boolean(product.stock) : true
+      stock: product.stock !== undefined ? Boolean(product.stock) : true,
+      options: product.options !== undefined ? normalizeOptions(product.options) : normalizeOptions(existingOptions)
     };
 
 }
 
-module.exports = { CatalogRepository, normalizeProduct };
+/**
+ * Opciones con precio de un producto:
+ * - presentations: tamaños (10/20 unid., ½ L/1 L). Sin `price` usa el precio del producto (lo que edita el panel).
+ * - extras: agregados que se cobran por unidad (cremas, adicionales de pizza).
+ * - drinks: bebida a elegir en una promo, con su recargo (0 si va incluida).
+ */
+const OPTION_GROUPS = { presentations: 6, extras: 12, drinks: 8 };
+
+function normalizeOptions(options) {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) return null;
+  const result = {};
+  for (const [group, max] of Object.entries(OPTION_GROUPS)) {
+    if (!Array.isArray(options[group])) continue;
+    const seen = new Set();
+    const list = [];
+    for (const raw of options[group].slice(0, max)) {
+      const id = cleanId(raw && raw.id);
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      const option = { id, label: sanitizeString(raw.label || id).slice(0, 60) };
+      const price = parseFloat(raw.price);
+      if (Number.isFinite(price) && price >= 0) option.price = Math.round(price * 100) / 100;
+      else if (group !== 'presentations') option.price = 0;
+      list.push(option);
+    }
+    if (list.length) result[group] = list;
+  }
+  return Object.keys(result).length ? result : null;
+}
+
+module.exports = { CatalogRepository, normalizeProduct, normalizeOptions };
