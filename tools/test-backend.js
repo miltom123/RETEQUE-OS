@@ -5,6 +5,7 @@ const os = require('os');
 const crypto = require('crypto');
 const assert = require('node:assert/strict');
 
+const { prepareStorage } = require('./test-storage');
 const root = path.resolve(__dirname, '..');
 const realDataDir = path.join(root, 'data');
 const hashDir = dir => Object.fromEntries(fs.readdirSync(dir).sort().map(name => {
@@ -43,6 +44,7 @@ async function run() {
   // 4. Crear la aplicación con un directorio de datos temporal y sin escuchar
   const dataDir = makeTemp();
   for (const name of ['catalog.db.json', 'store.config.json']) fs.copyFileSync(path.join(realDataDir, name), path.join(dataDir, name));
+  await prepareStorage(dataDir);
   const app = createApp({ dataDir, logger: silent });
   assert.equal(app.server.listening, false, 'createApp no debe abrir puertos');
   assert.deepEqual(fs.readdirSync(dataDir).sort(), ['catalog.db.json', 'orders.db.json', 'store.config.json', 'users.db.json']);
@@ -123,7 +125,8 @@ async function run() {
     assert.equal(created.status, 201); assert.match(created.body.order.id, /^RTQ-[0-9A-F]{12}$/);
   }
   assert.equal((await request('/api/pedidos', json('POST', admin.headers, [1, 2]))).status, 400);
-  assert.throws(() => app.repos.orders.insert({ id: 'RTQ-PANEL' }), /ya existe/);
+  if (process.env.RTQ_STORAGE === 'postgres') await assert.rejects(app.repos.orders.insert({ id: 'RTQ-PANEL' }), /ya existe/);
+  else assert.throws(() => app.repos.orders.insert({ id: 'RTQ-PANEL' }), /ya existe/);
 
   // 10. Métodos no contemplados siguen cayendo al servidor estático, como antes
   const fallThrough = await request('/api/pedidos', { method: 'PUT' });
@@ -152,12 +155,15 @@ async function run() {
   await new Promise(resolve => server.close(resolve)); server = null;
 
   // 14. PIN heredado solo si se habilita expresamente; instancias con estado independiente
-  const pinApp = createApp({ dataDir: makeTemp(), legacyPinEnabled: true, adminPin: '4321', logger: silent });
+  const pinDir = makeTemp();
+  for (const name of ['catalog.db.json', 'store.config.json']) fs.copyFileSync(path.join(realDataDir, name), path.join(pinDir, name));
+  await prepareStorage(pinDir);
+  const pinApp = createApp({ dataDir: pinDir, legacyPinEnabled: true, adminPin: '4321', logger: silent });
   await new Promise(resolve => pinApp.server.listen(0, '127.0.0.1', resolve));
   server = pinApp.server;
   const pinRes = await fetch(`http://127.0.0.1:${server.address().port}/api/auth/login`, json('POST', {}, { pin: '4321' }));
   assert.equal(pinRes.status, 200);
-  assert.equal(app.auth.isValidSession((await pinRes.json()).token), false, 'Las sesiones no se comparten entre instancias');
+  assert.equal(await app.auth.isValidSession((await pinRes.json()).token), false, 'Las sesiones no se comparten entre instancias');
   await new Promise(resolve => server.close(resolve)); server = null;
 
   // 15. Un archivo de datos ilegible detiene el arranque y queda intacto; uno ausente se crea como antes
@@ -169,10 +175,10 @@ async function run() {
   for (const [name, content] of unreadable) {
     const corruptDir = makeTemp();
     fs.writeFileSync(path.join(corruptDir, name), content);
-    assert.throws(() => createApp({ dataDir: corruptDir, logger: silent }), DataFileError, `${name} ilegible debe detener el arranque`);
+    assert.throws(() => createApp({ dataDir: corruptDir, storage: 'json', logger: silent }), DataFileError, `${name} ilegible debe detener el arranque`);
     assert.equal(fs.readFileSync(path.join(corruptDir, name), 'utf8'), content, `${name} no debe modificarse`);
   }
-  const freshApp = createApp({ dataDir: makeTemp(), logger: silent });
+  const freshApp = createApp({ dataDir: makeTemp(), storage: 'json', logger: silent });
   assert.deepEqual(freshApp.repos.orders.getAll().map(order => order.id), ['RTQ-2064', 'RTQ-2181', 'RTQ-2052']);
   assert.deepEqual(freshApp.repos.catalog.getAll(), []);
   assert.deepEqual(freshApp.repos.config.get(), {});

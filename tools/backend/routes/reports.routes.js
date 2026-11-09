@@ -7,7 +7,7 @@ async function handleReports({ req, res, pathname, parsedUrl }, { repos }) {
   if (pathname !== '/api/reports' && pathname !== '/api/reports/export') return false;
   if (req.method !== 'GET') return sendJson(res, 405, { error: 'Método no permitido.' });
   try {
-    const report = buildReport(repos.orders.getAll(), repos.catalog.getAll(), parsedUrl.searchParams);
+    const report = buildReport(await repos.orders.getAll(), await repos.catalog.getAll(), parsedUrl.searchParams);
     if (pathname === '/api/reports') return sendJson(res, 200, report);
     const type = parsedUrl.searchParams.get('type') || 'details';
     const content = exportReport(report, type);

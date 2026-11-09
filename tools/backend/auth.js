@@ -62,7 +62,7 @@ function createAuth({ usersRepo, adminPin = '2026', legacyPinEnabled = false }) 
   }
 
   // Valida el token y refresca los datos públicos del usuario desde el repositorio
-  function isValidSession(token) {
+  async function isValidSession(token) {
     if (!token) return false;
     const session = activeSessions.get(token);
     if (!session) return false;
@@ -70,7 +70,7 @@ function createAuth({ usersRepo, adminPin = '2026', legacyPinEnabled = false }) 
       activeSessions.delete(token);
       return false;
     }
-    const user = usersRepo.find(session.user.username);
+    const user = await usersRepo.find(session.user.username);
     if (!user || !user.active) { activeSessions.delete(token); return false; }
     session.user = publicUser(user);
     return true;
@@ -91,9 +91,9 @@ function createAuth({ usersRepo, adminPin = '2026', legacyPinEnabled = false }) 
   }
 
   // Usuario y contraseña; el PIN solo se acepta si se habilitó expresamente y sin usuario
-  function verifyCredentials(body) {
+  async function verifyCredentials(body) {
     const inputPin = String(body.pin || '').trim();
-    const user = usersRepo.authenticate(body.username, body.password);
+    const user = await usersRepo.authenticate(body.username, body.password);
     if (user) return { ok: true, user };
     if (legacyPinEnabled && !body.username && timingSafeEqualStrings(inputPin, adminPin)) return { ok: true, user: null };
     return { ok: false, user: null };

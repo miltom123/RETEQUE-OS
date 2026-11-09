@@ -11,7 +11,7 @@ async function handleAuth({ req, res, pathname }, { auth }) {
       }
 
       const body = await readJsonBody(req);
-      const result = auth.verifyCredentials(body);
+      const result = await auth.verifyCredentials(body);
 
       if (result.ok) {
         auth.recordLoginAttempt(clientIp, true);
@@ -35,7 +35,7 @@ async function handleAuth({ req, res, pathname }, { auth }) {
 
   if (pathname === '/api/auth/verify' && req.method === 'GET') {
     const token = extractToken(req);
-    const isValid = auth.isValidSession(token);
+    const isValid = await auth.isValidSession(token);
     return sendJson(res, 200, { authenticated: isValid, user: isValid ? auth.sessionUser(token) : null });
   }
 

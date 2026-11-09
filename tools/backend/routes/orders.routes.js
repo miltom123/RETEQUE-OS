@@ -9,9 +9,9 @@ const { extractToken, readJsonBody, sendJson } = require('../http');
 const { cleanId, sanitizeId } = require('../sanitize');
 const { canAccessOrder } = require('../auth');
 
-function newOrderId(ordersRepo) {
+async function newOrderId(ordersRepo) {
   let id;
-  do { id = 'RTQ-' + crypto.randomBytes(6).toString('hex').toUpperCase(); } while (ordersRepo.getById(id));
+  do { id = 'RTQ-' + crypto.randomBytes(6).toString('hex').toUpperCase(); } while (await ordersRepo.getById(id));
   return id;
 }
 
@@ -20,7 +20,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
     // GET: Obtener todos los pedidos (Exclusivo Administrador autenticado para evitar fuga de PII)
     if (req.method === 'GET') {
       const token = extractToken(req);
-      const isAuth = auth.isValidSession(token);
+      const isAuth = await auth.isValidSession(token);
 
       if (!isAuth) {
         return sendJson(res, 401, {
@@ -31,7 +31,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
 
       const user = auth.sessionUser(token);
       if (user.role !== 'admin' && parsedUrl.searchParams.get('scope') === 'all') return sendJson(res, 403, { error: 'Solo el administrador puede consultar el historial completo.' });
-      const orders = repos.orders.getAll().filter(order => canAccessOrder(user, order));
+      const orders = (await repos.orders.getAll()).filter(order => canAccessOrder(user, order));
       return sendJson(res, 200, orders);
     }
 
@@ -51,10 +51,10 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
 
         // El id se decide una sola vez: el del cliente si es válido, si no uno generado por el servidor
         const requestedId = cleanId(payload.id);
-        if (requestedId && repos.orders.getById(requestedId)) return sendJson(res, 409, { error: 'El pedido ya existe.' });
-        const id = requestedId || newOrderId(repos.orders);
+        if (requestedId && await repos.orders.getById(requestedId)) return sendJson(res, 409, { error: 'El pedido ya existe.' });
+        const id = requestedId || await newOrderId(repos.orders);
 
-        const newOrder = repos.orders.insert({
+        const newOrder = await repos.orders.insert({
           ...payload,
           id,
           channel: ['web', 'app', 'whatsapp'].includes(payload.channel) ? payload.channel : 'app',
@@ -63,9 +63,10 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
           createdAt: new Date().toISOString(),
           createdBy: currentUser.username
         });
-        logger.log(`[PEDIDO CREADO] ${newOrder.id} - ${newOrder.customer} - Total: S/ ${newOrder.total.toFixed(2)} (${newOrder.channel})`);
+        logger.log(`[PEDIDO CREADO] ${newOrder.id} - Total: S/ ${newOrder.total.toFixed(2)} (${newOrder.channel})`);
         return sendJson(res, 201, { ok: true, order: newOrder });
       } catch (err) {
+        if (err.code === '23505') return sendJson(res, 409, { error: 'El pedido ya existe.' });
         return sendJson(res, 400, { ok: false, error: err.message });
       }
     }
@@ -75,12 +76,12 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
   // GET /api/pedidos/:id (Consulta pública y segura de estado individual sin exponer PII completa)
   if (pathname.startsWith('/api/pedidos/') && req.method === 'GET') {
     const orderId = sanitizeId(pathname.split('/')[3] || '');
-    const ord = repos.orders.getById(orderId);
+    const ord = await repos.orders.getById(orderId);
     if (!ord) {
       return sendJson(res, 404, { ok: false, error: 'Pedido no encontrado' });
     }
     const token = extractToken(req);
-    const isAuth = auth.isValidSession(token);
+    const isAuth = await auth.isValidSession(token);
     if (!isAuth) {
       return sendJson(res, 200, {
         id: ord.id,
@@ -102,7 +103,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
   // PATCH /api/pedidos/:id (Actualizar estado o verificar pago - Requiere sesión de personal)
   if (pathname.startsWith('/api/pedidos/') && (req.method === 'PATCH' || req.method === 'POST')) {
     const token = extractToken(req);
-    if (!auth.isValidSession(token)) {
+    if (!(await auth.isValidSession(token))) {
       return sendJson(res, 401, { ok: false, error: 'Requiere autenticación de administrador' });
     }
 
@@ -111,7 +112,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
       return sendJson(res, 400, { ok: false, error: 'ID de pedido no especificado' });
     }
 
-    const order = repos.orders.getById(orderId);
+    const order = await repos.orders.getById(orderId);
     if (order && !canAccessOrder(auth.sessionUser(token), order)) return sendJson(res, 403, { error: 'Caja solo puede gestionar pedidos del día.' });
     try {
       const body = await readJsonBody(req);
@@ -121,7 +122,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
           const next = { new: ['kitchen'], kitchen: order.mode === 'pickup' ? ['delivered'] : ['delivery'], delivery: ['delivered'], delivered: [] };
           if (!next[order.status]?.includes(body.status)) return sendJson(res, 400, { error: 'Ese cambio de estado no está permitido para caja.' });
         }
-        const updated = repos.orders.updateStatus(orderId, body.status);
+        const updated = await repos.orders.updateStatus(orderId, body.status);
         if (updated) {
           return sendJson(res, 200, { ok: true, order: updated });
         }
@@ -129,7 +130,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
       }
 
       if (body.verifyPayment) {
-        const updated = repos.orders.verifyPayment(orderId);
+        const updated = await repos.orders.verifyPayment(orderId);
         if (updated) {
           return sendJson(res, 200, { ok: true, order: updated });
         }

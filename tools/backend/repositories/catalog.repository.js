@@ -35,19 +35,7 @@ class CatalogRepository {
   }
 
   save(product) {
-    const sanitized = {
-      id: sanitizeId(product.id || `prod_${Date.now()}`),
-      name: sanitizeString(product.name || 'Producto'),
-      icon: product.icon || '🥟',
-      cat: sanitizeString(product.cat || 'Clásicos'),
-      qty: sanitizeString(product.qty || 'Porción estándar'),
-      price: Math.max(0, parseFloat(product.price) || 0),
-      promo: product.promo ? Math.max(0, parseFloat(product.promo) || 0) : null,
-      sauces: sanitizeString(product.sauces || '2 salsas gratis'),
-      badge: sanitizeString(product.badge || ''),
-      desc: sanitizeString(product.desc || ''),
-      stock: product.stock !== undefined ? Boolean(product.stock) : true
-    };
+    const sanitized = normalizeProduct(product);
 
     const idx = this.products.findIndex(p => p.id === sanitized.id);
     if (idx >= 0) {
@@ -76,4 +64,21 @@ class CatalogRepository {
   }
 }
 
-module.exports = { CatalogRepository };
+function normalizeProduct(product) {
+    return {
+      id: sanitizeId(product.id || `prod_${Date.now()}`),
+      name: sanitizeString(product.name || 'Producto'),
+      icon: product.icon || '🥟',
+      cat: sanitizeString(product.cat || 'Clásicos'),
+      qty: sanitizeString(product.qty || 'Porción estándar'),
+      price: Math.max(0, parseFloat(product.price) || 0),
+      promo: product.promo ? Math.max(0, parseFloat(product.promo) || 0) : null,
+      sauces: sanitizeString(product.sauces || '2 salsas gratis'),
+      badge: sanitizeString(product.badge || ''),
+      desc: sanitizeString(product.desc || ''),
+      stock: product.stock !== undefined ? Boolean(product.stock) : true
+    };
+
+}
+
+module.exports = { CatalogRepository, normalizeProduct };
