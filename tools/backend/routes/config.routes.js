@@ -1,11 +1,14 @@
 // /api/config: lectura pública, modificación solo de administrador
 const { extractToken, readJsonBody, sendJson } = require('../http');
 
-async function handleConfig({ req, res, pathname }, { repos, auth }) {
+async function handleConfig({ req, res, pathname, currentUser }, { repos, auth }) {
   if (pathname !== '/api/config') return false;
 
   if (req.method === 'GET') {
-    return sendJson(res, 200, await repos.config.get());
+    // Los cupones se validan en el servidor: el público no ve la lista de códigos
+    const config = { ...(await repos.config.get()) };
+    if (!currentUser || currentUser.role !== 'admin') delete config.coupons;
+    return sendJson(res, 200, config);
   }
 
   if (req.method === 'PATCH' || req.method === 'POST') {

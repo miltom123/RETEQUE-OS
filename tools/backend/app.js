@@ -12,7 +12,7 @@ const { UsersRepository } = require('../users.repository');
 const { resolvePaths } = require('./config');
 const { handleCors, extractToken, sendJson } = require('./http');
 const { createAuth } = require('./auth');
-const { createOrderRateLimiter } = require('./rate-limit');
+const { createRateLimiter, createOrderRateLimiter } = require('./rate-limit');
 const { OrderRepository } = require('./repositories/orders.repository');
 const { ConfigRepository } = require('./repositories/config.repository');
 const { CatalogRepository } = require('./repositories/catalog.repository');
@@ -23,11 +23,12 @@ const { handleAuth } = require('./routes/auth.routes');
 const { handleOrders } = require('./routes/orders.routes');
 const { handleConfig } = require('./routes/config.routes');
 const { handleCatalog } = require('./routes/catalog.routes');
+const { handlePublic } = require('./routes/public.routes');
 const { serveStatic } = require('./routes/static.routes');
 
 // El orden importa: reproduce la cadena de if de la versión monolítica, incluidos los casos
 // en que un método no contemplado continúa hacia la siguiente ruta y termina en estáticos.
-const API_ROUTES = [handleReports, handleUsers, handleCaja, handleAuth, handleOrders, handleConfig, handleCatalog];
+const API_ROUTES = [handleReports, handleUsers, handleCaja, handleAuth, handleOrders, handleConfig, handleCatalog, handlePublic];
 
 function isAdminOnly(pathname, method) {
   return pathname.startsWith('/api/users') || pathname.startsWith('/api/reports') ||
@@ -67,7 +68,11 @@ function createApp(options = {}) {
     adminPin: options.adminPin || '2026',
     legacyPinEnabled: Boolean(options.legacyPinEnabled)
   });
-  const deps = { repos, auth, checkOrderRateLimit: createOrderRateLimiter(), logger, paths };
+  const deps = {
+    repos, auth, logger, paths,
+    checkOrderRateLimit: createOrderRateLimiter(),
+    checkQuoteRateLimit: createRateLimiter({ max: 120, message: 'Demasiadas consultas seguidas. Espera un momento.' })
+  };
 
   async function routeRequest(req, res) {
     handleCors(req, res);

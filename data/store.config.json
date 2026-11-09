@@ -13,5 +13,47 @@
   "instagram": "@retequenos",
   "instagramUrl": "https://www.instagram.com/retequenos",
   "facebook": "Retequeños",
-  "facebookUrl": "https://www.facebook.com/retequenos"
+  "facebookUrl": "https://www.facebook.com/retequenos",
+  "coupons": [
+    {
+      "code": "BIENVENIDO10",
+      "name": "Bienvenida nuevos clientes (-S/ 5.00)",
+      "type": "fixed",
+      "value": 5,
+      "minOrder": 20,
+      "active": true
+    },
+    {
+      "code": "RETE10",
+      "name": "10% OFF en tu pedido",
+      "type": "percent",
+      "value": 10,
+      "minOrder": 20,
+      "active": true
+    },
+    {
+      "code": "FIESTA20",
+      "name": "20% OFF Fiesta",
+      "type": "percent",
+      "value": 20,
+      "minOrder": 50,
+      "active": true
+    },
+    {
+      "code": "DEMANDA15",
+      "name": "15% OFF Horario especial",
+      "type": "percent",
+      "value": 15,
+      "minOrder": 25,
+      "active": true
+    },
+    {
+      "code": "ENCUESTA3",
+      "name": "Cupón por encuesta (-S/ 3.00)",
+      "type": "fixed",
+      "value": 3,
+      "minOrder": 15,
+      "active": true
+    }
+  ]
 }
