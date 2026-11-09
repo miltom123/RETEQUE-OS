@@ -12,9 +12,39 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { spawnSync } = require('child_process');
 
-process.argv = ['node', 'tools/server.js', '--port', '3098', '--pin', '2026'];
-require('./server.js');
+// Estas pruebas crean, modifican y borran registros. Si se ejecutan desde el proyecto,
+// se copian a una carpeta temporal y se ejecutan allí para no tocar data/ del negocio.
+const projectRoot = path.resolve(__dirname, '..');
+const realTemp = fs.realpathSync.native(os.tmpdir());
+const runningInTemp = fs.realpathSync.native(projectRoot).startsWith(realTemp + path.sep);
+
+function runInTemporaryCopy() {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'rtq-system-test-'));
+  try {
+    for (const folder of ['tools', 'data', 'app']) fs.cpSync(path.join(projectRoot, folder), path.join(tempRoot, folder), { recursive: true });
+    fs.cpSync(path.join(projectRoot, 'web', 'src'), path.join(tempRoot, 'web', 'src'), { recursive: true });
+    fs.copyFileSync(path.join(projectRoot, 'Iniciar app (celular).cmd'), path.join(tempRoot, 'Iniciar app (celular).cmd'));
+    console.log(`Ejecutando en copia temporal: ${tempRoot}`);
+    const result = spawnSync(process.execPath, [path.join(tempRoot, 'tools', 'test-system.js')], { stdio: 'inherit', timeout: 60000 });
+    process.exitCode = result.status === 0 ? 0 : 1;
+  } finally {
+    const resolved = path.resolve(tempRoot);
+    if (path.dirname(resolved) === path.resolve(os.tmpdir()) && path.basename(resolved).startsWith('rtq-system-test-')) {
+      fs.rmSync(resolved, { recursive: true, force: true });
+    }
+  }
+}
+
+if (!runningInTemp) {
+  runInTemporaryCopy();
+} else {
+  process.argv = ['node', 'tools/server.js', '--port', '3098', '--pin', '2026'];
+  require('./server.js');
+  setTimeout(runTests, 500);
+}
 
 function request(method, path, body = null, headers = {}) {
   return new Promise((resolve, reject) => {
@@ -341,5 +371,3 @@ async function runTests() {
 
   process.exit(passed === total ? 0 : 1);
 }
-
-setTimeout(runTests, 500);

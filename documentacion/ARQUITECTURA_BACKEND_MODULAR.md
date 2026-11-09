@@ -58,16 +58,15 @@ const app = createApp({ dataDir: carpetaTemporal, logger: { log() {}, warn() {} 
 | La autenticación del cliente en la web es simulada; las sesiones del personal viven en memoria y se pierden al reiniciar. | `web/src`, `backend/auth.js` |
 | `PATCH /api/config` acepta cualquier objeto y lo mezcla con la configuración sin validarlo. | `routes/config.routes.js` |
 | La persistencia en JSON reescribe el archivo completo en cada cambio: no hay transacciones entre archivos ni control de concurrencia entre procesos. | `repositories/` |
-| `tools/test-system.js` y `Ejecutar pruebas.cmd` trabajan sobre `data/` real si se ejecutan directamente. `tools/test-access.js` sí los ejecuta en una copia temporal. | `tools/test-system.js` |
 
 ## Resuelto en la etapa de robustez mínima
 
 - Una URL mal codificada (por ejemplo `/%E0%A4%A`) o una cabecera `Host` inválida lanzaban un error sin capturar que **detenía el proceso**. Ahora `app.js` responde 400. Cualquier otro error no controlado de una petición se registra y se responde con 500, sin exponer detalles internos.
+- `tools/test-system.js` (y por tanto `Ejecutar pruebas.cmd`) modificaba `data/` real al ejecutarse desde el proyecto. Ahora se copia a una carpeta temporal y se ejecuta allí; si ya está dentro de la carpeta temporal del sistema (como cuando lo lanza `test-access.js`), se ejecuta en el lugar.
 
 ## Siguientes etapas propuestas
 
-1. **Robustez mínima (pendiente).** Hacer que `test-system.js` use una copia temporal.
-2. **Admisión de pedidos y precios.** En `POST /api/pedidos`, tomar los precios del catálogo como ya hace caja; ignorar `status`, `payVerified`, `createdBy` y totales enviados por el cliente; rechazar `id` existentes en lugar de reemplazarlos; validar con un esquema explícito. No reemplazar datos ilegibles con la semilla: detener el arranque y avisar.
-3. **PostgreSQL transaccional.** Definir interfaces de repositorio a partir de las clases actuales, agregar una implementación PostgreSQL con migraciones versionadas y transacciones por pedido, y migrar los datos JSON con un script que se pueda verificar. Las rutas no deberían cambiar.
-4. **Autenticación real.** Sesiones persistentes con expiración y revocación, obligar a cambiar las contraseñas iniciales, quitar el PIN heredado, y autenticación de clientes en la web en lugar de la simulada.
-5. **Integración n8n idempotente.** Eventos de pedido emitidos después de confirmar la transacción (patrón *outbox*), con clave de idempotencia por pedido y evento, reintentos con espera creciente y firma de webhooks.
+1. **Admisión de pedidos y precios.** En `POST /api/pedidos`, tomar los precios del catálogo como ya hace caja; ignorar `status`, `payVerified`, `createdBy` y totales enviados por el cliente; rechazar `id` existentes en lugar de reemplazarlos; validar con un esquema explícito. No reemplazar datos ilegibles con la semilla: detener el arranque y avisar.
+2. **PostgreSQL transaccional.** Definir interfaces de repositorio a partir de las clases actuales, agregar una implementación PostgreSQL con migraciones versionadas y transacciones por pedido, y migrar los datos JSON con un script que se pueda verificar. Las rutas no deberían cambiar.
+3. **Autenticación real.** Sesiones persistentes con expiración y revocación, obligar a cambiar las contraseñas iniciales, quitar el PIN heredado, y autenticación de clientes en la web en lugar de la simulada.
+4. **Integración n8n idempotente.** Eventos de pedido emitidos después de confirmar la transacción (patrón *outbox*), con clave de idempotencia por pedido y evento, reintentos con espera creciente y firma de webhooks.
