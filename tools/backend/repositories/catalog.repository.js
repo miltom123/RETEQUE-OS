@@ -2,6 +2,7 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const { sanitizeId, sanitizeString } = require('../sanitize');
+const { readJsonFile } = require('./json-file');
 
 class CatalogRepository {
   constructor(filePath, logger = console) {
@@ -11,18 +12,11 @@ class CatalogRepository {
     this.init();
   }
 
+  // Un catálogo ilegible detiene el arranque: antes quedaba vacío y el siguiente guardado lo sobrescribía
   init() {
-    try {
-      if (fs.existsSync(this.filePath)) {
-        const parsed = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
-        if (Array.isArray(parsed)) {
-          this.products = parsed;
-          this.logger.log(`[Catalog] Catálogo cargado: ${this.products.length} productos.`);
-          return;
-        }
-      }
-    } catch (e) {
-      this.logger.warn('[Catalog] Error al leer catalog.db.json:', e.message);
+    if (fs.existsSync(this.filePath)) {
+      this.products = readJsonFile(this.filePath, { isValid: Array.isArray, expected: 'una lista de productos' });
+      this.logger.log(`[Catalog] Catálogo cargado: ${this.products.length} productos.`);
     }
   }
 

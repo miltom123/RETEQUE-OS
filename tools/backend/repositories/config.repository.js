@@ -1,6 +1,7 @@
 // Fuente Única de Verdad: Repositorio de Configuración del Negocio (data/store.config.json)
 const fs = require('fs');
 const crypto = require('crypto');
+const { readJsonFile } = require('./json-file');
 
 class ConfigRepository {
   constructor(filePath, logger = console) {
@@ -10,13 +11,13 @@ class ConfigRepository {
     this.init();
   }
 
+  // Una configuración ilegible detiene el arranque: antes quedaba vacía y el siguiente guardado la sobrescribía
   init() {
-    try {
-      if (fs.existsSync(this.filePath)) {
-        this.config = JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
-      }
-    } catch (e) {
-      this.logger.warn('[Config] Error al leer store.config.json:', e.message);
+    if (fs.existsSync(this.filePath)) {
+      this.config = readJsonFile(this.filePath, {
+        isValid: value => Boolean(value) && typeof value === 'object' && !Array.isArray(value),
+        expected: 'un objeto de configuración'
+      });
     }
   }
 
