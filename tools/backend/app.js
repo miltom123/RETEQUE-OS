@@ -61,7 +61,7 @@ function createApp(options = {}) {
   });
   const deps = { repos, auth, checkOrderRateLimit: createOrderRateLimiter(), logger, paths };
 
-  async function handleRequest(req, res) {
+  async function routeRequest(req, res) {
     handleCors(req, res);
 
     if (req.method === 'OPTIONS') {
@@ -70,8 +70,14 @@ function createApp(options = {}) {
       return;
     }
 
-    const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-    const pathname = decodeURIComponent(parsedUrl.pathname);
+    let parsedUrl, pathname;
+    try {
+      parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+      pathname = decodeURIComponent(parsedUrl.pathname);
+    } catch (error) {
+      // URL o cabecera Host mal formadas (por ejemplo /%E0%A4%A): antes detenían el proceso
+      return sendJson(res, 400, { ok: false, error: 'Dirección de la petición inválida.' });
+    }
 
     const currentToken = extractToken(req);
     const currentUser = auth.isValidSession(currentToken) ? auth.sessionUser(currentToken) : null;
@@ -84,6 +90,17 @@ function createApp(options = {}) {
       if (await route(ctx, deps)) return;
     }
     serveStatic(ctx, deps);
+  }
+
+  // Ningún error de una petición debe detener el servidor: se registra y se responde 500
+  async function handleRequest(req, res) {
+    try {
+      await routeRequest(req, res);
+    } catch (error) {
+      logger.warn('[HTTP] Error no controlado en', req.method, req.url, '-', error && error.message);
+      if (!res.headersSent) sendJson(res, 500, { ok: false, error: 'Error interno del servidor.' });
+      else res.destroy();
+    }
   }
 
   const server = http.createServer(handleRequest);
