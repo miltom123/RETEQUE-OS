@@ -1,11 +1,19 @@
 /**
  * /api/pedidos y /api/pedidos/:id
- * Comportamiento conservado: POST /api/pedidos sigue siendo público y acepta precios,
- * status y payVerified enviados por el cliente. Se corregirá en la etapa de admisión y precios.
+ * POST /api/pedidos es exclusivo del administrador (regla en app.js). El servidor fija estado,
+ * verificación de pago, autoría y fecha; el pago se verifica después con PATCH.
+ * Caja registra pedidos en /api/caja/pedidos con precios del catálogo.
  */
+const crypto = require('crypto');
 const { extractToken, readJsonBody, sendJson } = require('../http');
-const { sanitizeId } = require('../sanitize');
+const { cleanId, sanitizeId } = require('../sanitize');
 const { canAccessOrder } = require('../auth');
+
+function newOrderId(ordersRepo) {
+  let id;
+  do { id = 'RTQ-' + crypto.randomBytes(6).toString('hex').toUpperCase(); } while (ordersRepo.getById(id));
+  return id;
+}
 
 async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { repos, auth, checkOrderRateLimit, logger }) {
   if (pathname === '/api/pedidos') {
@@ -27,7 +35,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
       return sendJson(res, 200, orders);
     }
 
-    // POST: Crear nuevo pedido (Público desde Web y App con validación y límite de tasa)
+    // POST: Registrar pedido desde el panel del administrador (sesión validada en app.js)
     if (req.method === 'POST') {
       try {
         const clientIp = req.socket.remoteAddress || 'unknown';
@@ -37,15 +45,24 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
         }
 
         const payload = await readJsonBody(req);
-        if (!payload || typeof payload !== 'object') {
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
           return sendJson(res, 400, { ok: false, error: 'Cuerpo de pedido inválido' });
         }
 
-        if (currentUser && currentUser.role === 'cashier') return sendJson(res, 403, { error: 'Registra pedidos de caja desde /api/caja/pedidos.' });
-        if (repos.orders.getById(sanitizeId(payload.id))) return sendJson(res, 409, { error: 'El pedido ya existe.' });
-        payload.createdAt = new Date().toISOString();
-        payload.createdBy = null;
-        const newOrder = repos.orders.insert(payload);
+        // El id se decide una sola vez: el del cliente si es válido, si no uno generado por el servidor
+        const requestedId = cleanId(payload.id);
+        if (requestedId && repos.orders.getById(requestedId)) return sendJson(res, 409, { error: 'El pedido ya existe.' });
+        const id = requestedId || newOrderId(repos.orders);
+
+        const newOrder = repos.orders.insert({
+          ...payload,
+          id,
+          channel: ['web', 'app', 'whatsapp'].includes(payload.channel) ? payload.channel : 'app',
+          status: 'new',
+          payVerified: false,
+          createdAt: new Date().toISOString(),
+          createdBy: currentUser.username
+        });
         logger.log(`[PEDIDO CREADO] ${newOrder.id} - ${newOrder.customer} - Total: S/ ${newOrder.total.toFixed(2)} (${newOrder.channel})`);
         return sendJson(res, 201, { ok: true, order: newOrder });
       } catch (err) {

@@ -232,7 +232,10 @@ async function runTests() {
       items: [{ name: 'Test', qty: 1, price: 10 }],
       total: 10
     };
-    const res = await request('POST', '/api/pedidos', maliciousPayload);
+    if ((await request('POST', '/api/pedidos', maliciousPayload)).status !== 401) {
+      throw new Error('POST /api/pedidos sin sesión debe responder 401');
+    }
+    const res = await request('POST', '/api/pedidos', maliciousPayload, { 'Authorization': `Bearer ${authToken}` });
     if (res.status !== 201 || !res.body.order) {
       throw new Error(`Fallo creación pedido: ${res.status}`);
     }
@@ -324,7 +327,7 @@ async function runTests() {
       subtotal: 0.10, // Intento de manipulación de cliente
       total: 0.10     // Intento de pagar 10 centavos por S/ 55.00
     };
-    const res = await request('POST', '/api/pedidos', tamperedOrder);
+    const res = await request('POST', '/api/pedidos', tamperedOrder, { 'Authorization': `Bearer ${authToken}` });
     if (res.status !== 201 || !res.body.order) {
       throw new Error(`Fallo creación pedido de prueba: ${res.status}`);
     }

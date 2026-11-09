@@ -193,13 +193,11 @@ class OrderRepository {
       total
     };
 
-    // Si ya existe por ID, se ignora o actualiza para evitar duplicados
-    const existingIdx = this.orders.findIndex(o => o.id === sanitized.id);
-    if (existingIdx >= 0) {
-      this.orders[existingIdx] = sanitized;
-    } else {
-      this.orders.unshift(sanitized);
+    // Un pedido existente nunca se reemplaza al insertar; los cambios van por updateStatus/verifyPayment
+    if (this.orders.some(o => o.id === sanitized.id)) {
+      throw new Error('El pedido ya existe.');
     }
+    this.orders.unshift(sanitized);
 
     this.saveSync();
     return sanitized;

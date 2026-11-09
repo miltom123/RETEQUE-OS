@@ -1,8 +1,13 @@
 // Funciones de Sanitización compartidas por repositorios y rutas
+
+// Deja solo letras, números, guion y guion bajo; devuelve '' si no queda nada válido
+function cleanId(id) {
+  if (typeof id !== 'string') return '';
+  return id.trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
+}
+
 function sanitizeId(id) {
-  if (typeof id !== 'string') return `RTQ-${Math.floor(2000 + Math.random() * 8000)}`;
-  const cleaned = id.trim().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 40);
-  return cleaned || `RTQ-${Math.floor(2000 + Math.random() * 8000)}`;
+  return cleanId(id) || `RTQ-${Math.floor(2000 + Math.random() * 8000)}`;
 }
 
 function sanitizeString(str) {
@@ -22,4 +27,4 @@ function sanitizeUrl(url) {
   return '';
 }
 
-module.exports = { sanitizeId, sanitizeString, sanitizeUrl };
+module.exports = { cleanId, sanitizeId, sanitizeString, sanitizeUrl };
