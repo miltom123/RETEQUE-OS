@@ -41,7 +41,9 @@ function startServer({ server, paths }) {
     console.log(`✓ API REST Pedidos:      http://localhost:${PORT}/api/pedidos`);
     console.log('✓ Acceso del equipo:     administrador / caja');
     if (legacyPinEnabled) console.log('✓ Acceso PIN heredado:   habilitado expresamente');
-    console.log(`✓ Persistencia en disco: ${paths.ordersFile}`);
+    console.log(process.env.RTQ_STORAGE === 'postgres'
+      ? '✓ Persistencia: PostgreSQL mediante Supabase (solo backend)'
+      : `✓ Persistencia en disco: ${paths.ordersFile}`);
 
     if (BIND_ALL && localIp) {
       console.log(`✓ Acceso desde celular:  http://${localIp}:${PORT} (WiFi local)`);

@@ -1,4 +1,5 @@
 // Ejecuta las pruebas en una copia temporal: nunca modifica pedidos del negocio.
+const { prepareStorage, readStored } = require('./test-storage');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -23,6 +24,7 @@ async function run() {
   const testOrders = JSON.parse(fs.readFileSync(ordersFile, 'utf8'));
   testOrders.push({ ...testOrders[0], id: 'RTQ-OLD', createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString() });
   fs.writeFileSync(ordersFile, JSON.stringify(testOrders));
+  await prepareStorage(path.join(tempRoot, 'data'));
   server = spawn(process.execPath, [path.join(tempRoot, 'tools', 'server.js'), '--port', '3099'], { env, stdio: 'ignore' });
   for (let attempt = 0; attempt < 30; attempt++) {
     try { await request('/api/auth/verify'); break; } catch (e) { await new Promise(resolve => setTimeout(resolve, 100)); }
@@ -96,7 +98,7 @@ async function run() {
   assert.equal((await mutate('/api/users', adminHeaders, {username:'caja_test',name:'Duplicado',password:'5678'})).status, 400);
   const listing = await request('/api/users', {headers:adminHeaders});
   assert.ok(listing.body.every(user => !user.passwordHash && !user.salt));
-  const storedUsers = fs.readFileSync(path.join(tempRoot,'data','users.db.json'),'utf8');
+  const storedUsers = JSON.stringify(await readStored(path.join(tempRoot,'data'), 'users'));
   assert.ok(!storedUsers.includes('"password":'));
   const newLogin = await login({username:'caja_test',password:'5678'});
   assert.equal(newLogin.status,200);

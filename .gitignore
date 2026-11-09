@@ -16,3 +16,11 @@ desktop.ini
 
 # Clon anidado de otro repositorio (manuelandredp-gif/PROPUESTA-RETEQUE-OS.git)
 PROPUESTA RETEQUEÑOS/
+
+# Secretos del backend
+.env
+.env.*
+!.env.example
+node_modules/
+supabase/.temp/
+supabase/.branches/

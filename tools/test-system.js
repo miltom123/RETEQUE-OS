@@ -9,6 +9,7 @@
  * 6. Ciclo de vida del catálogo: Crear, conmutar stock y eliminar en disco (Phase 2)
  */
 
+const { prepareStorage, readStored } = require('./test-storage');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -42,8 +43,10 @@ if (!runningInTemp) {
   runInTemporaryCopy();
 } else {
   process.argv = ['node', 'tools/server.js', '--port', '3098', '--pin', '2026'];
-  require('./server.js');
-  setTimeout(runTests, 500);
+  prepareStorage(path.join(projectRoot, 'data')).then(() => {
+    require('./server.js');
+    setTimeout(runTests, 500);
+  }).catch(() => { console.error('No se pudo preparar el almacenamiento temporal'); process.exitCode = 1; });
 }
 
 function request(method, path, body = null, headers = {}) {
@@ -140,7 +143,7 @@ async function runTests() {
     });
     if (res.status !== 200 || !res.body.product) throw new Error(`Fallo guardado: ${res.status}`);
 
-    const dbRaw = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'catalog.db.json'), 'utf8');
+    const dbRaw = JSON.stringify(await readStored(path.resolve(__dirname, '..', 'data'), 'products'));
     if (!dbRaw.includes('test_tequeno_premium')) throw new Error('No se persistió en catalog.db.json');
   });
 
@@ -161,7 +164,7 @@ async function runTests() {
     });
     if (res.status !== 200 || !res.body.ok) throw new Error(`Fallo borrado: ${res.status}`);
 
-    const dbRaw = fs.readFileSync(path.resolve(__dirname, '..', 'data', 'catalog.db.json'), 'utf8');
+    const dbRaw = JSON.stringify(await readStored(path.resolve(__dirname, '..', 'data'), 'products'));
     if (dbRaw.includes('test_tequeno_premium')) throw new Error('El producto no fue removido del archivo');
   });
 
@@ -354,7 +357,7 @@ async function runTests() {
   // Limpieza Post-Pruebas: Restaurar estado original de pedidos en disco
   try {
     const dbPath = path.resolve(__dirname, '..', 'data', 'orders.db.json');
-    if (fs.existsSync(dbPath)) {
+    if (process.env.RTQ_STORAGE !== 'postgres' && fs.existsSync(dbPath)) {
       const orders = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
       const cleaned = orders
         .filter(o => !o.id.includes('XSS') && !o.id.includes('TAMPERED'))

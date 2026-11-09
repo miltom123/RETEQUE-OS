@@ -74,6 +74,8 @@ const app = createApp({ dataDir: carpetaTemporal, logger: { log() {}, warn() {} 
 
 ## Siguientes etapas propuestas
 
+La implementación revisable de PostgreSQL/Supabase se describe en [POSTGRESQL_SUPABASE.md](POSTGRESQL_SUPABASE.md). JSON continúa como valor predeterminado. Se verificó SQL en PostgreSQL 17 temporal; la validación con Supabase real y la autorización de operaciones remotas siguen pendientes.
+
 1. **PostgreSQL transaccional.** Definir interfaces de repositorio a partir de las clases actuales, agregar una implementación PostgreSQL con migraciones versionadas y transacciones por pedido, y migrar los datos JSON con un script que se pueda verificar. Las rutas no deberían cambiar.
 2. **Autenticación real.** Sesiones persistentes con expiración y revocación, obligar a cambiar las contraseñas iniciales, quitar el PIN heredado, y autenticación de clientes en la web en lugar de la simulada.
 3. **Integración n8n idempotente.** Será también la entrada pública de pedidos (web o WhatsApp), con `productId` del catálogo, precios calculados en el servidor y clave de idempotencia. Eventos de pedido emitidos después de confirmar la transacción (patrón *outbox*), con clave de idempotencia por pedido y evento, reintentos con espera creciente y firma de webhooks.

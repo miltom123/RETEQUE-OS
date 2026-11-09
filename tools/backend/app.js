@@ -2,7 +2,7 @@
  * Composición de la aplicación HTTP.
  *
  * Importar este módulo no abre puertos ni toca archivos. createApp() crea los repositorios
- * (que sí leen y, si falta algún archivo, escriben en dataDir) y devuelve un http.Server
+ * (JSON lee y puede inicializar dataDir; PostgreSQL nunca usa esos archivos) y devuelve un http.Server
  * sin escuchar. Quien llama decide cuándo hacer listen(): tools/server.js en producción
  * local, o las pruebas con un directorio de datos temporal.
  */
@@ -48,15 +48,22 @@ function createApp(options = {}) {
   paths.catalogFile = path.join(paths.dataDir, 'catalog.db.json');
   const logger = options.logger || console;
 
-  // Mismo orden de creación que la versión monolítica
-  const users = new UsersRepository(paths.dataDir);
-  const config = new ConfigRepository(paths.configFile, logger);
-  const catalog = new CatalogRepository(paths.catalogFile, logger);
-  const orders = new OrderRepository(paths.ordersFile, logger);
-  const repos = { users, config, catalog, orders };
+  const storage = options.storage || process.env.RTQ_STORAGE || 'json';
+  if (!['json', 'postgres'].includes(storage)) throw new Error('RTQ_STORAGE debe ser json o postgres.');
+  let repos;
+  if (storage === 'postgres') {
+    const { createPostgresRepositories } = require('./repositories/postgres.repositories');
+    repos = createPostgresRepositories(options.postgres);
+  } else {
+    const users = new UsersRepository(paths.dataDir);
+    const config = new ConfigRepository(paths.configFile, logger);
+    const catalog = new CatalogRepository(paths.catalogFile, logger);
+    const orders = new OrderRepository(paths.ordersFile, logger);
+    repos = { users, config, catalog, orders };
+  }
 
   const auth = createAuth({
-    usersRepo: users,
+    usersRepo: repos.users,
     adminPin: options.adminPin || '2026',
     legacyPinEnabled: Boolean(options.legacyPinEnabled)
   });
@@ -81,7 +88,7 @@ function createApp(options = {}) {
     }
 
     const currentToken = extractToken(req);
-    const currentUser = auth.isValidSession(currentToken) ? auth.sessionUser(currentToken) : null;
+    const currentUser = (await auth.isValidSession(currentToken)) ? auth.sessionUser(currentToken) : null;
     const adminOnly = isAdminOnly(pathname, req.method);
     if (adminOnly && !currentUser) return sendJson(res, 401, { error: 'Inicia sesión.' });
     if (adminOnly && currentUser.role !== 'admin') return sendJson(res, 403, { error: 'Esta acción es exclusiva del administrador.' });
@@ -98,7 +105,7 @@ function createApp(options = {}) {
     try {
       await routeRequest(req, res);
     } catch (error) {
-      logger.warn('[HTTP] Error no controlado en', req.method, req.url, '-', error && error.message);
+      logger.warn('[HTTP] Error no controlado en', req.method, '- operación fallida');
       if (!res.headersSent) sendJson(res, 500, { ok: false, error: 'Error interno del servidor.' });
       else res.destroy();
     }
