@@ -4,6 +4,7 @@ import { MessageCircle, CheckCircle2, ShieldCheck, Utensils, User, UserCheck } f
 import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { useAuthStore } from '../../store/authStore';
+import { customerAccountsEnabled } from '../../config/features';
 import { roundMoney } from '../../lib/money';
 import { isValidName, isValidPeruMobile } from '../../lib/validation';
 import { formatOrderRequestMessage, openWhatsApp } from '../../lib/whatsapp';
@@ -26,15 +27,18 @@ export const OrderRequestPage: React.FC = () => {
     setField,
   } = useCheckoutStore();
 
+  // Con las cuentas desactivadas se ignora cualquier sesión de prueba que haya quedado en el navegador
+  const signedIn = customerAccountsEnabled && isAuthenticated;
+
   // Pre-llenar datos si el cliente tiene sesión iniciada y campos vacíos
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (signedIn && user) {
       if (!fullName && user.displayName) setField('fullName', user.displayName);
       if (!phone && user.phone) setField('phone', user.phone);
       if (!address && user.defaultAddress) setField('address', user.defaultAddress);
       if (!reference && user.defaultReference) setField('reference', user.defaultReference);
     }
-  }, [isAuthenticated, user, fullName, phone, address, reference, setField]);
+  }, [signedIn, user, fullName, phone, address, reference, setField]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSent, setIsSent] = useState(false);
@@ -200,7 +204,7 @@ export const OrderRequestPage: React.FC = () => {
             </p>
           </div>
 
-          {isAuthenticated ? (
+          {customerAccountsEnabled && (signedIn ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded-lg shrink-0">
               <User className="w-3 h-3 text-emerald-600" />
               <span>Cliente Identificado</span>
@@ -210,7 +214,7 @@ export const OrderRequestPage: React.FC = () => {
               <UserCheck className="w-3 h-3 text-emerald-600" />
               <span>Modo Invitado</span>
             </div>
-          )}
+          ))}
         </div>
 
         {/* Formulario de Contacto */}

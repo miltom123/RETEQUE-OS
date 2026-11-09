@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Product } from '../data/catalog';
 import type { Promotion } from '../data/promotions';
+import { designControlsEnabled } from '../config/features';
 
 export type ConfigurableItem = Product | Promotion;
 export type UiPlatform = 'default' | 'ios';
@@ -67,7 +68,7 @@ export const useUiStore = create<UiStore>()(
 
       // Device preview: si true muestra chasis de celular; si false layout responsive de producción
       devicePreview:
-        typeof window !== 'undefined'
+        designControlsEnabled && typeof window !== 'undefined'
           ? import.meta.env.VITE_DEVICE_PREVIEW === 'true' ||
             localStorage.getItem('retequenos-device-preview') === 'true'
           : false,
@@ -87,6 +88,9 @@ export const useUiStore = create<UiStore>()(
         platform: state.platform,
         devicePreview: state.devicePreview,
       }),
+      // Sin controles de diseño se ignora lo guardado, para que nadie quede en modo simulador o iOS
+      merge: (persisted, current) =>
+        designControlsEnabled ? { ...current, ...(persisted as Partial<UiStore>) } : current,
     }
   )
 );

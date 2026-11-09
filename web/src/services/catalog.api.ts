@@ -8,13 +8,16 @@ import { PRODUCTS } from '../data/catalog';
 
 let cachedCatalog: Product[] | null = null;
 
+// Misma ruta relativa que el resto de la web; VITE_API_URL solo si la API vive en otro dominio
+const CATALOG_URL = `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/api/catalog`;
+
 export async function fetchCatalog(): Promise<Product[]> {
   if (cachedCatalog && cachedCatalog.length > 0) {
     return cachedCatalog;
   }
 
   try {
-    const endpoints = ['/api/catalog', 'http://localhost:3000/api/catalog'];
+    const endpoints = [CATALOG_URL];
     for (const url of endpoints) {
       try {
         const res = await fetch(url, { cache: 'no-cache' });

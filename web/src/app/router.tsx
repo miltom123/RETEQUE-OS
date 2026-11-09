@@ -11,6 +11,7 @@ import { CremasPage } from '../pages/CremasPage';
 import { ProductDetailPage } from '../pages/ProductDetailPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { useCartStore } from '../store/cartStore';
+import { customerAccountsEnabled } from '../config/features';
 
 // Mobile App Real Frontend Pages & Layout
 import { MobileLayout } from '../mobile/layouts/MobileLayout';
@@ -63,6 +64,10 @@ const withMobileLayout = (
   </MobileLayout>
 );
 
+/** Las páginas de cuenta solo existen si las cuentas de cliente están activadas; si no, vuelven al inicio. */
+const accountPage = (page: React.ReactNode) =>
+  customerAccountsEnabled ? page : <Navigate to="/app" replace />;
+
 export const AppRouter: React.FC = () => {
   return (
     <>
@@ -80,10 +85,10 @@ export const AppRouter: React.FC = () => {
         <Route path="/app/favoritos" element={withMobileLayout(<MobileFavoritesPage />, 'Mis Favoritos', true)} />
         <Route path="/app/carrito" element={withMobileLayout(<MobileCartPage />, 'Mi Carrito de Pedido', true)} />
         <Route path="/app/pedido" element={withMobileLayout(<MobileOrderRequestPage />, 'Completar Pedido', true, true)} />
-        <Route path="/app/login" element={withMobileLayout(<MobileLoginPage />, 'Iniciar Sesión', true, true)} />
-        <Route path="/app/register" element={withMobileLayout(<MobileRegisterPage />, 'Crear Cuenta', true, true)} />
-        <Route path="/app/forgot-password" element={withMobileLayout(<MobileForgotPasswordPage />, 'Recuperar Contraseña', true, true)} />
-        <Route path="/app/profile" element={withMobileLayout(<MobileProfilePage />, 'Mi Perfil', true)} />
+        <Route path="/app/login" element={accountPage(withMobileLayout(<MobileLoginPage />, 'Iniciar Sesión', true, true))} />
+        <Route path="/app/register" element={accountPage(withMobileLayout(<MobileRegisterPage />, 'Crear Cuenta', true, true))} />
+        <Route path="/app/forgot-password" element={accountPage(withMobileLayout(<MobileForgotPasswordPage />, 'Recuperar Contraseña', true, true))} />
+        <Route path="/app/profile" element={accountPage(withMobileLayout(<MobileProfilePage />, 'Mi Perfil', true))} />
         <Route path="/app/offline" element={withMobileLayout(<MobileOfflinePage />, 'Sin Conexión', true)} />
 
         {/* ============================================================== */}

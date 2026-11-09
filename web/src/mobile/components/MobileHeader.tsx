@@ -5,6 +5,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useUiStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
+import { customerAccountsEnabled } from '../../config/features';
 
 interface MobileHeaderProps {
   title?: string;
@@ -141,17 +142,19 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack }) =
           </Link>
         )}
 
-        <Link
-          to="/app/profile"
-          aria-label="Mi Perfil"
-          className="w-8.5 h-8.5 rounded-full bg-white border border-[#EFE6D6] flex items-center justify-center text-[#6B6662] hover:text-[#FF3038] hover:bg-[#FFF2DF] active:scale-95 transition shadow-sm overflow-hidden"
-        >
-          {isAuthenticated && user?.photoURL ? (
-            <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
-          ) : (
-            <User className={`w-4 h-4 ${isAuthenticated ? 'text-emerald-600' : ''}`} />
-          )}
-        </Link>
+        {customerAccountsEnabled && (
+          <Link
+            to="/app/profile"
+            aria-label="Mi Perfil"
+            className="w-8.5 h-8.5 rounded-full bg-white border border-[#EFE6D6] flex items-center justify-center text-[#6B6662] hover:text-[#FF3038] hover:bg-[#FFF2DF] active:scale-95 transition shadow-sm overflow-hidden"
+          >
+            {isAuthenticated && user?.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName} className="w-full h-full object-cover" />
+            ) : (
+              <User className={`w-4 h-4 ${isAuthenticated ? 'text-emerald-600' : ''}`} />
+            )}
+          </Link>
+        )}
 
         {location.pathname !== '/app/carrito' && (
           <Link
