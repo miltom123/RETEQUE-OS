@@ -5,6 +5,7 @@ import { BottomNavigation } from '../components/BottomNavigation';
 import { Toast } from '../../components/layout/Toast';
 import { Wifi, Smartphone, Monitor, Apple, SmartphoneCharging } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
+import { designControlsEnabled } from '../../config/features';
 
 interface MobileLayoutProps {
   children?: React.ReactNode;
@@ -123,45 +124,48 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
         </div>
       )}
 
-      {/* 
+      {/*
         SELECTOR FLOTANTE DEV / PREVIEW / PLATAFORMA (Visible en Desktop)
-        Permite al cliente, desarrollador o tester cambiar entre el simulador y la web responsive,
+        Permite al desarrollador o tester cambiar entre el simulador y la web responsive,
         y alternar entre estilo Android y estilo iOS al instante.
+        Solo en desarrollo o con VITE_DEVICE_PREVIEW=true: los clientes no lo ven.
       */}
-      <aside
-        aria-label="Controles de diseño y vista previa"
-        className="fixed bottom-4 right-4 z-50 hidden md:flex items-center gap-2 bg-white/95 backdrop-blur-lg border border-[#EFE6D6] p-1.5 rounded-2xl shadow-xl text-xs font-semibold select-none text-[#242424]"
-      >
-        <button
-          type="button"
-          onClick={toggleDevicePreview}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition cursor-pointer ${
-            devicePreview
-              ? 'bg-[#FF3038] text-white shadow-sm'
-              : 'hover:bg-[#FFF2DF] text-[#6B6662]'
-          }`}
-          title="Alternar entre modo simulador de smartphone y diseño web responsive"
+      {designControlsEnabled && (
+        <aside
+          aria-label="Controles de diseño y vista previa"
+          className="fixed bottom-4 right-4 z-50 hidden md:flex items-center gap-2 bg-white/95 backdrop-blur-lg border border-[#EFE6D6] p-1.5 rounded-2xl shadow-xl text-xs font-semibold select-none text-[#242424]"
         >
-          {devicePreview ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
-          <span>{devicePreview ? 'Simulador Celular' : 'Web Responsive'}</span>
-        </button>
+          <button
+            type="button"
+            onClick={toggleDevicePreview}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition cursor-pointer ${
+              devicePreview
+                ? 'bg-[#FF3038] text-white shadow-sm'
+                : 'hover:bg-[#FFF2DF] text-[#6B6662]'
+            }`}
+            title="Alternar entre modo simulador de smartphone y diseño web responsive"
+          >
+            {devicePreview ? <Smartphone className="w-3.5 h-3.5" /> : <Monitor className="w-3.5 h-3.5" />}
+            <span>{devicePreview ? 'Simulador Celular' : 'Web Responsive'}</span>
+          </button>
 
-        <div className="w-[1px] h-4 bg-[#EFE6D6]" />
+          <div className="w-[1px] h-4 bg-[#EFE6D6]" />
 
-        <button
-          type="button"
-          onClick={() => setPlatform(isIos ? 'default' : 'ios')}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition cursor-pointer ${
-            isIos
-              ? 'bg-[#242424] text-white shadow-sm'
-              : 'hover:bg-[#FFF2DF] text-[#6B6662]'
-          }`}
-          title="Alternar tokens de estilo entre Android (Material 3) y Apple (iOS Cupertino)"
-        >
-          {isIos ? <Apple className="w-3.5 h-3.5" /> : <SmartphoneCharging className="w-3.5 h-3.5" />}
-          <span>{isIos ? 'Modo iOS' : 'Modo Android'}</span>
-        </button>
-      </aside>
+          <button
+            type="button"
+            onClick={() => setPlatform(isIos ? 'default' : 'ios')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition cursor-pointer ${
+              isIos
+                ? 'bg-[#242424] text-white shadow-sm'
+                : 'hover:bg-[#FFF2DF] text-[#6B6662]'
+            }`}
+            title="Alternar tokens de estilo entre Android (Material 3) y Apple (iOS Cupertino)"
+          >
+            {isIos ? <Apple className="w-3.5 h-3.5" /> : <SmartphoneCharging className="w-3.5 h-3.5" />}
+            <span>{isIos ? 'Modo iOS' : 'Modo Android'}</span>
+          </button>
+        </aside>
+      )}
     </div>
   );
 };
