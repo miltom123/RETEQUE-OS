@@ -5,11 +5,20 @@ import { PRODUCTS, CREMAS_EXTRAS } from '../data/catalog';
 import { useCartStore } from '../store/cartStore';
 import { useUiStore } from '../store/uiStore';
 import { formatMoney } from '../lib/money';
-import { openWhatsApp } from '../lib/whatsapp';
+import { kitchenDetails, specFromItem, type LineSpec } from '../lib/cartSpec';
+import { UPGRADE_REFS } from '../data/serverRefs';
 import { QuantityStepper } from '../components/ui/QuantityStepper';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 import { NotFoundPage } from './NotFoundPage';
 import { siteConfig } from '../config/site';
+
+// Crema extra (id de la carta) -> crema suelta que vende la tienda
+const CREAM_ADDONS: Record<string, string> = {
+  'mayonesa-ajo': 'extra-crema-mayo',
+  'salsa-tocino': 'extra-crema-tocino',
+  mayopalta: 'extra-crema-palta',
+  'aji-especial': 'extra-crema-aji',
+};
 
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -42,7 +51,10 @@ const ProductDetail: React.FC<{ product: ProductType }> = ({ product }) => {
 
   const selectedPres = product.presentations?.find((p) => p.id === selectedPresentationId);
   const baseUnitPrice = selectedPres ? selectedPres.price : product.basePrice || 0;
-  const cremasPrice = selectedCremas.length * 2.0;
+  const cremasPrice = selectedCremas.reduce(
+    (sum, cId) => sum + (CREMAS_EXTRAS.find((c) => c.id === cId)?.price ?? 0),
+    0
+  );
   const unitPrice = baseUnitPrice + cremasPrice;
   const totalPrice = unitPrice * quantity;
 
@@ -52,8 +64,25 @@ const ProductDetail: React.FC<{ product: ProductType }> = ({ product }) => {
     setSelectedCremas((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
   };
 
-  const handleAddToCart = () => {
-    if (!addItem({
+  // Línea para el servidor: en los tequeños las cremas son extras del producto;
+  // en lo demás se cobran como cremas sueltas
+  const buildSpec = (): LineSpec | undefined => {
+    const base = specFromItem({ productId: product.id, selectedPresentation: selectedPres?.label });
+    if (!base) return undefined;
+    const spec: LineSpec = { ...base, details: kitchenDetails([notes.trim()]) };
+    if (selectedCremas.length === 0) return spec;
+    if (product.category === 'tequenos') {
+      return { ...spec, extras: Object.fromEntries(selectedCremas.map((id) => [id, 1])) };
+    }
+    const addons = selectedCremas
+      .map((id) => UPGRADE_REFS[CREAM_ADDONS[id]])
+      .filter(Boolean)
+      .map((ref) => ({ ...ref, qty: 1 }));
+    return { ...spec, addons };
+  };
+
+  const addToCart = (): boolean =>
+    addItem({
       productId: product.id,
       name: product.name,
       image: product.image,
@@ -62,30 +91,20 @@ const ProductDetail: React.FC<{ product: ProductType }> = ({ product }) => {
       selectedPresentation: selectedPres ? selectedPres.label : undefined,
       selectedOptions: cremaLabels.map((c) => `Crema extra: ${c}`),
       notes: notes.trim() || undefined,
-    })) return;
+      spec: buildSpec(),
+    });
+
+  const handleAddToCart = () => {
+    if (!addToCart()) return;
     setAddedToast(true);
     showToast({ message: `Agregado: ${quantity} × ${product.name}`, action: 'cart' });
     setTimeout(() => setAddedToast(false), 1500);
   };
 
+  // El pedido se registra desde el carrito, donde el cliente deja sus datos y recibe el código
   const handleBuyWhatsApp = () => {
-    const presText = selectedPres ? ` (${selectedPres.label})` : '';
-
-    const lines = [
-      '🥟 *PEDIDO RETEQUEÑOS* 👋',
-      '',
-      'Quiero realizar la siguiente consulta / pedido rápido:',
-      '',
-      `📦 *${quantity} x ${product.name}*${presText} — ${formatMoney(totalPrice)}`,
-    ];
-    if (cremaLabels.length > 0) lines.push(`   • Cremas extra: ${cremaLabels.join(', ')}`);
-    if (notes.trim()) lines.push(`   • Indicaciones: ${notes.trim()}`);
-    lines.push('');
-    lines.push(`💰 *TOTAL:* ${formatMoney(totalPrice)}`);
-    lines.push('🛵 *ENTREGA:* Delivery / Recojo a coordinar');
-    lines.push('');
-    lines.push('Deseo coordinar la entrega y forma de pago. ¡Muchas gracias!');
-    openWhatsApp(lines.join('\n'));
+    if (!addToCart()) return;
+    openCart();
   };
 
   return (
@@ -198,7 +217,7 @@ const ProductDetail: React.FC<{ product: ProductType }> = ({ product }) => {
                 <span className="text-[11px] font-medium text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full">Opcional</span>
               </div>
               <span className="text-xs text-neutral-500 font-medium">
-                Cremas adicionales de 2 oz — <span className="font-bold text-neutral-800">S/ 2.00 c/u</span>
+                Cremas adicionales de 2 oz — <span className="font-bold text-neutral-800">{formatMoney(CREMAS_EXTRAS[0]?.price ?? 2)} c/u</span>
               </span>
             </div>
 

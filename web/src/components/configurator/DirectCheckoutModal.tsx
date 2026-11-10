@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Bike, Store, MessageCircle } from 'lucide-react';
+import { X, Bike, Store, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { formatMoney } from '../../lib/money';
 import { useCheckoutStore } from '../../store/checkoutStore';
 
@@ -19,6 +19,10 @@ interface DirectCheckoutModalProps {
   includesDrink: boolean;
   selectedDrinkName?: string;
   errors: Record<string, string>;
+  sending?: boolean;
+  submitError?: string | null;
+  /** Pedido ya registrado: se muestra su código y el total que calculó el servidor. */
+  order?: { code: string; total: number; whatsappUrl: string | null } | null;
 }
 
 export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
@@ -37,10 +41,52 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
   includesDrink,
   selectedDrinkName,
   errors,
+  sending = false,
+  submitError,
+  order,
 }) => {
   const { fullName, phone, deliveryType, address, setField } = useCheckoutStore();
 
   if (!isOpen) return null;
+
+  if (order) {
+    return (
+      <div className="fixed inset-0 z-[10010] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="modal-in bg-surface rounded-[18px] max-w-lg w-full p-6 shadow-2xl space-y-4 text-center">
+          <CheckCircle2 className="w-12 h-12 text-[#16B959] mx-auto" aria-hidden="true" />
+          <div className="space-y-1">
+            <h3 className="text-lg font-extrabold tracking-tight text-ink">Registramos tu pedido</h3>
+            <p className="text-2xl font-black text-[#D31728] tracking-wide">{order.code}</p>
+            <p className="text-sm text-neutral-600">
+              Total {formatMoney(order.total)}. Envía el mensaje de WhatsApp con este código para que lo confirmemos.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {order.whatsappUrl && (
+              <a
+                href={order.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-11 rounded-xl bg-[#16B959] hover:bg-[#13A24D] text-white text-sm font-black flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4 fill-white" aria-hidden="true" />
+                Abrir WhatsApp
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className={`h-11 rounded-xl border border-neutral-300 text-neutral-800 text-sm font-bold hover:bg-neutral-50 cursor-pointer ${
+                order.whatsappUrl ? '' : 'col-span-2'
+              }`}
+            >
+              Listo
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[10010] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -51,7 +97,7 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
               Datos para tu pedido en Tacna
             </h3>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Se enviará tu pedido detallado a nuestro WhatsApp oficial.
+              Registramos tu pedido y lo confirmas por nuestro WhatsApp oficial con su código.
             </p>
           </div>
           <button
@@ -117,9 +163,9 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => setField('deliveryType', 'recojo')}
+                onClick={() => setField('deliveryType', 'pickup')}
                 className={`p-2.5 rounded-xl border-2 flex items-center justify-center gap-2 font-bold cursor-pointer ${
-                  deliveryType === 'recojo'
+                  deliveryType === 'pickup'
                     ? 'border-[#D31728] bg-[#FFF0F1] text-[#D31728]'
                     : 'border-neutral-200 text-neutral-600'
                 }`}
@@ -177,13 +223,20 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
           )}
         </div>
 
+        {submitError && (
+          <p role="alert" className="text-xs font-bold text-[#D31728]">
+            {submitError}
+          </p>
+        )}
+
         <button
           type="button"
           onClick={onConfirm}
-          className="w-full h-12 bg-[#16B959] hover:bg-[#13A24D] text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
+          disabled={sending}
+          className="w-full h-12 bg-[#16B959] hover:bg-[#13A24D] disabled:opacity-60 disabled:cursor-wait text-white font-black text-sm rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98]"
         >
           <MessageCircle className="w-5 h-5 fill-white" />
-          <span>Continuar a WhatsApp ({formatMoney(grandTotalPrice)})</span>
+          <span>{sending ? 'Registrando tu pedido…' : `Continuar a WhatsApp (${formatMoney(grandTotalPrice)})`}</span>
         </button>
       </div>
     </div>

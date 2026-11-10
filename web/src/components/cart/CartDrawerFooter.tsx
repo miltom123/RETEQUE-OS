@@ -11,6 +11,12 @@ interface CartDrawerFooterProps {
   onRemoveCoupon: () => void;
   couponMessage?: { text: string; error?: boolean } | null;
   sent: boolean;
+  sending?: boolean;
+  submitError?: string | null;
+  /** Código RTQ-… del pedido ya registrado y total calculado por el servidor. */
+  orderCode?: string;
+  orderTotal?: number;
+  whatsappUrl?: string;
   onSend: () => void;
   onClear: () => void;
 }
@@ -24,6 +30,11 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
   onRemoveCoupon,
   couponMessage,
   sent,
+  sending = false,
+  submitError,
+  orderCode,
+  orderTotal,
+  whatsappUrl,
   onSend,
   onClear,
 }) => {
@@ -100,13 +111,20 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
         </div>
       </div>
 
-      {sent ? (
+      {submitError && (
+        <p role="alert" className="text-xs font-bold text-[#D31728]">
+          {submitError}
+        </p>
+      )}
+
+      {sent && orderCode ? (
         <div className="rounded-xl border border-[#16B959]/40 bg-[#E8F8EE] p-3 space-y-2">
           <div className="flex items-start gap-2 text-sm text-neutral-800">
             <CheckCircle2 className="w-5 h-5 text-[#16B959] shrink-0" aria-hidden="true" />
             <span>
-              Abrimos WhatsApp con tu pedido. Si ya lo enviaste, puedes vaciar el carrito. Si no se abrió,
-              vuelve a intentarlo.
+              Registramos tu pedido <strong>{orderCode}</strong>
+              {orderTotal != null && <> por {formatMoney(orderTotal)}</>}. Envía el mensaje de WhatsApp con ese
+              código para que lo confirmemos.
             </span>
           </div>
           <div className="grid grid-cols-2 gap-2">
@@ -117,23 +135,35 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
             >
               Ya lo envié, vaciar
             </button>
-            <button
-              type="button"
-              onClick={onSend}
-              className="h-10 rounded-xl border border-neutral-300 text-neutral-800 text-xs font-bold hover:bg-neutral-50 cursor-pointer"
-            >
-              Reintentar
-            </button>
+            {whatsappUrl ? (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-10 rounded-xl border border-neutral-300 text-neutral-800 text-xs font-bold hover:bg-neutral-50 flex items-center justify-center"
+              >
+                Abrir WhatsApp
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={onSend}
+                className="h-10 rounded-xl border border-neutral-300 text-neutral-800 text-xs font-bold hover:bg-neutral-50 cursor-pointer"
+              >
+                Reintentar
+              </button>
+            )}
           </div>
         </div>
       ) : (
         <button
           type="button"
           onClick={onSend}
-          className="w-full h-12 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-sm rounded-[10px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
+          disabled={sending}
+          className="w-full h-12 bg-[#16A34A] hover:bg-[#15803D] disabled:opacity-60 disabled:cursor-wait text-white font-bold text-sm rounded-[10px] flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
         >
           <MessageCircle className="w-5 h-5 fill-white" aria-hidden="true" />
-          <span>Enviar pedido por WhatsApp</span>
+          <span>{sending ? 'Registrando tu pedido…' : 'Enviar pedido por WhatsApp'}</span>
         </button>
       )}
     </div>

@@ -84,18 +84,18 @@ for (const r of routes) {
 }
 console.log('  ✓ [PASS] Todas las rutas de la app móvil están registradas en React Router');
 
-// 4. Verificar formato oficial del mensaje de WhatsApp
-console.log('\n[4/4] Verificando formato de mensaje de WhatsApp (Sección 12)...');
+// 4. El pedido se registra en el servidor y WhatsApp lleva solo su código
+console.log('\n[4/4] Verificando que el checkout registra el pedido antes de abrir WhatsApp...');
 const whatsappContent = fs.readFileSync(path.join(WEB_SRC, 'lib', 'whatsapp.ts'), 'utf8');
-assert(whatsappContent.includes('🥟 *PEDIDO RETEQUEÑOS*'), 'Falta encabezado oficial');
-assert(whatsappContent.includes('👤 *CLIENTE*'), 'Falta sección cliente');
-assert(whatsappContent.includes('🛒 *PEDIDO*'), 'Falta sección pedido');
-assert(whatsappContent.includes('🚚 *MODALIDAD*'), 'Falta modalidad delivery');
-assert(whatsappContent.includes('🏪 *MODALIDAD*'), 'Falta modalidad recojo');
-assert(whatsappContent.includes('💰 *RESUMEN*'), 'Falta sección resumen');
-assert(whatsappContent.includes('Delivery: A coordinar por WhatsApp'), 'Falta texto delivery a coordinar');
-assert(whatsappContent.includes('¿Podrían confirmarme disponibilidad, delivery y forma de pago?'), 'Falta cierre');
-console.log('  ✓ [PASS] Plantilla de WhatsApp 100% conforme a la especificación del negocio');
+const orderApiContent = fs.readFileSync(path.join(WEB_SRC, 'lib', 'orderApi.ts'), 'utf8');
+const orderPageContent = fs.readFileSync(path.join(WEB_SRC, 'mobile', 'pages', 'OrderRequestPage.tsx'), 'utf8');
+assert(orderApiContent.includes("'/api/public/orders'"), 'El checkout no crea el pedido en el servidor');
+assert(orderApiContent.includes("'Idempotency-Key'"), 'Un reintento podría duplicar el pedido (falta Idempotency-Key)');
+assert(orderApiContent.includes("'/api/public/quote'"), 'Los cupones no se validan en el servidor');
+assert(whatsappContent.includes('prepareWhatsAppWindow') && whatsappContent.includes('openWhatsAppOrder'), 'Falta abrir WhatsApp sin que el navegador lo bloquee');
+assert(orderPageContent.includes('submitOrder') && orderPageContent.includes('order.code'), 'La pantalla de pedido no muestra el código RTQ');
+assert(!whatsappContent.includes('PEDIDO RETEQUEÑOS'), 'WhatsApp todavía arma el pedido completo en el navegador');
+console.log('  ✓ [PASS] Pedido registrado en el servidor y WhatsApp solo con el código');
 
 console.log('\n======================================================');
 console.log('VERIFICACIÓN DEL FRONTEND MÓVIL EXITOSA: 4/4 FASES OK');

@@ -4,7 +4,11 @@ import { X } from 'lucide-react';
 import { formatMoney } from '../../lib/money';
 import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
-import { openWhatsApp } from '../../lib/whatsapp';
+import { discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
+import { resetOrderAttempt, submitOrder } from '../../lib/orderApi';
+import { kitchenDetails, specFromItem, type LineAddon, type LineSpec } from '../../lib/cartSpec';
+import { isValidName, isValidPeruMobile } from '../../lib/validation';
+import { UPGRADE_REFS } from '../../data/serverRefs';
 import type { PromoConfig } from '../../data/promotions';
 
 import {
@@ -105,6 +109,9 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
   // WhatsApp checkout prompt
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [checkoutErrors, setCheckoutErrors] = useState<Record<string, string>>({});
+  const [directSending, setDirectSending] = useState(false);
+  const [directError, setDirectError] = useState<string | null>(null);
+  const [directOrder, setDirectOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
 
   // Bloquea el scroll del fondo y cierra con Escape mientras el modal está abierto
   useEffect(() => {
@@ -295,149 +302,119 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
     })
     .join(', ') || 'Pendiente de selección';
 
-  const upgradesCountTotal = Object.values(upgradeCounts).reduce((a, b) => a + b, 0);
-
-  // Generate WhatsApp message with 100% Retequeños branding
-  const buildWhatsAppMessage = (ordId?: string) => {
-    const lines: string[] = [
-      '🧀 *¡HOLA RETEQUEÑOS!* 👋',
-    ];
-
-    if (ordId) {
-      lines.push(`🔖 *PEDIDO / COMANDA: ${ordId}*`);
-    }
-
-    lines.push(
-      '',
-      'Quiero realizar el siguiente pedido personalizado:',
-      '',
-      `📦 *${quantity} x ${productOrPromo.name}* — ${formatMoney(grandTotalPrice)}`,
-    );
-
-    if (productOrPromo.description) {
-      lines.push(`   📝 ${productOrPromo.description}`);
-    }
+  // Lo elegido, como texto para el carrito y como línea que cotiza el servidor.
+  // Sabores y cremas incluidas van a cocina como texto; bebida y agregados se cobran aparte.
+  const buildLine = (): { optionsList: string[]; spec?: LineSpec } => {
+    const kitchen: string[] = [];
 
     if (hasPizza) {
-      lines.push('');
-      lines.push(`🍕 *PIZZAS FAMILIARES 35 CM:*`);
       selectedPizzaFlavors.forEach((id, idx) => {
         const pz = PIZZA_FLAVORS.find((f) => f.id === id);
-        lines.push(`   • Pizza ${idx + 1}: ${pz?.name || id}`);
+        kitchen.push(`Pizza ${idx + 1}: ${pz?.name.split(' (')[0] || id}`);
       });
     }
 
     if (hasTequeños && targetTequeños > 0) {
-      lines.push('');
-      lines.push(`👉 *SABORES DE TEQUEÑOS (${totalSelectedTequeños} unid.):*`);
       Object.entries(flavorCounts).forEach(([id, count]) => {
         const fl = TEQUEÑO_FLAVORS.find((f) => f.id === id);
-        lines.push(`   • ${count} un. de ${fl?.name || id}`);
+        kitchen.push(`${fl?.name || id} (${count} un.)`);
       });
     }
 
-    lines.push('');
-    lines.push(`🥣 *CREMAS INCLUIDAS (${totalSelectedCreams} unid.):*`);
     Object.entries(creamCounts).forEach(([id, count]) => {
       const cr = CREAMS.find((c) => c.id === id);
-      lines.push(`   • ${count} x ${cr?.name || id}`);
+      kitchen.push(`${cr?.name.replace(' (2 oz)', '') || id} (x${count})`);
     });
 
+    const optionsList = [...kitchen];
     if (includesDrink && selectedDrink) {
-      lines.push('');
-      lines.push(`🥤 *BEBIDA ELEGIDA:*`);
-      lines.push(`   • ${selectedDrink.name}${selectedDrink.extraPrice > 0 ? ` (+${formatMoney(selectedDrink.extraPrice)})` : ''}`);
+      optionsList.push(`Bebida: ${selectedDrink.name}`);
     }
 
-    if (upgradesCountTotal > 0) {
-      lines.push('');
-      lines.push(`➕ *ADICIONALES MARCADOS:*`);
-      Object.entries(upgradeCounts).forEach(([id, count]) => {
-        const up = UPGRADES.find((u) => u.id === id);
-        if (up) {
-          lines.push(`   • ${count} x ${up.name} (+${formatMoney(up.price * count)})`);
-        }
-      });
-    }
-
-    lines.push('');
-    lines.push(`💰 *TOTAL PEDIDO:* ${formatMoney(grandTotalPrice)}`);
-    lines.push(`🚚 *TIPO DE ENTREGA:* ${deliveryType === 'delivery' ? 'Delivery (por confirmar)' : 'Recojo en tienda (S/ 0.00)'}`);
-    lines.push('');
-    lines.push('👤 *DATOS DEL CLIENTE:*');
-    lines.push(`• Nombre: ${fullName || 'No especificado'}`);
-    lines.push(`• Celular: ${phone || 'No especificado'}`);
-
-    if (deliveryType === 'delivery') {
-      lines.push(`• Dirección: ${address || 'No especificada'}`);
-      if (reference) {
-        lines.push(`• Referencia: ${reference}`);
+    const addons: LineAddon[] = [];
+    Object.entries(upgradeCounts).forEach(([id, count]) => {
+      const up = UPGRADES.find((u) => u.id === id);
+      const ref = UPGRADE_REFS[id];
+      if (up && ref && count > 0) {
+        optionsList.push(`+ ${count} x ${up.name}`);
+        addons.push({ ...ref, qty: count });
       }
-    }
+    });
 
-    if (generalNotes) {
-      lines.push(`• Indicaciones: ${generalNotes}`);
-    }
-
-    lines.push('');
-    lines.push('Deseo confirmar disponibilidad, delivery y realizar el pago por Yape/Plin/Transferencia. ¡Gracias!');
-
-    return lines.join('\n');
+    const base = specFromItem({
+      productId: productOrPromo.id,
+      selectedPresentation: isPromo ? undefined : selectedPresentation,
+    });
+    const spec: LineSpec | undefined = base && {
+      ...base,
+      ...(includesDrink ? { drinkId: selectedDrinkId } : {}),
+      ...(addons.length > 0 ? { addons } : {}),
+      details: kitchenDetails(kitchen),
+    };
+    return { optionsList, spec };
   };
 
   const handleComprarAhora = () => {
+    setDirectError(null);
+    setDirectOrder(null);
     setIsCheckoutModalOpen(true);
   };
 
-  const handleModalConfirmWhatsApp = () => {
+  const closeDirectCheckout = () => {
+    setIsCheckoutModalOpen(false);
+    setDirectError(null);
+    if (directOrder) {
+      setDirectOrder(null);
+      resetOrderAttempt();
+      onClose();
+    }
+  };
+
+  // "Comprar ahora": registra un pedido de este solo producto y abre WhatsApp con su código
+  const handleModalConfirmWhatsApp = async () => {
+    if (directSending) return;
     const errs: Record<string, string> = {};
-    if (!fullName.trim()) errs.fullName = 'Ingresa tu nombre completo';
-    if (!phone.trim()) errs.phone = 'Ingresa tu número de celular';
-    if (deliveryType === 'delivery' && !address.trim()) errs.address = 'Ingresa tu dirección para el delivery';
+    if (!isValidName(fullName)) errs.fullName = 'Escribe tu nombre (mínimo 3 letras)';
+    if (!isValidPeruMobile(phone)) errs.phone = 'Ingresa un celular válido de 9 dígitos (empieza en 9)';
+    if (deliveryType === 'delivery' && address.trim().length < 5) errs.address = 'Ingresa tu dirección en Tacna';
 
     if (Object.keys(errs).length > 0) {
       setCheckoutErrors(errs);
       return;
     }
-
     setCheckoutErrors({});
-    setIsCheckoutModalOpen(false);
 
-    openWhatsApp(buildWhatsAppMessage());
+    const { spec } = buildLine();
+    if (!spec) {
+      setDirectError('Este producto no se puede pedir en línea por ahora. Escríbenos por WhatsApp.');
+      return;
+    }
+
+    const mode = deliveryType === 'delivery' ? 'delivery' : 'pickup';
+    const whatsappWindow = prepareWhatsAppWindow();
+    setDirectSending(true);
+    setDirectError(null);
+    try {
+      const result = await submitOrder([{ productId: productOrPromo.id, quantity, spec }], {
+        customer: { name: fullName.trim(), phone: phone.trim() },
+        mode,
+        address: mode === 'delivery' ? address.trim() : undefined,
+        reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+        notes: generalNotes.trim() || undefined,
+      });
+      setDirectOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
+      if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
+      else discardWhatsAppWindow(whatsappWindow);
+    } catch (error) {
+      discardWhatsAppWindow(whatsappWindow);
+      setDirectError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
+    } finally {
+      setDirectSending(false);
+    }
   };
 
   const handleAddToCart = () => {
-    const optionsList: string[] = [];
-
-    if (hasPizza) {
-      selectedPizzaFlavors.forEach((id, idx) => {
-        const pz = PIZZA_FLAVORS.find((f) => f.id === id);
-        optionsList.push(`Pizza ${idx + 1}: ${pz?.name.split(' (')[0] || id}`);
-      });
-    }
-
-    if (hasTequeños && targetTequeños > 0) {
-      Object.entries(flavorCounts).forEach(([id, count]) => {
-        const fl = TEQUEÑO_FLAVORS.find((f) => f.id === id);
-        optionsList.push(`${fl?.name || id} (${count} un.)`);
-      });
-    }
-
-    Object.entries(creamCounts).forEach(([id, count]) => {
-      const cr = CREAMS.find((c) => c.id === id);
-      optionsList.push(`${cr?.name.replace(' (2 oz)', '') || id} (x${count})`);
-    });
-
-    if (includesDrink && selectedDrink) {
-      optionsList.push(`Bebida: ${selectedDrink.name}`);
-    }
-
-    Object.entries(upgradeCounts).forEach(([id, count]) => {
-      const up = UPGRADES.find((u) => u.id === id);
-      if (up) {
-        optionsList.push(`+ ${count} x ${up.name}`);
-      }
-    });
+    const { optionsList, spec } = buildLine();
 
     if (!addItem({
       productId: productOrPromo.id,
@@ -447,6 +424,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
       unitPrice: unitTotalPrice,
       selectedPresentation: isPromo ? undefined : selectedPresentation,
       selectedOptions: optionsList.length > 0 ? optionsList : undefined,
+      spec,
     })) return;
 
     onClose();
@@ -599,8 +577,11 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
         {/* Direct WhatsApp Checkout Sub-Modal */}
         <DirectCheckoutModal
           isOpen={isCheckoutModalOpen}
-          onClose={() => setIsCheckoutModalOpen(false)}
+          onClose={closeDirectCheckout}
           onConfirm={handleModalConfirmWhatsApp}
+          sending={directSending}
+          submitError={directError}
+          order={directOrder}
           productName={productOrPromo.name}
           quantity={quantity}
           grandTotalPrice={grandTotalPrice}

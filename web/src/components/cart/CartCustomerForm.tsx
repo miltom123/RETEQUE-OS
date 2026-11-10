@@ -33,7 +33,7 @@ export const CartCustomerForm: React.FC<CartCustomerFormProps> = ({
         onChange={(v) => setField('deliveryType', v)}
         options={[
           { id: 'delivery', label: 'Delivery' },
-          { id: 'recojo', label: 'Recojo en tienda' },
+          { id: 'pickup', label: 'Recojo en tienda' },
         ]}
       />
 

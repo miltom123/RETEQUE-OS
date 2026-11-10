@@ -4,14 +4,15 @@ import { X, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { useUiStore } from '../../store/uiStore';
-import { openWhatsAppCheckout } from '../../lib/whatsapp';
+import { discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
 import { isValidName, isValidPeruMobile } from '../../lib/validation';
 import { CartItemRow } from './CartItemRow';
 import { CartCustomerForm } from './CartCustomerForm';
 import { CartDrawerFooter } from './CartDrawerFooter';
 import { DEFAULT_TACNA_ZONE, TacnaZone } from '../../config/tacnaZones';
 import { roundMoney } from '../../lib/money';
-import { validateCoupon } from '../../lib/coupons';
+import { resetOrderAttempt, submitOrder } from '../../lib/orderApi';
+import { useServerCoupon } from '../../hooks/useServerCoupon';
 
 export const CartDrawer: React.FC = () => {
   const isOpen = useCartStore((s) => s.isCartOpen);
@@ -26,8 +27,12 @@ export const CartDrawer: React.FC = () => {
   const [selectedZone, setSelectedZone] = useState<TacnaZone>(DEFAULT_TACNA_ZONE);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sent, setSent] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
-  const [couponMessage, setCouponMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [order, setOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
+  const mode = deliveryType === 'delivery' ? 'delivery' : 'pickup';
+  const coupon = useServerCoupon(items, mode, isOpen);
+  const appliedCoupon = coupon.applied;
 
   // Bloquea el scroll del fondo y cierra con Escape
   useEffect(() => {
@@ -47,34 +52,32 @@ export const CartDrawer: React.FC = () => {
   useEffect(() => {
     if (items.length === 0) {
       setSent(false);
-      setAppliedCoupon(null);
-      setCouponMessage(null);
+      setOrder(null);
+      setSubmitError(null);
     }
   }, [items.length]);
+
+  // Si el carrito cambia después de enviar, el código mostrado ya no corresponde: se vuelve a enviar
+  useEffect(() => {
+    setSent(false);
+    setOrder(null);
+  }, [items]);
 
   if (!isOpen) return null;
 
   const subtotal = roundMoney(items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const deliveryFee = deliveryType === 'delivery' ? roundMoney(selectedZone.fee) : 0;
   const discount = appliedCoupon ? appliedCoupon.discount : 0;
   const grandTotal = roundMoney(Math.max(0, subtotal - discount));
 
-  const handleApplyCoupon = (code: string) => {
-    const res = validateCoupon(code, subtotal);
-    if (res.valid) {
-      setAppliedCoupon({ code: res.rule!.code, discount: res.discount });
-      setCouponMessage({ text: res.message });
-      showToast({ message: `Cupón ${res.rule!.code} aplicado: -S/ ${res.discount.toFixed(2)}` });
-    } else {
-      setAppliedCoupon(null);
-      setCouponMessage({ text: res.message, error: true });
-    }
+  // El servidor dice si el cupón aplica y cuánto descuenta; la web ya no conoce la lista de códigos
+  const handleApplyCoupon = async (code: string) => {
+    const res = await coupon.apply(code);
+    if (res.valid) showToast({ message: `Cupón ${res.code} aplicado: -S/ ${res.discount.toFixed(2)}` });
   };
 
   const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponMessage(null);
+    coupon.remove();
     showToast({ message: 'Cupón removido' });
   };
 
@@ -87,25 +90,40 @@ export const CartDrawer: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSend = () => {
-    if (!validate()) return;
-    openWhatsAppCheckout(
-      items,
-      { fullName, phone, deliveryType, address, reference, generalNotes },
-      subtotal,
-      deliveryFee,
-      deliveryType === 'delivery' ? selectedZone.name : undefined,
-      discount,
-      appliedCoupon?.code
-    );
-    setSent(true);
+  // Crea el pedido "por confirmar" con precios del servidor y abre WhatsApp solo con su código
+  const handleSend = async () => {
+    if (sending || !validate()) return;
+    const whatsappWindow = prepareWhatsAppWindow();
+    setSending(true);
+    setSubmitError(null);
+    try {
+      const result = await submitOrder(items, {
+        customer: { name: fullName.trim(), phone: phone.trim() },
+        mode,
+        address: mode === 'delivery' ? address.trim() : undefined,
+        reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+        notes: [generalNotes.trim(), mode === 'delivery' ? `Zona: ${selectedZone.name}` : ''].filter(Boolean).join(' · ') || undefined,
+        couponCode: appliedCoupon?.code,
+      });
+      setOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
+      if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
+      else discardWhatsAppWindow(whatsappWindow);
+      setSent(true);
+    } catch (error) {
+      discardWhatsAppWindow(whatsappWindow);
+      setSubmitError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleClear = () => {
     clearCart();
+    coupon.remove();
+    resetOrderAttempt();
     setSent(false);
-    setAppliedCoupon(null);
-    setCouponMessage(null);
+    setOrder(null);
+    setSubmitError(null);
     closeCart();
     showToast({ message: 'Pedido vaciado. ¡Gracias por tu compra!' });
   };
@@ -187,8 +205,13 @@ export const CartDrawer: React.FC = () => {
             appliedCouponCode={appliedCoupon?.code}
             onApplyCoupon={handleApplyCoupon}
             onRemoveCoupon={handleRemoveCoupon}
-            couponMessage={couponMessage}
+            couponMessage={coupon.message}
             sent={sent}
+            sending={sending}
+            submitError={submitError}
+            orderCode={order?.code}
+            orderTotal={order?.total}
+            whatsappUrl={order?.whatsappUrl ?? undefined}
             onSend={handleSend}
             onClear={handleClear}
           />

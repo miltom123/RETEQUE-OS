@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { roundMoney } from '../lib/money';
 import { isSoldOut } from '../services/catalog.api';
+import { specFromItem, type LineSpec } from '../lib/cartSpec';
 import { useUiStore } from './uiStore';
 
 export interface CartItem {
@@ -10,10 +11,13 @@ export interface CartItem {
   name: string;
   image: string;
   quantity: number;
+  /** Precio de referencia para mostrar; el total real lo calcula el servidor con `spec`. */
   unitPrice: number;
   selectedPresentation?: string;
   selectedOptions?: string[];
   notes?: string;
+  /** Lo elegido, en el formato que cotiza el servidor. */
+  spec?: LineSpec;
 }
 
 interface CartStore {
@@ -70,7 +74,7 @@ export const useCartStore = create<CartStore>()(
           });
         } else {
           const lineId = `${newItem.productId}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-          set({ items: [...items, { ...newItem, lineId }] });
+          set({ items: [...items, { ...newItem, spec: newItem.spec ?? specFromItem(newItem), lineId }] });
         }
         return true;
       },
@@ -118,9 +122,11 @@ export const useCartStore = create<CartStore>()(
     }),
     {
       name: 'retequenos_cart_storage',
-      version: 2,
+      version: 3,
       // Solo se guardan los productos; el estado "abierto/cerrado" no sobrevive a la recarga.
       partialize: (state) => ({ items: state.items }),
+      // Los carritos anteriores no guardaban lo elegido en formato del servidor: se vacían una vez
+      migrate: (persisted, version) => (version < 3 ? { items: [] } : persisted) as CartStore,
     }
   )
 );

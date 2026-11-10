@@ -5,10 +5,12 @@ import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { useAuthStore } from '../../store/authStore';
 import { customerAccountsEnabled } from '../../config/features';
-import { roundMoney } from '../../lib/money';
+import { formatMoney, roundMoney } from '../../lib/money';
 import { isValidName, isValidPeruMobile } from '../../lib/validation';
-import { formatOrderRequestMessage, openWhatsApp } from '../../lib/whatsapp';
-import { OrderRequest, FulfillmentType } from '../../types/orderRequest';
+import { discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
+import { resetOrderAttempt, submitOrder } from '../../lib/orderApi';
+import { useServerCoupon } from '../../hooks/useServerCoupon';
+import { FulfillmentType } from '../../types/orderRequest';
 import { CustomerForm } from '../components/CustomerForm';
 import { FulfillmentSelector } from '../components/FulfillmentSelector';
 import { OrderSummary } from '../components/OrderSummary';
@@ -41,13 +43,19 @@ export const OrderRequestPage: React.FC = () => {
   }, [signedIn, user, fullName, phone, address, reference, setField]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSent, setIsSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [order, setOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
+  const isSent = order !== null;
 
+  const mode = deliveryType === 'delivery' ? 'delivery' : 'pickup';
+  // El cupón aplicado en el carrito se vuelve a validar con la modalidad elegida aquí
+  const coupon = useServerCoupon(items, mode, !isSent);
 
   const subtotal = roundMoney(
     items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
   );
-  const discount = 0; // Descuentos ya calculados o directos
+  const discount = coupon.applied ? coupon.applied.discount : 0;
   const totalProducts = roundMoney(Math.max(0, subtotal - discount));
 
   if (items.length === 0 && !isSent) {
@@ -98,37 +106,47 @@ export const OrderRequestPage: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSendOrder = () => {
+  // Registra el pedido "por confirmar" con precios del servidor y abre WhatsApp solo con su código
+  const handleSendOrder = async () => {
+    if (sending) return;
     if (!validate()) {
-      // Scroll to first error
       window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
-    const orderRequest: OrderRequest = {
-      customer: {
-        name: fullName.trim(),
-        phone: phone.trim(),
-      },
-      fulfillment: {
-        type: deliveryType as FulfillmentType,
-        address: deliveryType === 'delivery' ? address.trim() : undefined,
-        reference: deliveryType === 'delivery' ? reference.trim() || undefined : undefined,
-      },
-      items,
-      notes: generalNotes.trim() || undefined,
-      subtotal,
-      discount,
-      totalProducts,
-    };
-
-    const message = formatOrderRequestMessage(orderRequest);
-    openWhatsApp(message);
-    setIsSent(true);
+    const whatsappWindow = prepareWhatsAppWindow();
+    setSending(true);
+    setSubmitError(null);
+    try {
+      const result = await submitOrder(items, {
+        customer: { name: fullName.trim(), phone: phone.replace(/\s+/g, '') },
+        mode,
+        address: mode === 'delivery' ? address.trim() : undefined,
+        reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+        notes: generalNotes.trim() || undefined,
+        couponCode: coupon.applied?.code,
+      });
+      setOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
+      if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
+      else discardWhatsAppWindow(whatsappWindow);
+      window.scrollTo({ top: 0 });
+    } catch (error) {
+      discardWhatsAppWindow(whatsappWindow);
+      setSubmitError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
+    } finally {
+      setSending(false);
+    }
   };
 
-  // Pantalla de Confirmación de Envío a WhatsApp (Sección 7 y 19 del Plan)
-  if (isSent) {
+  const handleFinish = () => {
+    clearCart();
+    coupon.remove();
+    resetOrderAttempt();
+    navigate('/app');
+  };
+
+  // Pedido registrado: el cliente envía el código por WhatsApp y caja lo confirma en el panel
+  if (order) {
     return (
       <div className="p-5 space-y-5 my-4">
         <div className="bg-white border border-[#EFE6D6] rounded-3xl p-6 text-center space-y-4 shadow-sm">
@@ -138,10 +156,11 @@ export const OrderRequestPage: React.FC = () => {
 
           <div className="space-y-1.5">
             <h2 className="text-xl font-black text-[#242424] font-display">
-              Tu solicitud está lista
+              Registramos tu pedido
             </h2>
+            <p className="text-2xl font-black text-[#FF3038] font-display tracking-wide">{order.code}</p>
             <p className="text-xs text-[#6B6662] max-w-[300px] mx-auto leading-relaxed">
-              Enviaremos el detalle a WhatsApp para que el equipo de Retequeños confirme disponibilidad, entrega y forma de pago.
+              Envía el mensaje de WhatsApp con este código para que el equipo de Retequeños lo confirme y coordine contigo la entrega y el pago.
             </p>
           </div>
 
@@ -156,26 +175,26 @@ export const OrderRequestPage: React.FC = () => {
             </div>
             <div className="flex justify-between font-bold text-[#FF3038] pt-1.5 border-t border-[#F5EDE1]">
               <span>Total productos:</span>
-              <span className="text-sm font-display">{subtotal.toFixed(2)}</span>
+              <span className="text-sm font-display">{formatMoney(order.total)}</span>
             </div>
           </div>
 
           <div className="space-y-2 pt-2">
-            <button
-              type="button"
-              onClick={handleSendOrder}
-              className="w-full h-12 bg-[#16B959] hover:bg-[#13A24D] text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition active:scale-[0.98] cursor-pointer"
-            >
-              <MessageCircle className="w-5 h-5 fill-white" />
-              <span>CONTINUAR EN WHATSAPP</span>
-            </button>
+            {order.whatsappUrl && (
+              <a
+                href={order.whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full h-12 bg-[#16B959] hover:bg-[#13A24D] text-white font-black text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition active:scale-[0.98]"
+              >
+                <MessageCircle className="w-5 h-5 fill-white" />
+                <span>ABRIR WHATSAPP</span>
+              </a>
+            )}
 
             <button
               type="button"
-              onClick={() => {
-                clearCart();
-                navigate('/app');
-              }}
+              onClick={handleFinish}
               className="w-full h-11 border border-[#EFE6D6] bg-white text-[#242424] font-bold text-xs rounded-xl hover:bg-[#FFF2DF] transition cursor-pointer"
             >
               Ya lo envié, vaciar carrito y volver al inicio
@@ -200,7 +219,7 @@ export const OrderRequestPage: React.FC = () => {
               Datos de tu Pedido
             </h2>
             <p className="text-xs text-[#8C867F]">
-              Completa tus datos para enviarlo prellenado a WhatsApp
+              Completa tus datos para registrar tu pedido y enviarlo por WhatsApp
             </p>
           </div>
 
@@ -244,21 +263,32 @@ export const OrderRequestPage: React.FC = () => {
           subtotal={subtotal}
           discount={discount}
           totalProducts={totalProducts}
-          fulfillmentType={deliveryType as FulfillmentType}
+          fulfillmentType={mode}
+          couponCode={coupon.applied?.code}
           itemCount={items.reduce((s, it) => s + it.quantity, 0)}
         />
+
+        {coupon.message?.error && (
+          <p className="text-[11px] font-bold text-[#FF3038] px-1">{coupon.message.text}</p>
+        )}
       </div>
 
       {/* Sticky Bottom Final CTA Button (Dentro del contenedor scroll) */}
       <div className="sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#EFE6D6] p-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] mt-4">
         <div className="max-w-md mx-auto">
+          {submitError && (
+            <p role="alert" className="text-xs font-bold text-[#FF3038] text-center mb-2">
+              {submitError}
+            </p>
+          )}
           <button
             type="button"
             onClick={handleSendOrder}
-            className="w-full h-12 bg-[#16B959] hover:bg-[#13A24D] text-white font-black text-sm rounded-xl shadow-lg shadow-[#16B959]/25 flex items-center justify-center gap-2 transition active:scale-[0.98] cursor-pointer"
+            disabled={sending}
+            className="w-full h-12 bg-[#16B959] hover:bg-[#13A24D] disabled:opacity-60 disabled:cursor-wait text-white font-black text-sm rounded-xl shadow-lg shadow-[#16B959]/25 flex items-center justify-center gap-2 transition active:scale-[0.98] cursor-pointer"
           >
             <MessageCircle className="w-5 h-5 fill-white" />
-            <span>ENVIAR PEDIDO POR WHATSAPP</span>
+            <span>{sending ? 'REGISTRANDO TU PEDIDO…' : 'ENVIAR PEDIDO POR WHATSAPP'}</span>
           </button>
           <p className="text-[10px] text-[#8C867F] text-center mt-1.5 font-medium">
             Retequeños coordinará contigo el costo final de delivery y la confirmación.

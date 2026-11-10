@@ -4,20 +4,21 @@ import { ShoppingBag, ArrowRight, Tag, X, Trash2, Utensils } from 'lucide-react'
 import { useCartStore } from '../../store/cartStore';
 import { formatMoney, roundMoney } from '../../lib/money';
 import { CartItem } from '../components/CartItem';
-import { validateCoupon } from '../../lib/coupons';
 import { useUiStore } from '../../store/uiStore';
+import { useCheckoutStore } from '../../store/checkoutStore';
+import { useServerCoupon } from '../../hooks/useServerCoupon';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const { items, clearCart } = useCartStore();
   const showToast = useUiStore((s) => s.showToast);
+  const deliveryType = useCheckoutStore((s) => s.deliveryType);
 
   const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<{
-    code: string;
-    discount: number;
-  } | null>(null);
-  const [couponError, setCouponError] = useState<string | null>(null);
+  // El servidor valida el cupón; el código queda guardado para que "Completar pedido" lo envíe
+  const coupon = useServerCoupon(items, deliveryType === 'delivery' ? 'delivery' : 'pickup');
+  const appliedCoupon = coupon.applied;
+  const couponError = coupon.message?.error ? coupon.message.text : null;
 
   const subtotal = roundMoney(
     items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
@@ -25,25 +26,16 @@ export const CartPage: React.FC = () => {
   const discount = appliedCoupon ? appliedCoupon.discount : 0;
   const totalProducts = roundMoney(Math.max(0, subtotal - discount));
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
+  const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponCode.trim()) return;
-
-    const res = validateCoupon(couponCode.trim(), subtotal);
-    if (res.valid) {
-      setAppliedCoupon({ code: res.rule!.code, discount: res.discount });
-      setCouponError(null);
-      showToast({ message: `Cupón ${res.rule!.code} aplicado: -S/ ${res.discount.toFixed(2)}` });
-    } else {
-      setAppliedCoupon(null);
-      setCouponError(res.message);
-    }
+    const res = await coupon.apply(couponCode.trim());
+    if (res.valid) showToast({ message: `Cupón ${res.code} aplicado: -S/ ${res.discount.toFixed(2)}` });
   };
 
   const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
+    coupon.remove();
     setCouponCode('');
-    setCouponError(null);
   };
 
   if (items.length === 0) {
