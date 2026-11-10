@@ -8,6 +8,7 @@ const crypto = require('crypto');
 const { extractToken, readJsonBody, sendJson } = require('../http');
 const { cleanId, sanitizeId } = require('../sanitize');
 const { canAccessOrder } = require('../auth');
+const { cashierNextStatuses } = require('../order-status');
 
 async function newOrderId(ordersRepo) {
   let id;
@@ -119,8 +120,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
       if (body.status) {
         if (order && body.status === 'kitchen' && /yape|plin|transfer/i.test(order.payMethod || '') && !order.payVerified) return sendJson(res, 400, { error: 'Verifica el pago antes de mandar a cocina.' });
         if (currentUser.role === 'cashier' && order) {
-          const next = { new: ['kitchen'], kitchen: order.mode === 'pickup' ? ['delivered'] : ['delivery'], delivery: ['delivered'], delivered: [] };
-          if (!next[order.status]?.includes(body.status)) return sendJson(res, 400, { error: 'Ese cambio de estado no está permitido para caja.' });
+          if (!cashierNextStatuses(order).includes(body.status)) return sendJson(res, 400, { error: 'Ese cambio de estado no está permitido para caja.' });
         }
         const updated = await repos.orders.updateStatus(orderId, body.status);
         if (updated) {
@@ -146,4 +146,4 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
   return false;
 }
 
-module.exports = { handleOrders };
+module.exports = { handleOrders, newOrderId };

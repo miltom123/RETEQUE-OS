@@ -149,7 +149,7 @@ async function run() {
   assert.equal(await sql("SELECT md5((COALESCE((SELECT jsonb_agg(to_jsonb(o)) FROM public.orders o),'[]'::jsonb) || COALESCE((SELECT jsonb_agg(to_jsonb(u)) FROM public.staff_users u),'[]'::jsonb))::text)"),privateBefore);
   console.log('Modo exclusivo catálogo/configuración: sin cambios en pedidos ni usuarios: PASS');
   const env={...process.env,RTQ_STORAGE:'postgres',SUPABASE_URL:url,SUPABASE_SECRET_KEY:'',SUPABASE_SERVICE_ROLE_KEY:key,RTQ_TEST_SQL_BRIDGE:url,RTQ_TEST_SUPABASE_LOCAL:''};
-  for(const name of ['test-backend.js','test-system.js','test-access.js','test-reports.js']) await suite(name,env);
+  for(const name of ['test-backend.js','test-system.js','test-access.js','test-reports.js','test-pricing.js','test-web-orders.js']) await suite(name,env);
 }
 run().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{
   if(gateway) await new Promise(resolve=>gateway.close(resolve));

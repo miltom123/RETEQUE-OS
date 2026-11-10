@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { SupabaseRpc } = require('./backend/repositories/supabase-rpc');
 const { normalizeOptions } = require('./backend/repositories/catalog.repository');
+const { ORDER_STATUSES } = require('./backend/order-status');
 
 function invalid(location) { throw new Error(`Dato inválido en ${location}; no se muestra su contenido.`); }
 const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -71,7 +72,7 @@ function loadSnapshot(directory, options = {}) {
   const normalizedOrders = orders.map((o,i) => {
     const loc = `orders[${i}]`;
     keys(o, orderFields, loc);
-    for (const [k,values] of [['channel',['web','app','whatsapp','caja']],['mode',['delivery','pickup']],['status',['new','kitchen','delivery','delivered']]]) {
+    for (const [k,values] of [['channel',['web','app','whatsapp','caja']],['mode',['delivery','pickup']],['status',ORDER_STATUSES]]) {
       if (!values.includes(o[k])) invalid(`${loc}.${k}`);
     }
     const normalized = { ...o };

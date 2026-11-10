@@ -8,6 +8,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { sanitizeId, sanitizeString, sanitizeUrl } = require('../sanitize');
 const { readJsonFile } = require('./json-file');
+const { ORDER_STATUSES } = require('../order-status');
 
 // Semilla inicial de pedidos si la base de datos no existe
 const SEED_ORDERS = [
@@ -143,9 +144,11 @@ class OrderRepository {
     const order = this.orders.find(o => o.id === id);
     if (!order) return null;
 
-    if (['new', 'kitchen', 'delivery', 'delivered'].includes(newStatus)) {
+    if (ORDER_STATUSES.includes(newStatus)) {
       order.status = newStatus;
-      if (newStatus === 'kitchen') {
+      if (newStatus === 'cancelled') {
+        order.time = 'Cancelado';
+      } else if (newStatus === 'kitchen') {
         order.time = 'En cocina hace 1 min';
         order.elapsedMinutes = 1;
       } else if (newStatus === 'delivery') {
@@ -214,7 +217,7 @@ function normalizeOrder(order) {
       phone: sanitizeString(order.phone || ''),
       channel: ['web', 'app', 'whatsapp', 'caja'].includes(order.channel) ? order.channel : 'app',
       mode: ['delivery', 'pickup'].includes(order.mode) ? order.mode : 'delivery',
-      status: ['new', 'kitchen', 'delivery', 'delivered'].includes(order.status) ? order.status : 'new',
+      status: ORDER_STATUSES.includes(order.status) ? order.status : 'new',
       priority: Boolean(order.priority),
       payMethod: sanitizeString(order.payMethod || 'Por verificar'),
       payVerified: Boolean(order.payVerified),

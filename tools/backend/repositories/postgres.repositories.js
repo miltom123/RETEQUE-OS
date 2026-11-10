@@ -3,6 +3,7 @@ const { SupabaseRpc } = require('./supabase-rpc');
 const { normalizeOrder } = require('./orders.repository');
 const { normalizeProduct } = require('./catalog.repository');
 const { cleanId } = require('../sanitize');
+const { ORDER_STATUSES } = require('../order-status');
 const { publicUser } = require('../../users.repository');
 
 // Mismos métodos públicos de los repositorios JSON; en PostgreSQL devuelven promesas.
@@ -12,8 +13,9 @@ class OrderRepository {
   getById(id) { return this.db.operation('orders.find', { id }); }
   insert(order) { return this.db.operation('orders.insert', { order: normalizeOrder(order) }); }
   updateStatus(id, status) {
-    if (!['new', 'kitchen', 'delivery', 'delivered'].includes(status)) return Promise.resolve(null);
+    if (!ORDER_STATUSES.includes(status)) return Promise.resolve(null);
     const patch = { status };
+    if (status === 'cancelled') patch.time = 'Cancelado';
     if (status === 'kitchen') Object.assign(patch, { time: 'En cocina hace 1 min', elapsedMinutes: 1 });
     if (status === 'delivery') Object.assign(patch, { time: 'Salió hace 1 min', elapsedMinutes: 1 });
     if (status === 'delivered') {

@@ -14,7 +14,9 @@ function buildReport(allOrders, catalog, params = new URLSearchParams(), now = n
   const includeUndated = params.get('undated') !== 'false';
   const channel = params.get('channel') || '';
   const records = params.get('records') === 'all' ? 'all' : 'delivered';
+  // Un pedido web que caja aún no confirmó no es venta ni deuda: queda fuera de los reportes
   const orders = allOrders.filter(order => {
+    if (order.status === 'pending_confirmation') return false;
     const date = dateParts(order.createdAt);
     return (!channel || order.channel === channel) && (date ? (!from || date.day >= from) && (!to || date.day <= to) : includeUndated);
   });
