@@ -771,6 +771,7 @@
               <select id="kds-filter-type" onchange="handleKDSFilterChange()">
                 <option value="all">Todos</option>
                 <option value="app">App</option>
+                <option value="web">Web</option>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="caja">Caja</option>
                 <option value="pickup">Recojo</option>
@@ -820,6 +821,16 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
             <span>Limpiar filtros</span>
           </button>
+        </div>
+
+        <!-- Pedidos de la web que esperan el WhatsApp del cliente con su código para pasar a cocina -->
+        <div class="kds-pending-web" id="kds-pending-web" hidden>
+          <div class="kds-pending-web-header">
+            <div class="kds-col-title">Por confirmar (web)</div>
+            <span class="kds-col-count-pill kds-count-blue" id="count-pending-web">0</span>
+            <span class="kds-pending-web-hint">Confírmalo cuando el cliente escriba por WhatsApp con el código del pedido.</span>
+          </div>
+          <div class="kds-pending-web-list" id="list-pending-web"></div>
         </div>
 
         <!-- Tablero Board KDS (4 Columnas) -->

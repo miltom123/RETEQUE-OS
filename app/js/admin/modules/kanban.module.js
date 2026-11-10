@@ -51,6 +51,51 @@
       showToast('↻ Filtros restablecidos');
     }
 
+    // Pedidos de la web en espera: caja los confirma cuando llega el WhatsApp con el código
+    function renderPendingWebOrders() {
+      const box = document.getElementById('kds-pending-web');
+      const list = document.getElementById('list-pending-web');
+      if (!box || !list) return;
+      const pending = ORDERS
+        .filter(ord => ord.status === 'pending_confirmation')
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      box.hidden = pending.length === 0;
+      document.getElementById('count-pending-web').textContent = pending.length;
+      list.innerHTML = pending.map(ord => {
+        const cleanId = encodeURIComponent(String(ord.id || ''));
+        const minutes = ord.createdAt ? Math.max(0, Math.round((Date.now() - Date.parse(ord.createdAt)) / 60000)) : null;
+        const items = (ord.items || []).map(i => `<div>${Number(i.qty) || 1}x ${escapeHtml(i.name || '')}${i.sauces ? ` <span class="kds-pending-web-muted">(${escapeHtml(i.sauces)})</span>` : ''}</div>`).join('');
+        return `<div class="kds-pending-web-card">
+          <div class="kds-pending-web-top">
+            <strong>${escapeHtml(ord.id)}</strong>
+            <span class="kds-pending-web-muted">${minutes === null ? '' : minutes < 1 ? 'recién' : 'hace ' + minutes + ' min'}</span>
+          </div>
+          <div>${escapeHtml(ord.customer)} · ${escapeHtml(ord.phone)} · ${ord.mode === 'pickup' ? 'Recojo' : 'Delivery'}</div>
+          ${ord.mode === 'delivery' && ord.address ? `<div class="kds-pending-web-muted">${escapeHtml(ord.address)}${ord.reference ? ' · ' + escapeHtml(ord.reference) : ''}</div>` : ''}
+          <div class="kds-pending-web-items">${items}</div>
+          ${ord.notes ? `<div class="kds-pending-web-muted">${escapeHtml(ord.notes)}</div>` : ''}
+          <div class="kds-pending-web-actions">
+            <strong>S/ ${Number(ord.total || 0).toFixed(2)}</strong>
+            <button class="btn btn-outline btn-sm" onclick="cancelWebOrder('${cleanId}')">Cancelar</button>
+            <button class="btn btn-primary btn-sm" onclick="confirmWebOrder('${cleanId}')">Confirmar</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    async function confirmWebOrder(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      const updated = await updateOrderOnServer(id, { status: 'new' });
+      if (updated) { playAlertSound(); showToast('Pedido ' + id + ' confirmado: ya está en Nuevos.'); }
+    }
+
+    async function cancelWebOrder(encodedId) {
+      const id = decodeURIComponent(encodedId);
+      if (!window.confirm('¿Cancelar el pedido ' + id + '? El cliente no lo confirmó por WhatsApp.')) return;
+      const updated = await updateOrderOnServer(id, { status: 'cancelled' });
+      if (updated) showToast('Pedido ' + id + ' cancelado.');
+    }
+
     // Render KDS Kanban & Cards con DocumentFragment de alto rendimiento
     function renderKanban() {
       const cols = {
@@ -61,7 +106,8 @@
       };
 
       if (!cols.new) return; // Tab not in DOM yet
-      
+      renderPendingWebOrders();
+
       // DocumentFragments para agrupar inserciones en un único reflow por columna
       const fragments = {
         new: document.createDocumentFragment(),
@@ -104,6 +150,7 @@
         // Type filter
         if (typeFilter !== 'all') {
           if (typeFilter === 'app' && ord.channel !== 'app') return false;
+          if (typeFilter === 'web' && ord.channel !== 'web') return false;
           if (typeFilter === 'whatsapp' && ord.channel !== 'whatsapp') return false;
           if (typeFilter === 'caja' && ord.channel !== 'caja') return false;
           if (typeFilter === 'pickup' && ord.mode !== 'pickup') return false;
@@ -611,6 +658,8 @@ window.payBadgeHtml = payBadgeHtml;
 window.verifyPayment = verifyPayment;
 window.paymentSummaryHtml = paymentSummaryHtml;
 window.moveOrderStatus = moveOrderStatus;
+window.confirmWebOrder = confirmWebOrder;
+window.cancelWebOrder = cancelWebOrder;
 window.triggerSimulatedOrder = triggerSimulatedOrder;
 window.simulateIncomingOrder = triggerSimulatedOrder;
 window.openOrderDetailModal = openOrderDetailModal;

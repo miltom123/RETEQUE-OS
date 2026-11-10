@@ -88,6 +88,7 @@
 
           const previousIds = new Set(window.ORDERS.map(o => o.id));
           const hasNew = remoteOrders.some(r => !previousIds.has(r.id) && r.status === 'new');
+          const hasNewWeb = remoteOrders.some(r => !previousIds.has(r.id) && r.status === 'pending_confirmation');
           const isFirstSync = window.ORDERS.length === 0 || previousIds.size === 0;
           const hasDifference = JSON.stringify(window.ORDERS) !== JSON.stringify(remoteOrders);
 
@@ -105,6 +106,9 @@
             if (hasNew && !isFirstSync) {
               if (window.playAlertSound) window.playAlertSound();
               if (window.showToast) window.showToast('🔥 ¡NUEVO PEDIDO RECIBIDO Y GUARDADO EN DISCO!');
+            } else if (hasNewWeb && !isFirstSync) {
+              if (window.playAlertSound) window.playAlertSound();
+              if (window.showToast) window.showToast('🌐 Nuevo pedido web por confirmar: revisa WhatsApp.');
             }
           }
           if (window.renderCash) window.renderCash();
