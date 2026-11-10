@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { roundMoney } from '../lib/money';
+import { isSoldOut } from '../services/catalog.api';
+import { useUiStore } from './uiStore';
 
 export interface CartItem {
   lineId: string;
@@ -20,7 +22,8 @@ interface CartStore {
   openCart: () => void;
   closeCart: () => void;
   setIsCartOpen: (open: boolean) => void;
-  addItem: (item: Omit<CartItem, 'lineId'>) => void;
+  /** Devuelve false si no se agregó (producto agotado), para no mostrar un aviso de éxito falso. */
+  addItem: (item: Omit<CartItem, 'lineId'>) => boolean;
   removeItem: (lineId: string) => void;
   updateQuantity: (lineId: string, delta: number) => void;
   setQuantity: (lineId: string, quantity: number) => void;
@@ -42,6 +45,11 @@ export const useCartStore = create<CartStore>()(
       setIsCartOpen: (open: boolean) => set({ isCartOpen: open }),
 
       addItem: (newItem) => {
+        // Un solo control para todas las formas de agregar: lo agotado en el panel no entra al carrito
+        if (isSoldOut(newItem.productId)) {
+          useUiStore.getState().showToast({ message: `${newItem.name} está agotado por ahora.` });
+          return false;
+        }
         const items = get().items;
         const optionsKey = [...(newItem.selectedOptions || [])].sort().join(',');
         const existingIndex = items.findIndex(
@@ -64,6 +72,7 @@ export const useCartStore = create<CartStore>()(
           const lineId = `${newItem.productId}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
           set({ items: [...items, { ...newItem, lineId }] });
         }
+        return true;
       },
 
       removeItem: (lineId) => {

@@ -1,63 +1,105 @@
 // ===================================================
-// RETEQUEÑOS - CLIENTE DE API DEL CATALOGO
-// Consume /api/catalog con fallback seguro a catálogo local
+// RETEQUEÑOS - SINCRONIZACIÓN CON EL CATÁLOGO DEL SERVIDOR
+// La carta local trae fotos y textos; el servidor decide precios y stock.
+// Si la API no responde, la tienda sigue con los precios locales y el servidor
+// igual recalcula el total al crear el pedido.
 // ===================================================
 
-import { Product } from '../types/product';
-import { PRODUCTS } from '../data/catalog';
+import { PRODUCTS, PROMOTIONS, CREMAS_EXTRAS, PIZZA_ADICIONALES } from '../data/catalog';
+import { DRINKS, UPGRADES } from '../components/configurator/configuratorData';
+import { SERVER_REFS, UPGRADE_REFS } from '../data/serverRefs';
 
-let cachedCatalog: Product[] | null = null;
+interface ServerOption {
+  id: string;
+  label: string;
+  price?: number;
+}
 
-// Misma ruta relativa que el resto de la web; VITE_API_URL solo si la API vive en otro dominio
-const CATALOG_URL = `${(import.meta.env.VITE_API_URL || '').replace(/\/$/, '')}/api/catalog`;
+interface ServerProduct {
+  id: string;
+  price: number;
+  promo: number | null;
+  stock: boolean;
+  options: { presentations?: ServerOption[]; extras?: ServerOption[]; drinks?: ServerOption[] } | null;
+}
 
-export async function fetchCatalog(): Promise<Product[]> {
-  if (cachedCatalog && cachedCatalog.length > 0) {
-    return cachedCatalog;
+export const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
+const soldOut = new Set<string>(); // IDs locales agotados según el servidor
+
+export function isSoldOut(localId: string): boolean {
+  return soldOut.has(localId);
+}
+
+const basePrice = (p: ServerProduct) => (p.promo != null ? p.promo : p.price);
+
+// Sin precio propio, la presentación usa el precio del producto (el que se edita en el panel)
+function presentationPrice(p: ServerProduct, id: string): number | undefined {
+  const presentation = p.options?.presentations?.find((x) => x.id === id);
+  if (!presentation) return undefined;
+  return presentation.price != null ? presentation.price : basePrice(p);
+}
+
+function copyPrices<T extends { id: string }>(local: T[], remote: ServerOption[] | undefined, field: keyof T) {
+  if (!remote) return;
+  for (const item of local) {
+    const match = remote.find((r) => r.id === item.id);
+    if (match && match.price != null) (item[field] as unknown as number) = match.price;
   }
+}
 
-  try {
-    const endpoints = [CATALOG_URL];
-    for (const url of endpoints) {
-      try {
-        const res = await fetch(url, { cache: 'no-cache' });
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            // Unificamos el catálogo remoto con la información de imágenes y slugs local si hiciera falta
-            cachedCatalog = PRODUCTS.map((local) => {
-              const remote = data.find((r: { id: string }) => r.id === local.id);
-              if (remote) {
-                return {
-                  ...local,
-                  basePrice: Number(remote.price) || local.basePrice,
-                  promoPrice: remote.promo ? Number(remote.promo) : local.promoPrice,
-                  stock: remote.stock !== false,
-                  badge: remote.badge || local.badge,
-                };
-              }
-              return local;
-            });
-            return cachedCatalog;
-          }
-        }
-      } catch {
-        // Siguiente endpoint
+/** Actualiza en el lugar los precios y el stock de la carta. Devuelve true si se aplicó el catálogo del servidor. */
+export async function syncCatalogWithServer(): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/api/catalog`, { cache: 'no-cache' });
+  if (!res.ok) return false;
+  const data: unknown = await res.json();
+  if (!Array.isArray(data) || data.length === 0) return false;
+  const byId = new Map((data as ServerProduct[]).map((p) => [p.id, p]));
+
+  for (const product of PRODUCTS) {
+    const ref = SERVER_REFS[product.id];
+    const remote = ref && byId.get(ref.productId);
+    if (!remote) continue;
+    if (product.presentations && product.presentations.length > 0) {
+      for (const presentation of product.presentations) {
+        const price = presentationPrice(remote, presentation.id);
+        if (price != null) presentation.price = price;
+      }
+      product.basePrice = product.presentations[0].price;
+    } else {
+      const price = ref.presentationId ? presentationPrice(remote, ref.presentationId) : basePrice(remote);
+      if (price != null) {
+        product.basePrice = price;
+        if (product.promoPrice != null) product.promoPrice = price;
       }
     }
-  } catch {
-    // Modo offline o servidor no alcanzable
+    if (remote.stock === false) {
+      soldOut.add(product.id);
+      product.badge = 'Agotado';
+    }
   }
 
-  cachedCatalog = PRODUCTS;
-  return PRODUCTS;
-}
+  for (const promo of PROMOTIONS) {
+    const remote = byId.get(SERVER_REFS[promo.id]?.productId || '');
+    if (!remote) continue;
+    promo.price = basePrice(remote);
+    if (remote.stock === false) {
+      soldOut.add(promo.id);
+      promo.badge = 'Agotado';
+    }
+  }
 
-export function getLocalCatalog(): Product[] {
-  return cachedCatalog || PRODUCTS;
-}
-
-export async function getProductBySlug(slug: string): Promise<Product | undefined> {
-  const catalog = await fetchCatalog();
-  return catalog.find((p) => p.slug === slug || p.id === slug);
+  // Opciones compartidas por varios productos: cremas de los tequeños, adicionales de pizza y bebidas de las promos
+  copyPrices(CREMAS_EXTRAS, byId.get('clasicos')?.options?.extras, 'price');
+  copyPrices(PIZZA_ADICIONALES, byId.get('pizza-americana')?.options?.extras, 'price');
+  copyPrices(DRINKS, byId.get('promo-solo')?.options?.drinks, 'extraPrice');
+  for (const upgrade of UPGRADES) {
+    const ref = UPGRADE_REFS[upgrade.id];
+    const remote = ref && byId.get(ref.productId);
+    if (!remote) continue;
+    const price = ref.presentationId ? presentationPrice(remote, ref.presentationId) : basePrice(remote);
+    if (price != null) upgrade.price = price;
+    if (remote.stock === false) soldOut.add(upgrade.id);
+  }
+  return true;
 }

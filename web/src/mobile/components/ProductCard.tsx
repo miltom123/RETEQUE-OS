@@ -39,14 +39,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       return;
     }
 
-    addItem({
+    if (!addItem({
       productId: product.id,
       name: product.name,
       image: product.image,
       quantity: 1,
       unitPrice: displayPrice,
       selectedPresentation: product.presentations?.[0]?.label,
-    });
+    })) return;
 
     showToast({
       message: `¡${product.name} agregado al carrito!`,

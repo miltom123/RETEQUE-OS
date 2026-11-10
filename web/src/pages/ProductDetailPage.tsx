@@ -53,7 +53,7 @@ const ProductDetail: React.FC<{ product: ProductType }> = ({ product }) => {
   };
 
   const handleAddToCart = () => {
-    addItem({
+    if (!addItem({
       productId: product.id,
       name: product.name,
       image: product.image,
@@ -62,7 +62,7 @@ const ProductDetail: React.FC<{ product: ProductType }> = ({ product }) => {
       selectedPresentation: selectedPres ? selectedPres.label : undefined,
       selectedOptions: cremaLabels.map((c) => `Crema extra: ${c}`),
       notes: notes.trim() || undefined,
-    });
+    })) return;
     setAddedToast(true);
     showToast({ message: `Agregado: ${quantity} × ${product.name}`, action: 'cart' });
     setTimeout(() => setAddedToast(false), 1500);

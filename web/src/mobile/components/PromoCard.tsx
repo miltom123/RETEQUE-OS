@@ -34,13 +34,13 @@ export const PromoCard: React.FC<PromoCardProps> = ({
       return;
     }
 
-    addItem({
+    if (!addItem({
       productId: product.id,
       name: product.name,
       image: product.image,
       quantity: 1,
       unitPrice: displayPrice,
-    });
+    })) return;
 
     showToast({
       message: `¡${product.name} agregado al carrito!`,

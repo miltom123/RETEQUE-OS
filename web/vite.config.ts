@@ -7,5 +7,7 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // En desarrollo, /api va al backend local (node tools/server.js), igual que la reescritura de Vercel en producción
+    proxy: { '/api': 'http://localhost:3000' },
   },
 });

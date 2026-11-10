@@ -439,7 +439,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
       }
     });
 
-    addItem({
+    if (!addItem({
       productId: productOrPromo.id,
       name: productOrPromo.name,
       image: productOrPromo.image,
@@ -447,7 +447,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
       unitPrice: unitTotalPrice,
       selectedPresentation: isPromo ? undefined : selectedPresentation,
       selectedOptions: optionsList.length > 0 ? optionsList : undefined,
-    });
+    })) return;
 
     onClose();
     if (onOpenCartDrawer) {

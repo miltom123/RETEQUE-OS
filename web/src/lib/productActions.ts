@@ -20,7 +20,7 @@ export function useProductActions() {
   const quickAdd = (product: Product, presentationId?: string) => {
     const pres =
       product.presentations?.find((p) => p.id === presentationId) ?? product.presentations?.[0];
-    addItem({
+    if (!addItem({
       productId: product.id,
       name: product.name,
       image: product.image,
@@ -28,7 +28,7 @@ export function useProductActions() {
       unitPrice: pres ? pres.price : product.basePrice ?? 0,
       selectedPresentation: pres?.label,
       selectedOptions: [],
-    });
+    })) return;
     showToast({ message: `Agregado: ${product.name}`, action: 'cart' });
   };
 
@@ -41,7 +41,7 @@ export function useProductActions() {
   };
 
   const addPromo = (promotion: Promotion) => {
-    addItem({
+    if (!addItem({
       productId: promotion.id,
       name: promotion.name,
       image: promotion.image,
@@ -49,7 +49,7 @@ export function useProductActions() {
       unitPrice: promotion.price,
       selectedPresentation: promotion.description,
       selectedOptions: [],
-    });
+    })) return;
     showToast({ message: `Agregado: ${promotion.name}`, action: 'cart' });
   };
 

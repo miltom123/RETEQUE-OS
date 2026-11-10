@@ -57,7 +57,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
   };
 
   const handleConfirm = () => {
-    addItem({
+    if (!addItem({
       productId: product.id,
       name: product.name,
       image: product.image,
@@ -66,7 +66,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
       selectedPresentation: selectedPres?.label,
       selectedOptions: selectedSauces,
       notes: notes.trim() || undefined,
-    });
+    })) return;
 
     showToast({
       message: `¡${quantity} × ${product.name} agregado al pedido!`,
