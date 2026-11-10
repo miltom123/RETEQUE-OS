@@ -14,6 +14,7 @@ const { handleCors, extractToken, sendJson } = require('./http');
 const { createAuth } = require('./auth');
 const { createRateLimiter, createOrderRateLimiter } = require('./rate-limit');
 const { createIdempotencyStore } = require('./idempotency');
+const { createPendingExpiry } = require('./pending-orders');
 const { OrderRepository } = require('./repositories/orders.repository');
 const { ConfigRepository } = require('./repositories/config.repository');
 const { CatalogRepository } = require('./repositories/catalog.repository');
@@ -76,7 +77,13 @@ function createApp(options = {}) {
     // Pedidos web por confirmar: pocos por IP y por celular para que nadie llene la lista de caja
     checkPublicOrderRateLimit: createRateLimiter({ max: 10, windowMs: 10 * 60 * 1000, message: 'Hiciste varios pedidos seguidos. Espera unos minutos o escríbenos por WhatsApp.' }),
     checkPublicOrderPhoneLimit: createRateLimiter({ max: 5, windowMs: 10 * 60 * 1000, message: 'Ya registramos varios pedidos con ese celular. Escríbenos por WhatsApp para confirmarlos.' }),
-    idempotency: createIdempotencyStore()
+    idempotency: createIdempotencyStore(),
+    expirePendingOrders: createPendingExpiry({
+      orders: repos.orders,
+      logger,
+      hours: options.pendingOrderHours || process.env.RTQ_PENDING_HOURS,
+      now: options.now
+    })
   };
 
   async function routeRequest(req, res) {

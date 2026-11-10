@@ -16,7 +16,7 @@ async function newOrderId(ordersRepo) {
   return id;
 }
 
-async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { repos, auth, checkOrderRateLimit, logger }) {
+async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { repos, auth, checkOrderRateLimit, expirePendingOrders, logger }) {
   if (pathname === '/api/pedidos') {
     // GET: Obtener todos los pedidos (Exclusivo Administrador autenticado para evitar fuga de PII)
     if (req.method === 'GET') {
@@ -32,6 +32,8 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
 
       const user = auth.sessionUser(token);
       if (user.role !== 'admin' && parsedUrl.searchParams.get('scope') === 'all') return sendJson(res, 403, { error: 'Solo el administrador puede consultar el historial completo.' });
+      // Antes de listar se anulan los pedidos web que vencieron sin confirmar; si falla, igual se lista
+      try { await expirePendingOrders(); } catch (error) { logger.warn('[PEDIDOS WEB] No se pudieron vencer los pedidos sin confirmar.'); }
       const orders = (await repos.orders.getAll()).filter(order => canAccessOrder(user, order));
       return sendJson(res, 200, orders);
     }

@@ -10,11 +10,11 @@ const tempDirs = [];
 const servers = [];
 const silent = { log() {}, warn() {} };
 
-async function startApp() {
+async function startApp(options = {}) {
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rtq-web-orders-test-'));
   tempDirs.push(dataDir);
   for (const name of ['catalog.db.json', 'store.config.json']) fs.copyFileSync(path.join(root, 'data', name), path.join(dataDir, name));
-  const app = createApp({ dataDir, logger: silent });
+  const app = createApp({ dataDir, logger: silent, ...options });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   servers.push(app.server);
   const base = `http://127.0.0.1:${app.server.address().port}`;
@@ -100,7 +100,23 @@ async function run() {
   for (let i = 0; i < 6; i++) results.push((await c.order(cart({ customer: { name: 'Mismo Celular', phone: '955555555' } }))).status);
   assert.deepEqual(results, [201, 201, 201, 201, 201, 429]);
 
-  console.log('Pedido web: código, idempotencia, validaciones, campos forzados, confirmación de caja, reportes y límites: PASS');
+  // 4. Un pedido que nadie confirma se anula solo al vencer el plazo; uno confirmado no se toca.
+  // Va al final: con PostgreSQL la base es compartida y adelantar el reloj vence todo lo pendiente.
+  let ahead = 0;
+  const d = await startApp({ pendingOrderHours: 12, now: () => Date.now() + ahead });
+  const adminD = await d.login('administrador');
+  const expiryPhone = '9' + String(Date.now() + 7).slice(-8);
+  const abandoned = (await d.order(cart({ customer: { name: 'Sin Confirmar', phone: expiryPhone } }))).body.code;
+  const confirmed = (await d.order(cart({ customer: { name: 'Confirmado', phone: expiryPhone } }))).body.code;
+  await d.call('/api/pedidos/' + confirmed, { method: 'PATCH', headers: adminD, body: JSON.stringify({ status: 'new' }) });
+  const statusOf = async id => (await d.call('/api/pedidos?scope=all', { headers: adminD })).body.find(o => o.id === id).status;
+  ahead = 11 * 60 * 60 * 1000;
+  assert.equal(await statusOf(abandoned), 'pending_confirmation', 'Dentro del plazo sigue por confirmar');
+  ahead = 13 * 60 * 60 * 1000;
+  assert.equal(await statusOf(abandoned), 'cancelled', 'Vencido el plazo se anula solo');
+  assert.equal(await statusOf(confirmed), 'new', 'Un pedido ya confirmado no vence');
+
+  console.log('Pedido web: código, idempotencia, validaciones, campos forzados, confirmación de caja, reportes, límites y vencimiento: PASS');
 }
 
 run().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
