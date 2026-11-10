@@ -7,8 +7,8 @@ import { useAuthStore } from '../../store/authStore';
 import { customerAccountsEnabled } from '../../config/features';
 import { formatMoney, roundMoney } from '../../lib/money';
 import { isValidName, isValidPeruMobile } from '../../lib/validation';
-import { discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
-import { resetOrderAttempt, submitOrder } from '../../lib/orderApi';
+import { buildFallbackOrderUrl, discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
+import { resetOrderAttempt, StoreUnavailableError, submitOrder, type OrderDetails } from '../../lib/orderApi';
 import { useServerCoupon } from '../../hooks/useServerCoupon';
 import { FulfillmentType } from '../../types/orderRequest';
 import { CustomerForm } from '../components/CustomerForm';
@@ -45,6 +45,7 @@ export const OrderRequestPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const [order, setOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
   const isSent = order !== null;
 
@@ -117,15 +118,17 @@ export const OrderRequestPage: React.FC = () => {
     const whatsappWindow = prepareWhatsAppWindow();
     setSending(true);
     setSubmitError(null);
+    setFallbackUrl(null);
+    const details: OrderDetails = {
+      customer: { name: fullName.trim(), phone: phone.replace(/\s+/g, '') },
+      mode,
+      address: mode === 'delivery' ? address.trim() : undefined,
+      reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+      notes: generalNotes.trim() || undefined,
+      couponCode: coupon.applied?.code,
+    };
     try {
-      const result = await submitOrder(items, {
-        customer: { name: fullName.trim(), phone: phone.replace(/\s+/g, '') },
-        mode,
-        address: mode === 'delivery' ? address.trim() : undefined,
-        reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
-        notes: generalNotes.trim() || undefined,
-        couponCode: coupon.applied?.code,
-      });
+      const result = await submitOrder(items, details);
       setOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
       if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
       else discardWhatsAppWindow(whatsappWindow);
@@ -133,6 +136,8 @@ export const OrderRequestPage: React.FC = () => {
     } catch (error) {
       discardWhatsAppWindow(whatsappWindow);
       setSubmitError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
+      // Si la tienda no responde, el cliente igual puede pedir: el detalle va completo por WhatsApp
+      if (error instanceof StoreUnavailableError) setFallbackUrl(buildFallbackOrderUrl(items, details));
     } finally {
       setSending(false);
     }
@@ -280,6 +285,17 @@ export const OrderRequestPage: React.FC = () => {
             <p role="alert" className="text-xs font-bold text-[#FF3038] text-center mb-2">
               {submitError}
             </p>
+          )}
+          {fallbackUrl && (
+            <a
+              href={fallbackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-10 mb-2 rounded-xl border border-[#16B959] text-[#13A24D] text-xs font-black flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              <span>Enviar el pedido completo por WhatsApp</span>
+            </a>
           )}
           <button
             type="button"

@@ -95,7 +95,8 @@ assert(orderApiContent.includes("'/api/public/quote'"), 'Los cupones no se valid
 assert(whatsappContent.includes('prepareWhatsAppWindow') && whatsappContent.includes('openWhatsAppOrder'), 'Falta abrir WhatsApp sin que el navegador lo bloquee');
 assert(orderPageContent.includes('submitOrder') && orderPageContent.includes('order.code'), 'La pantalla de pedido no muestra el código RTQ');
 assert(!whatsappContent.includes('PEDIDO RETEQUEÑOS'), 'WhatsApp todavía arma el pedido completo en el navegador');
-console.log('  ✓ [PASS] Pedido registrado en el servidor y WhatsApp solo con el código');
+assert(orderApiContent.includes('StoreUnavailableError') && whatsappContent.includes('buildFallbackOrderUrl') && orderPageContent.includes('buildFallbackOrderUrl'), 'Si la tienda no responde, el cliente no tiene cómo pedir');
+console.log('  ✓ [PASS] Pedido registrado en el servidor, WhatsApp solo con el código y respaldo si la tienda no responde');
 
 console.log('\n======================================================');
 console.log('VERIFICACIÓN DEL FRONTEND MÓVIL EXITOSA: 4/4 FASES OK');

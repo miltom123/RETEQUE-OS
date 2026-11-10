@@ -21,6 +21,8 @@ interface DirectCheckoutModalProps {
   errors: Record<string, string>;
   sending?: boolean;
   submitError?: string | null;
+  /** Enlace para enviar el pedido completo por WhatsApp cuando la tienda no pudo registrarlo. */
+  fallbackUrl?: string;
   /** Pedido ya registrado: se muestra su código y el total que calculó el servidor. */
   order?: { code: string; total: number; whatsappUrl: string | null } | null;
 }
@@ -43,6 +45,7 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
   errors,
   sending = false,
   submitError,
+  fallbackUrl,
   order,
 }) => {
   const { fullName, phone, deliveryType, address, setField } = useCheckoutStore();
@@ -227,6 +230,18 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
           <p role="alert" className="text-xs font-bold text-[#D31728]">
             {submitError}
           </p>
+        )}
+
+        {fallbackUrl && (
+          <a
+            href={fallbackUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full h-10 rounded-xl border border-[#16B959] text-[#13A24D] text-xs font-black hover:bg-[#E8F8EE] flex items-center justify-center gap-2"
+          >
+            <MessageCircle className="w-4 h-4" aria-hidden="true" />
+            Enviar el pedido completo por WhatsApp
+          </a>
         )}
 
         <button

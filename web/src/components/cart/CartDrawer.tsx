@@ -4,14 +4,14 @@ import { X, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { useUiStore } from '../../store/uiStore';
-import { discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
+import { buildFallbackOrderUrl, discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
 import { isValidName, isValidPeruMobile } from '../../lib/validation';
 import { CartItemRow } from './CartItemRow';
 import { CartCustomerForm } from './CartCustomerForm';
 import { CartDrawerFooter } from './CartDrawerFooter';
 import { DEFAULT_TACNA_ZONE, TacnaZone } from '../../config/tacnaZones';
 import { roundMoney } from '../../lib/money';
-import { resetOrderAttempt, submitOrder } from '../../lib/orderApi';
+import { resetOrderAttempt, StoreUnavailableError, submitOrder, type OrderDetails } from '../../lib/orderApi';
 import { useServerCoupon } from '../../hooks/useServerCoupon';
 
 export const CartDrawer: React.FC = () => {
@@ -29,6 +29,7 @@ export const CartDrawer: React.FC = () => {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const [order, setOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
   const mode = deliveryType === 'delivery' ? 'delivery' : 'pickup';
   const coupon = useServerCoupon(items, mode, isOpen);
@@ -61,6 +62,7 @@ export const CartDrawer: React.FC = () => {
   useEffect(() => {
     setSent(false);
     setOrder(null);
+    setFallbackUrl(null);
   }, [items]);
 
   if (!isOpen) return null;
@@ -96,15 +98,17 @@ export const CartDrawer: React.FC = () => {
     const whatsappWindow = prepareWhatsAppWindow();
     setSending(true);
     setSubmitError(null);
+    setFallbackUrl(null);
+    const details: OrderDetails = {
+      customer: { name: fullName.trim(), phone: phone.trim() },
+      mode,
+      address: mode === 'delivery' ? address.trim() : undefined,
+      reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+      notes: [generalNotes.trim(), mode === 'delivery' ? `Zona: ${selectedZone.name}` : ''].filter(Boolean).join(' · ') || undefined,
+      couponCode: appliedCoupon?.code,
+    };
     try {
-      const result = await submitOrder(items, {
-        customer: { name: fullName.trim(), phone: phone.trim() },
-        mode,
-        address: mode === 'delivery' ? address.trim() : undefined,
-        reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
-        notes: [generalNotes.trim(), mode === 'delivery' ? `Zona: ${selectedZone.name}` : ''].filter(Boolean).join(' · ') || undefined,
-        couponCode: appliedCoupon?.code,
-      });
+      const result = await submitOrder(items, details);
       setOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
       if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
       else discardWhatsAppWindow(whatsappWindow);
@@ -112,6 +116,8 @@ export const CartDrawer: React.FC = () => {
     } catch (error) {
       discardWhatsAppWindow(whatsappWindow);
       setSubmitError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
+      // Si la tienda no responde, el cliente igual puede pedir: el detalle va completo por WhatsApp
+      if (error instanceof StoreUnavailableError) setFallbackUrl(buildFallbackOrderUrl(items, details));
     } finally {
       setSending(false);
     }
@@ -124,6 +130,7 @@ export const CartDrawer: React.FC = () => {
     setSent(false);
     setOrder(null);
     setSubmitError(null);
+    setFallbackUrl(null);
     closeCart();
     showToast({ message: 'Pedido vaciado. ¡Gracias por tu compra!' });
   };
@@ -209,6 +216,7 @@ export const CartDrawer: React.FC = () => {
             sent={sent}
             sending={sending}
             submitError={submitError}
+            fallbackUrl={fallbackUrl ?? undefined}
             orderCode={order?.code}
             orderTotal={order?.total}
             whatsappUrl={order?.whatsappUrl ?? undefined}

@@ -13,6 +13,8 @@ interface CartDrawerFooterProps {
   sent: boolean;
   sending?: boolean;
   submitError?: string | null;
+  /** Enlace para enviar el pedido completo por WhatsApp cuando la tienda no pudo registrarlo. */
+  fallbackUrl?: string;
   /** Código RTQ-… del pedido ya registrado y total calculado por el servidor. */
   orderCode?: string;
   orderTotal?: number;
@@ -32,6 +34,7 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
   sent,
   sending = false,
   submitError,
+  fallbackUrl,
   orderCode,
   orderTotal,
   whatsappUrl,
@@ -115,6 +118,18 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
         <p role="alert" className="text-xs font-bold text-[#D31728]">
           {submitError}
         </p>
+      )}
+
+      {fallbackUrl && (
+        <a
+          href={fallbackUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full h-10 rounded-[10px] border border-[#16A34A] text-[#15803D] text-xs font-black hover:bg-[#E8F8EE] flex items-center justify-center gap-2"
+        >
+          <MessageCircle className="w-4 h-4" aria-hidden="true" />
+          Enviar el pedido completo por WhatsApp
+        </a>
       )}
 
       {sent && orderCode ? (

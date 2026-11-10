@@ -32,7 +32,8 @@ export function useServerCoupon(items: CartItem[], mode: OrderMode, active = tru
       if (cancelled) return;
       if (res.valid) {
         setApplied({ code: res.code, discount: res.discount });
-      } else {
+      } else if (!res.unavailable) {
+        // Si la tienda no respondió se conserva el cupón: no se sabe que dejó de aplicar
         setApplied(null);
         setField('couponCode', '');
         setMessage({ text: res.message, error: true });

@@ -43,6 +43,14 @@ export interface OrderDetails {
 
 const NETWORK_ERROR = 'No pudimos conectar con la tienda. Revisa tu conexión e inténtalo de nuevo.';
 
+/** La tienda no respondió (sin red, servidor caído o demasiado lento). El pedido puede ir completo por WhatsApp. */
+export class StoreUnavailableError extends Error {
+  constructor() {
+    super(NETWORK_ERROR);
+    this.name = 'StoreUnavailableError';
+  }
+}
+
 /** Líneas para el servidor: la que guardó el configurador o una deducida del producto. */
 function serverLines(items: { spec?: LineSpec; quantity: number; productId: string; selectedPresentation?: string; selectedOptions?: string[]; notes?: string }[]) {
   return items.map((item) => {
@@ -52,23 +60,26 @@ function serverLines(items: { spec?: LineSpec; quantity: number; productId: stri
   });
 }
 
-async function post<T>(path: string, body: unknown, headers: Record<string, string> = {}): Promise<T> {
+async function post<T>(path: string, body: unknown, headers: Record<string, string> = {}, timeoutMs = 20000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
+  let data: { error?: string } & T;
   try {
     res = await fetch(`${API_BASE}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
-  } catch {
-    throw new Error(NETWORK_ERROR);
-  }
-  let data: { error?: string } & T;
-  try {
     data = await res.json();
   } catch {
-    throw new Error(NETWORK_ERROR);
+    // Sin red, sin respuesta a tiempo o una respuesta que no es de la tienda (página de error del hosting)
+    throw new StoreUnavailableError();
+  } finally {
+    clearTimeout(timer);
   }
+  if (res.status >= 500) throw new StoreUnavailableError();
   if (!res.ok) throw new Error(data.error || NETWORK_ERROR);
   return data;
 }
@@ -92,7 +103,8 @@ export function submitOrder(
   const body = { ...details, items: serverLines(items) };
   const serialized = JSON.stringify(body);
   if (!lastAttempt || lastAttempt.body !== serialized) lastAttempt = { body: serialized, key: newKey() };
-  return post<OrderResult>('/api/public/orders', body, { 'Idempotency-Key': lastAttempt.key });
+  // Plazo largo: el servidor puede estar despertando. Si se agota, un reintento con la misma clave no duplica.
+  return post<OrderResult>('/api/public/orders', body, { 'Idempotency-Key': lastAttempt.key }, 45000);
 }
 
 /** Al cerrar un pedido ya registrado: el siguiente, aunque sea igual, es un pedido nuevo. */

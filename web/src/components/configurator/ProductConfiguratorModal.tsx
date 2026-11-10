@@ -4,8 +4,8 @@ import { X } from 'lucide-react';
 import { formatMoney } from '../../lib/money';
 import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
-import { discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
-import { resetOrderAttempt, submitOrder } from '../../lib/orderApi';
+import { buildFallbackOrderUrl, discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
+import { resetOrderAttempt, StoreUnavailableError, submitOrder, type OrderDetails } from '../../lib/orderApi';
 import { kitchenDetails, specFromItem, type LineAddon, type LineSpec } from '../../lib/cartSpec';
 import { isValidName, isValidPeruMobile } from '../../lib/validation';
 import { UPGRADE_REFS } from '../../data/serverRefs';
@@ -111,6 +111,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
   const [checkoutErrors, setCheckoutErrors] = useState<Record<string, string>>({});
   const [directSending, setDirectSending] = useState(false);
   const [directError, setDirectError] = useState<string | null>(null);
+  const [directFallbackUrl, setDirectFallbackUrl] = useState<string | null>(null);
   const [directOrder, setDirectOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
 
   // Bloquea el scroll del fondo y cierra con Escape mientras el modal está abierto
@@ -356,6 +357,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
 
   const handleComprarAhora = () => {
     setDirectError(null);
+    setDirectFallbackUrl(null);
     setDirectOrder(null);
     setIsCheckoutModalOpen(true);
   };
@@ -363,6 +365,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
   const closeDirectCheckout = () => {
     setIsCheckoutModalOpen(false);
     setDirectError(null);
+    setDirectFallbackUrl(null);
     if (directOrder) {
       setDirectOrder(null);
       resetOrderAttempt();
@@ -384,7 +387,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
     }
     setCheckoutErrors({});
 
-    const { spec } = buildLine();
+    const { spec, optionsList } = buildLine();
     if (!spec) {
       setDirectError('Este producto no se puede pedir en línea por ahora. Escríbenos por WhatsApp.');
       return;
@@ -394,20 +397,32 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
     const whatsappWindow = prepareWhatsAppWindow();
     setDirectSending(true);
     setDirectError(null);
+    setDirectFallbackUrl(null);
+    const details: OrderDetails = {
+      customer: { name: fullName.trim(), phone: phone.trim() },
+      mode,
+      address: mode === 'delivery' ? address.trim() : undefined,
+      reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+      notes: generalNotes.trim() || undefined,
+    };
     try {
-      const result = await submitOrder([{ productId: productOrPromo.id, quantity, spec }], {
-        customer: { name: fullName.trim(), phone: phone.trim() },
-        mode,
-        address: mode === 'delivery' ? address.trim() : undefined,
-        reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
-        notes: generalNotes.trim() || undefined,
-      });
+      const result = await submitOrder([{ productId: productOrPromo.id, quantity, spec }], details);
       setDirectOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
       if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
       else discardWhatsAppWindow(whatsappWindow);
     } catch (error) {
       discardWhatsAppWindow(whatsappWindow);
       setDirectError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
+      // Si la tienda no responde, el cliente igual puede pedir: el detalle va completo por WhatsApp
+      if (error instanceof StoreUnavailableError) {
+        setDirectFallbackUrl(buildFallbackOrderUrl([{
+          name: productOrPromo.name,
+          quantity,
+          unitPrice: unitTotalPrice,
+          selectedPresentation: isPromo || !productOrPromo.presentations ? undefined : selectedPresentation,
+          selectedOptions: optionsList,
+        }], details));
+      }
     } finally {
       setDirectSending(false);
     }
@@ -581,6 +596,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
           onConfirm={handleModalConfirmWhatsApp}
           sending={directSending}
           submitError={directError}
+          fallbackUrl={directFallbackUrl ?? undefined}
           order={directOrder}
           productName={productOrPromo.name}
           quantity={quantity}

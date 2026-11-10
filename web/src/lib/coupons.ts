@@ -4,13 +4,15 @@
 // ===================================================
 
 import type { CartItem } from '../store/cartStore';
-import { quoteCart, type OrderMode } from './orderApi';
+import { quoteCart, StoreUnavailableError, type OrderMode } from './orderApi';
 
 export interface CouponCheck {
   valid: boolean;
   message: string;
   discount: number;
   code: string;
+  /** La tienda no respondió: no se sabe si el cupón aplica. */
+  unavailable?: boolean;
 }
 
 export async function validateCoupon(rawCode: string, items: CartItem[], mode: OrderMode): Promise<CouponCheck> {
@@ -22,6 +24,6 @@ export async function validateCoupon(rawCode: string, items: CartItem[], mode: O
     if (coupon && coupon.applied) return { valid: true, message: coupon.message, discount: quote.discount, code: coupon.code };
     return { valid: false, message: coupon ? coupon.message : `El cupón "${code}" no es válido o ha expirado.`, discount: 0, code };
   } catch (error) {
-    return { valid: false, message: error instanceof Error ? error.message : 'No pudimos validar el cupón.', discount: 0, code };
+    return { valid: false, message: error instanceof Error ? error.message : 'No pudimos validar el cupón.', discount: 0, code, unavailable: error instanceof StoreUnavailableError };
   }
 }
