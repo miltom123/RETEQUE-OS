@@ -12,6 +12,7 @@ const os = require('os');
 const { parseArgs } = require('./backend/config');
 const { createApp } = require('./backend/app');
 const { DataFileError } = require('./backend/repositories/json-file');
+const { ensureInitialStaff } = require('./backend/initial-staff');
 
 // Detección de IP local para conexión celular
 function getLocalIp() {
@@ -67,4 +68,11 @@ try {
   process.exitCode = 1;
 }
 
-if (app) startServer(app);
+if (app && process.env.RTQ_STORAGE === 'postgres') {
+  // Base nueva sin usuarios: crea las cuentas iniciales antes de atender; si falla, el servidor igual arranca
+  ensureInitialStaff(app.repos.users)
+    .catch(() => console.warn('[EQUIPO] No se pudieron revisar las cuentas iniciales.'))
+    .finally(() => startServer(app));
+} else if (app) {
+  startServer(app);
+}
