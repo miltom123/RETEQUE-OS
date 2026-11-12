@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { sanitizeId, sanitizeString, sanitizeUrl } = require('../sanitize');
+const { cleanId, sanitizeId, sanitizeString, sanitizeUrl } = require('../sanitize');
 const { readJsonFile } = require('./json-file');
 const { ORDER_STATUSES } = require('../order-status');
 
@@ -146,6 +146,8 @@ class OrderRepository {
 
     if (ORDER_STATUSES.includes(newStatus)) {
       order.status = newStatus;
+      // Hora de cada cambio: el KDS calcula el tiempo transcurrido y el cliente ve su avance
+      order.statusAt = { ...(order.statusAt || {}), [newStatus]: new Date().toISOString() };
       if (newStatus === 'cancelled') {
         order.time = 'Cancelado';
       } else if (newStatus === 'kitchen') {
@@ -173,6 +175,65 @@ class OrderRepository {
     this.saveSync();
     return order;
   }
+
+  // Cambios parciales que no son de estado: constancia de pago y despacho al motorizado
+  patch(id, fields) {
+    const order = this.orders.find(o => o.id === id);
+    if (!order) return null;
+    if ('receipt' in fields) order.receipt = normalizeReceipt(fields.receipt);
+    if ('dispatch' in fields) order.dispatch = normalizeDispatch(fields.dispatch);
+    this.saveSync();
+    return order;
+  }
+}
+
+const isoOrNull = value => (typeof value === 'string' && Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null);
+
+function normalizeReceipt(receipt) {
+  if (!receipt || typeof receipt !== 'object') return null;
+  const type = ['image/jpeg', 'image/png', 'image/webp'].includes(receipt.type) ? receipt.type : null;
+  return type ? { type, uploadedAt: isoOrNull(receipt.uploadedAt) || new Date().toISOString() } : null;
+}
+
+const DISPATCH_STATUSES = ['offered', 'assigned', 'failed', 'manual'];
+function normalizeDispatch(dispatch) {
+  if (!dispatch || typeof dispatch !== 'object' || !DISPATCH_STATUSES.includes(dispatch.status)) return null;
+  return {
+    status: dispatch.status,
+    driverId: dispatch.driverId ? cleanId(String(dispatch.driverId)) || null : null,
+    driverName: sanitizeString(dispatch.driverName || '').slice(0, 60) || null,
+    takeTokenHash: /^[a-f0-9]{64}$/.test(dispatch.takeTokenHash || '') ? dispatch.takeTokenHash : null,
+    offeredAt: isoOrNull(dispatch.offeredAt),
+    assignedAt: isoOrNull(dispatch.assignedAt),
+    attempts: Math.max(0, Math.min(99, parseInt(dispatch.attempts, 10) || 0)),
+    lastError: sanitizeString(dispatch.lastError || '').slice(0, 200) || null,
+  };
+}
+
+// Lo elegido en cada línea, tal como lo cotiza el servidor: sirve para repetir el pedido
+function normalizeSpec(spec) {
+  if (!spec || typeof spec !== 'object') return null;
+  const id = cleanId(spec.productId);
+  if (!id) return null;
+  const result = { productId: id };
+  if (spec.presentationId) result.presentationId = cleanId(String(spec.presentationId));
+  if (spec.drinkId) result.drinkId = cleanId(String(spec.drinkId));
+  if (spec.extras && typeof spec.extras === 'object') {
+    const extras = {};
+    for (const [key, count] of Object.entries(spec.extras).slice(0, 12)) {
+      const qty = parseInt(count, 10);
+      if (cleanId(key) && qty > 0 && qty <= 10) extras[cleanId(key)] = qty;
+    }
+    if (Object.keys(extras).length) result.extras = extras;
+  }
+  if (Array.isArray(spec.addons) && spec.addons.length) {
+    result.addons = spec.addons.slice(0, 10)
+      .map(a => ({ productId: cleanId(a && a.productId), ...(a && a.presentationId ? { presentationId: cleanId(String(a.presentationId)) } : {}), qty: Math.max(1, Math.min(20, parseInt(a && a.qty, 10) || 1)) }))
+      .filter(a => a.productId);
+  }
+  const details = sanitizeString(spec.details || '').slice(0, 300);
+  if (details) result.details = details;
+  return result;
 }
 
 function normalizeOrder(order) {
@@ -181,34 +242,27 @@ function normalizeOrder(order) {
       ? order.items.map(it => {
           const qty = Math.max(1, parseInt(it.qty, 10) || 1);
           const price = Math.round((Math.max(0, parseFloat(it.price) || 0) + Number.EPSILON) * 100) / 100;
+          const spec = normalizeSpec(it.spec);
           return {
             productId: it.productId ? sanitizeId(it.productId) : null,
             name: sanitizeString(it.name || 'Ítem'),
             qty,
             price,
-            sauces: sanitizeString(it.sauces || '')
+            sauces: sanitizeString(it.sauces || ''),
+            ...(spec ? { spec } : {})
           };
         })
       : [];
 
-    const deliveryFee = Math.round((Math.max(0, parseFloat(order.deliveryFee) || 0) + Number.EPSILON) * 100) / 100;
-    const discount = Math.round((Math.max(0, parseFloat(order.discount) || 0) + Number.EPSILON) * 100) / 100;
+    const money = value => Math.round((Math.max(0, parseFloat(value) || 0) + Number.EPSILON) * 100) / 100;
+    const deliveryFee = money(order.deliveryFee);
 
-    // Recalcular subtotal a partir de ítems si existen
-    let subtotal = Math.round((Math.max(0, parseFloat(order.subtotal) || 0) + Number.EPSILON) * 100) / 100;
-    if (items.length > 0) {
-      const computedSubtotal = Math.round((items.reduce((sum, it) => sum + (it.price * it.qty), 0) + Number.EPSILON) * 100) / 100;
-      if (Math.abs(computedSubtotal - subtotal) > 0.05 || subtotal === 0) {
-        subtotal = computedSubtotal;
-      }
-    }
-
-    // Recalcular total con integridad financiera
-    const computedTotal = Math.max(0, Math.round((subtotal + deliveryFee - discount + Number.EPSILON) * 100) / 100);
-    let total = Math.round((Math.max(0, parseFloat(order.total) || 0) + Number.EPSILON) * 100) / 100;
-    if (Math.abs(computedTotal - total) > 0.05 || total === 0) {
-      total = computedTotal;
-    }
+    // El subtotal sale siempre de las líneas y el total se recalcula: nunca se acepta el que envía el cliente
+    const subtotal = items.length > 0
+      ? Math.round(items.reduce((sum, it) => sum + Math.round(it.price * 100) * it.qty, 0)) / 100
+      : money(order.subtotal);
+    const discount = Math.min(money(order.discount), subtotal);
+    const total = Math.max(0, Math.round((subtotal + deliveryFee - discount) * 100) / 100);
 
     // Sanitización preventiva profunda de campos de texto
     return {
@@ -229,6 +283,12 @@ function normalizeOrder(order) {
       elapsedMinutes: 0,
       createdAt: order.createdAt || new Date().toISOString(),
       createdBy: order.createdBy || null,
+      customerId: order.customerId ? cleanId(String(order.customerId)) || null : null,
+      scheduledFor: isoOrNull(order.scheduledFor),
+      accessTokenHash: /^[a-f0-9]{64}$/.test(order.accessTokenHash || '') ? order.accessTokenHash : null,
+      receipt: normalizeReceipt(order.receipt),
+      dispatch: normalizeDispatch(order.dispatch),
+      statusAt: { [ORDER_STATUSES.includes(order.status) ? order.status : 'new']: isoOrNull(order.createdAt) || new Date().toISOString() },
       items,
       subtotal,
       deliveryFee,
@@ -238,4 +298,4 @@ function normalizeOrder(order) {
 
 }
 
-module.exports = { OrderRepository, SEED_ORDERS, normalizeOrder };
+module.exports = { OrderRepository, SEED_ORDERS, normalizeOrder, normalizeDispatch };

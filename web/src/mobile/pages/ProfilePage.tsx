@@ -16,6 +16,7 @@ import {
   Monitor,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { AddressBook } from '../components/AddressBook';
 import { useUiStore } from '../../store/uiStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useCartStore } from '../../store/cartStore';
@@ -106,7 +107,7 @@ export const ProfilePage: React.FC = () => {
               <p className="text-xs text-[#8C867F] truncate">{user.email}</p>
               <div className="flex items-center gap-1.5 mt-1 text-[11px] font-bold text-emerald-600">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Cuenta Verificada ({user.provider === 'google' ? 'Google' : 'Email'})</span>
+                <span>Cuenta registrada ({user.email})</span>
               </div>
             </div>
 
@@ -230,6 +231,8 @@ export const ProfilePage: React.FC = () => {
         </div>
       )}
 
+      {isAuthenticated && user && <AddressBook />}
+
       {/* Accesos rápidos */}
       <div className="grid grid-cols-2 gap-3">
         <Link
@@ -246,15 +249,15 @@ export const ProfilePage: React.FC = () => {
         </Link>
 
         <Link
-          to="/app/carrito"
+          to="/app/pedidos"
           className="bg-white border border-[#EFE6D6] p-4 rounded-2xl flex items-center gap-3 hover:border-[#FF3038]/40 transition shadow-sm"
         >
-          <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#F5A623] flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-orange-50 text-[#B45309] flex items-center justify-center shrink-0">
             <ShoppingBag className="w-5 h-5" />
           </div>
           <div>
-            <span className="block text-xs font-bold text-[#242424]">Carrito</span>
-            <span className="text-[11px] text-[#8C867F] font-medium">{cartCount} en lista</span>
+            <span className="block text-xs font-bold text-[#242424]">Mis pedidos</span>
+            <span className="text-[11px] text-[#4B4540] font-medium">Estado y repetir · {cartCount} en carrito</span>
           </div>
         </Link>
       </div>

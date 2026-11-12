@@ -91,6 +91,10 @@
           const hasNewWeb = remoteOrders.some(r => !previousIds.has(r.id) && r.status === 'pending_confirmation');
           const isFirstSync = window.ORDERS.length === 0 || previousIds.size === 0;
           const hasDifference = JSON.stringify(window.ORDERS) !== JSON.stringify(remoteOrders);
+          // Constancias recién subidas y despachos que n8n no pudo enviar también suenan (RFI-12, RNF-05)
+          const previousById = new Map(window.ORDERS.map(o => [o.id, o]));
+          const newReceipt = remoteOrders.find(r => r.receipt && previousById.has(r.id) && !previousById.get(r.id).receipt);
+          const newFailure = remoteOrders.find(r => r.dispatch && r.dispatch.status === 'failed' && previousById.has(r.id) && (previousById.get(r.id).dispatch || {}).status !== 'failed');
 
           if (hasDifference) {
             window.ORDERS = remoteOrders;
@@ -109,9 +113,16 @@
             } else if (hasNewWeb && !isFirstSync) {
               if (window.playAlertSound) window.playAlertSound();
               if (window.showToast) window.showToast('🌐 Nuevo pedido web por confirmar: revisa WhatsApp.');
+            } else if (newReceipt && !isFirstSync) {
+              if (window.playAlertSound) window.playAlertSound();
+              if (window.showToast) window.showToast('📎 Constancia de pago recibida en ' + newReceipt.id + ': verifícala.');
+            } else if (newFailure && !isFirstSync) {
+              if (window.playAlertSound) window.playAlertSound();
+              if (window.showToast) window.showToast('⚠ No se pudo avisar al motorizado de ' + newFailure.id + ': coordínalo a mano.');
             }
           }
           if (window.renderCash) window.renderCash();
+          if (hasDifference && window.renderDashboard) window.renderDashboard();
           if (hasDifference && window.refreshVisibleReports) window.refreshVisibleReports();
         }
       } else {

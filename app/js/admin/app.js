@@ -58,6 +58,7 @@ function initNavigation() {
       if (tabId === 'tab-history' && window.renderOrderHistory) window.renderOrderHistory();
       if (tabId === 'tab-cash' && window.loadCashCatalog) window.loadCashCatalog();
       if (tabId === 'tab-users' && window.loadUsers) window.loadUsers();
+      if (tabId === 'tab-users' && window.loadDriversAdmin) window.loadDriversAdmin();
       if (tabId === 'tab-reports' && window.loadReports) window.loadReports();
       if (tabId === 'tab-dashboard') {
         setTimeout(() => {
@@ -105,5 +106,6 @@ window.startAdminApp = function() {
   if (window.renderDashboardFeedback) window.renderDashboardFeedback();
   if (window.renderSurveys) window.renderSurveys();
   if (window.initCharts) window.initCharts();
+  if (window.loadDrivers) window.loadDrivers();
 };
 window.addEventListener('DOMContentLoaded', () => window.initAdminAuth());

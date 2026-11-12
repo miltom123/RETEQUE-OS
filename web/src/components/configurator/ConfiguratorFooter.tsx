@@ -7,7 +7,8 @@ interface ConfiguratorFooterProps {
   onSetQuantity: (updater: (q: number) => number) => void;
   grandTotalPrice: number;
   onAddToCart: () => void;
-  onComprarAhora: () => void;
+  /** Sin esta función no se muestra "Pedir por WhatsApp" (la app móvil pide desde el carrito). */
+  onComprarAhora?: () => void;
   /** false mientras falten sabores o cremas por elegir */
   canSubmit?: boolean;
 }
@@ -60,7 +61,7 @@ export const ConfiguratorFooter: React.FC<ConfiguratorFooterProps> = ({
           Agregar al pedido
         </button>
 
-        <button
+        {onComprarAhora && <button
           type="button"
           onClick={onComprarAhora}
           disabled={!canSubmit}
@@ -68,7 +69,7 @@ export const ConfiguratorFooter: React.FC<ConfiguratorFooterProps> = ({
         >
           <MessageCircle className="w-4 h-4" />
           <span className="whitespace-nowrap"><span className="hidden sm:inline">Pedir por </span>WhatsApp<span className="hidden sm:inline"> · {formatMoney(grandTotalPrice)}</span></span>
-        </button>
+        </button>}
       </div>
     </div>
   );

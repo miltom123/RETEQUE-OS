@@ -26,14 +26,21 @@ const { handleOrders } = require('./routes/orders.routes');
 const { handleConfig } = require('./routes/config.routes');
 const { handleCatalog } = require('./routes/catalog.routes');
 const { handlePublic } = require('./routes/public.routes');
+const { handleCustomers } = require('./routes/customers.routes');
+const { handleReceipts } = require('./routes/receipts.routes');
+const { handleDispatch } = require('./routes/dispatch.routes');
+const { CustomersRepository } = require('./repositories/customers.repository');
+const { createCustomerAuth, loadSecret } = require('./customer-auth');
+const { createDispatcher } = require('./dispatch');
 const { serveStatic } = require('./routes/static.routes');
 
 // El orden importa: reproduce la cadena de if de la versión monolítica, incluidos los casos
 // en que un método no contemplado continúa hacia la siguiente ruta y termina en estáticos.
-const API_ROUTES = [handleReports, handleUsers, handleCaja, handleAuth, handleOrders, handleConfig, handleCatalog, handlePublic];
+// Constancias y despacho van antes que pedidos: usan rutas /api/pedidos/:id/... que pedidos trataría como cambio de estado.
+const API_ROUTES = [handleReports, handleUsers, handleCaja, handleAuth, handleCustomers, handleReceipts, handleDispatch, handleOrders, handleConfig, handleCatalog, handlePublic];
 
 function isAdminOnly(pathname, method) {
-  return pathname.startsWith('/api/users') || pathname.startsWith('/api/reports') ||
+  return pathname.startsWith('/api/users') || pathname.startsWith('/api/reports') || (pathname === '/api/drivers' && method !== 'GET') ||
     (pathname === '/api/pedidos' && method === 'POST') ||
     (pathname.startsWith('/api/catalog') && method !== 'GET') ||
     (pathname === '/api/config' && method !== 'GET');
@@ -65,6 +72,9 @@ function createApp(options = {}) {
     repos = { users, config, catalog, orders };
   }
 
+  // Clientes en archivo JSON también con PostgreSQL (todavía no hay tabla de clientes)
+  repos.customers = options.customersRepo || new CustomersRepository(paths.dataDir);
+
   const auth = createAuth({
     usersRepo: repos.users,
     adminPin: options.adminPin || '2026',
@@ -78,6 +88,11 @@ function createApp(options = {}) {
     checkPublicOrderRateLimit: createRateLimiter({ max: 10, windowMs: 10 * 60 * 1000, message: 'Hiciste varios pedidos seguidos. Espera unos minutos o escríbenos por WhatsApp.' }),
     checkPublicOrderPhoneLimit: createRateLimiter({ max: 5, windowMs: 10 * 60 * 1000, message: 'Ya registramos varios pedidos con ese celular. Escríbenos por WhatsApp para confirmarlos.' }),
     idempotency: createIdempotencyStore(),
+    customerAuth: createCustomerAuth({ secret: () => loadSecret(paths.dataDir, options.secret || process.env.RTQ_SECRET), now: options.now }),
+    checkCustomerLoginLimit: createRateLimiter({ max: 10, windowMs: 10 * 60 * 1000, message: 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.' }),
+    checkReceiptLimit: createRateLimiter({ max: 10, windowMs: 10 * 60 * 1000, message: 'Demasiados envíos de constancia. Espera unos minutos.' }),
+    checkTakeLimit: createRateLimiter({ max: 20, windowMs: 10 * 60 * 1000, message: 'Demasiados intentos. Espera unos minutos.' }),
+    dispatcher: createDispatcher({ repos, logger, env: options.env || process.env, fetchImpl: options.fetch }),
     expirePendingOrders: createPendingExpiry({
       orders: repos.orders,
       logger,

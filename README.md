@@ -48,6 +48,10 @@ El proyecto fue auditado exhaustivamente y reestructurado bajo estándares profe
 
 > Consulta el documento maestro de arquitectura: [**`documentacion/ARQUITECTURA_Y_SISTEMA.md`**](./documentacion/ARQUITECTURA_Y_SISTEMA.md).
 
+## Cumplimiento de requerimientos (noviembre 2026)
+
+Cuentas de cliente reales, catálogo con filtros, personalización de promos, direcciones con mapa, pedidos programados, pago con constancia, seguimiento, historial con "Repetir pedido", dashboard con datos reales, KDS con alertas y verificación de pagos, y despacho al motorizado con n8n (con coordinación manual si n8n falla). Detalle por requerimiento y cómo verificarlo: [**`documentacion/CUMPLIMIENTO_REQUERIMIENTOS.md`**](./documentacion/CUMPLIMIENTO_REQUERIMIENTOS.md). Flujo de n8n: [`automation/n8n/`](./automation/n8n/). Pruebas nuevas: `node tools/test-requirements.js`.
+
 ---
 
 ## 🚀 Cómo Ejecutar el Sistema

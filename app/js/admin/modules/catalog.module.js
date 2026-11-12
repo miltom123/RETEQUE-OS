@@ -116,25 +116,34 @@
       }).join('');
     }
 
-    function toggleStock(id, inStock) {
-      const prod = CATALOG.find(p => p.id === id);
-      if (prod) {
-        prod.stock = inStock;
-        if (window.saveCatalogData) window.saveCatalogData();
-        renderCatalog();
-        showToast(`Stock de "${prod.name}" actualizado a ${inStock ? 'DISPONIBLE' : 'AGOTADO'}`);
+    // RFI-15: todo cambio de la carta se guarda primero en el servidor; si falla, la tabla no cambia
+    async function catalogApi(url, options) {
+      const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json' } });
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+      if (res.status === 401) { window.lockAdminApp(); throw new Error('Tu sesión venció. Ingresa de nuevo.'); }
+      if (res.status === 403) throw new Error('Solo el administrador puede cambiar la carta.');
+      if (!res.ok) throw new Error(data.error || 'No se pudo guardar el cambio.');
+      return data;
+    }
 
-        // Sincronizar persistencia centralizada en backend
-        try {
-          const token = window.getAdminToken ? window.getAdminToken() : '';
-          const headers = { 'Content-Type': 'application/json' };
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-          fetch(`/api/catalog/${encodeURIComponent(id)}/stock`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify({ stock: inStock })
-          }).catch(() => {});
-        } catch (e) {}
+    function replaceProduct(saved) {
+      const idx = CATALOG.findIndex(p => p.id === saved.id);
+      if (idx > -1) CATALOG[idx] = saved; else CATALOG.unshift(saved);
+      if (window.saveCatalogData) window.saveCatalogData();
+      renderCatalog();
+    }
+
+    async function toggleStock(id, inStock) {
+      const prod = CATALOG.find(p => p.id === id);
+      if (!prod) return;
+      try {
+        const data = await catalogApi(`/api/catalog/${encodeURIComponent(id)}/stock`, { method: 'PATCH', body: JSON.stringify({ stock: inStock }) });
+        replaceProduct(data.product);
+        showToast(`Stock de "${prod.name}" actualizado a ${inStock ? 'DISPONIBLE' : 'AGOTADO'}`);
+      } catch (error) {
+        renderCatalog(); // devuelve el interruptor a su estado real
+        showToast('⚠️ ' + error.message);
       }
     }
 
@@ -196,7 +205,7 @@
       });
     }
 
-    function handleSaveProduct(e) {
+    async function handleSaveProduct(e) {
       e.preventDefault();
       const editId = document.getElementById('prod-edit-id').value;
       const name = document.getElementById('prod-name').value.trim();
@@ -216,80 +225,44 @@
         return;
       }
 
-      if (editId) {
-        // Edit existing product
-        const idx = CATALOG.findIndex(p => p.id === editId);
-        if (idx > -1) {
-          CATALOG[idx] = {
-            ...CATALOG[idx],
-            name, cat, qty, price, promo, sauces, badge, desc, icon, stock
-          };
-          showToast(`✅ Producto "${name}" actualizado con éxito.`);
-        }
-      } else {
-        // Create new product
-        const cleanId = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) + '_' + Math.floor(100 + Math.random() * 900);
-        const newProduct = {
-          id: cleanId,
-          name,
-          cat,
-          qty,
-          price,
-          promo,
-          sauces,
-          badge,
-          desc,
-          icon,
-          stock
-        };
-        CATALOG.unshift(newProduct);
-        showToast(`🎉 ¡Nuevo producto "${name}" agregado al menú de la App!`);
-      }
-
-      if (window.saveCatalogData) window.saveCatalogData();
-      renderCatalog();
-      playAlertSound();
-      closeProductModal();
-
-      // Sincronizar con backend centralizado
+      const base = editId ? CATALOG.find(p => p.id === editId) : null;
+      const product = {
+        ...(base || {}),
+        id: editId || name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 20) + '_' + Math.floor(100 + Math.random() * 900),
+        name, cat, qty, price, promo, sauces, badge, desc, icon, stock
+      };
+      const submit = document.querySelector('#product-form button[type="submit"]');
+      if (submit) submit.disabled = true;
       try {
-        const token = window.getAdminToken ? window.getAdminToken() : '';
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const prodToSave = editId ? CATALOG.find(p => p.id === editId) : newProduct;
-        fetch('/api/catalog', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(prodToSave)
-        }).catch(() => {});
-      } catch (err) {}
+        const data = await catalogApi('/api/catalog', { method: 'POST', body: JSON.stringify(product) });
+        replaceProduct(data.product);
+        playAlertSound();
+        closeProductModal();
+        showToast(editId ? `✅ Producto "${data.product.name}" actualizado.` : `🎉 "${data.product.name}" agregado a la carta.`);
+      } catch (error) {
+        showToast('⚠️ ' + error.message);
+      } finally {
+        if (submit) submit.disabled = false;
+      }
     }
 
-    function handleDeleteProduct() {
+    async function handleDeleteProduct() {
       const editId = document.getElementById('prod-edit-id').value;
       if (!editId) return;
 
       const prod = CATALOG.find(p => p.id === editId);
       const name = prod ? prod.name : 'el producto';
 
-      if (confirm(`¿Estás seguro de eliminar "${name}" del menú? Esta acción no se puede deshacer.`)) {
+      if (!confirm(`¿Estás seguro de eliminar "${name}" del menú? Esta acción no se puede deshacer.`)) return;
+      try {
+        await catalogApi(`/api/catalog/${encodeURIComponent(editId)}`, { method: 'DELETE' });
         CATALOG = CATALOG.filter(p => p.id !== editId);
+        window.CATALOG = CATALOG;
         if (window.saveCatalogData) window.saveCatalogData();
         renderCatalog();
         closeProductModal();
         showToast(`🗑️ "${name}" ha sido eliminado del catálogo.`);
-
-        // Sincronizar eliminación con backend
-        try {
-          const token = window.getAdminToken ? window.getAdminToken() : '';
-          const headers = {};
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-          fetch(`/api/catalog/${encodeURIComponent(editId)}`, {
-            method: 'DELETE',
-            headers
-          }).catch(() => {});
-        } catch (err) {}
-      }
+      } catch (error) { showToast('⚠️ ' + error.message); }
     }
 
 window.filterCatalogTable = filterCatalogTable;

@@ -22,6 +22,38 @@
       return '#';
     }
 
+    // Minutos desde que el pedido entró a su estado actual; los pedidos sin statusAt usan createdAt
+    function minutesInStatus(ord) {
+      const since = Date.parse((ord.statusAt && ord.statusAt[ord.status]) || ord.createdAt || '');
+      return Number.isFinite(since) ? Math.max(0, Math.floor((Date.now() - since) / 60000)) : (Number(ord.elapsedMinutes) || 0);
+    }
+    function statusTimeLabel(ord) {
+      const m = minutesInStatus(ord);
+      if (ord.status === 'delivered' || ord.status === 'cancelled') return ord.time || '';
+      if (ord.status === 'kitchen') return `En cocina hace ${m} min`;
+      if (ord.status === 'delivery') return `En reparto hace ${m} min`;
+      return m < 1 ? 'Recién recibido' : `Recibido hace ${m} min`;
+    }
+    function isOrderDelayed(ord) {
+      return (ord.status === 'new' || ord.status === 'kitchen') && (ord.isDelayed || minutesInStatus(ord) >= 20);
+    }
+    function scheduleLabel(ord) {
+      if (!ord.scheduledFor) return '';
+      return new Date(ord.scheduledFor).toLocaleString('es-PE', { timeZone: 'America/Lima', weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    function dispatchBadgeHtml(ord) {
+      const d = ord.dispatch;
+      if (ord.mode !== 'delivery' || !d) return '';
+      const map = {
+        offered: ['kds-pay-amber', '🛵 Ofrecido al grupo'],
+        assigned: ['kds-pay-green', '🛵 ' + escapeHtml(d.driverName || 'Asignado')],
+        manual: ['kds-pay-green', '🛵 ' + escapeHtml(d.driverName || 'Coordinado') + ' (manual)'],
+        failed: ['kds-pay-red', '⚠ n8n falló: coordinar a mano'],
+      };
+      const [cls, text] = map[d.status] || [];
+      return cls ? `<span class="kds-tag-pay ${cls}">${text}</span>` : '';
+    }
+
     let kdsFilterDebounceTimer = null;
     function handleKDSFilterChange() {
       clearTimeout(kdsFilterDebounceTimer);
@@ -71,6 +103,7 @@
             <span class="kds-pending-web-muted">${minutes === null ? '' : minutes < 1 ? 'recién' : 'hace ' + minutes + ' min'}</span>
           </div>
           <div>${escapeHtml(ord.customer)} · ${escapeHtml(ord.phone)} · ${ord.mode === 'pickup' ? 'Recojo' : 'Delivery'}</div>
+          <div class="kds-pending-web-muted">Pago: ${escapeHtml(ord.payMethod || 'Por coordinar')}${ord.receipt ? ' · 📎 constancia adjunta' : ''}${ord.scheduledFor ? ' · 📅 ' + escapeHtml(scheduleLabel(ord)) : ''}</div>
           ${ord.mode === 'delivery' && ord.address ? `<div class="kds-pending-web-muted">${escapeHtml(ord.address)}${ord.reference ? ' · ' + escapeHtml(ord.reference) : ''}</div>` : ''}
           <div class="kds-pending-web-items">${items}</div>
           ${ord.notes ? `<div class="kds-pending-web-muted">${escapeHtml(ord.notes)}</div>` : ''}
@@ -131,7 +164,7 @@
         if (totalActiveCounts[ord.status] !== undefined) {
           totalActiveCounts[ord.status]++;
         }
-        if (ord.isDelayed || ((ord.status === 'new' || ord.status === 'kitchen') && ord.elapsedMinutes && ord.elapsedMinutes >= 20)) {
+        if (isOrderDelayed(ord)) {
           totalActiveCounts.delayed++;
         }
       });
@@ -169,15 +202,16 @@
 
         // Priority filter
         if (prioFilter !== 'all') {
-          const isDelayed = (ord.status === 'new' || ord.status === 'kitchen') && (ord.isDelayed || (ord.elapsedMinutes && ord.elapsedMinutes >= 20));
+          const isDelayed = isOrderDelayed(ord);
           if (prioFilter === 'prioridad' && !ord.priority) return false;
           if (prioFilter === 'retrasados' && !isDelayed) return false;
           if (prioFilter === 'normal' && (ord.priority || isDelayed)) return false;
         }
 
         // Range filter
-        if (rangeFilter === '1h' && ord.elapsedMinutes && ord.elapsedMinutes > 60) return false;
-        if (rangeFilter === '4h' && ord.elapsedMinutes && ord.elapsedMinutes > 240) return false;
+        const ageMinutes = ord.createdAt ? (Date.now() - Date.parse(ord.createdAt)) / 60000 : 0;
+        if (rangeFilter === '1h' && ageMinutes > 60) return false;
+        if (rangeFilter === '4h' && ageMinutes > 240) return false;
 
         return true;
       });
@@ -188,15 +222,15 @@
           counts[ord.status]++;
         }
 
-        const isDelayed = (ord.status === 'new' || ord.status === 'kitchen') && (ord.isDelayed || (ord.elapsedMinutes && ord.elapsedMinutes >= 20));
+        const isDelayed = isOrderDelayed(ord);
         const card = document.createElement('div');
         const isDeliveredCol = ord.status === 'delivered';
         card.className = `kds-order-card ${isDeliveredCol ? 'kds-card-delivered' : ''}`;
         card.onclick = () => openOrderDetailModal(ord.id);
 
         // Time presentation
-        const safeTime = escapeHtml(ord.time || '');
-        let timeHtml = `<span class="kds-card-time ${ord.time === 'Recién recibido' || isDelayed ? 'kds-time-red' : ''}">${safeTime.startsWith('🕒') ? safeTime : '🕒 ' + safeTime}</span>`;
+        const safeTime = escapeHtml(statusTimeLabel(ord));
+        let timeHtml = `<span class="kds-card-time ${safeTime === 'Recién recibido' || isDelayed ? 'kds-time-red' : ''}">${safeTime.startsWith('🕒') ? safeTime : '🕒 ' + safeTime}</span>`;
         if (isDeliveredCol) {
           timeHtml = `<span class="kds-card-time kds-time-green">🕒 ${safeTime.replace(/^🕒\s*/, '')}</span>`;
         }
@@ -206,24 +240,19 @@
           ? `<span class="kds-tag-channel kds-channel-wa">WhatsApp</span>`
           : `<span class="kds-tag-channel kds-channel-app">${ord.channel === 'caja' ? 'Caja' : ord.channel === 'web' ? 'Web' : 'App'}</span>`;
 
-        let payBadge = '';
+        // Estado real del pago: Yape, Plin y transferencia dicen "verificado" solo cuando caja lo confirmó
         const pm = String(ord.payMethod || '');
-        const pmLower = pm.toLowerCase();
-        const safePm = escapeHtml(pm);
-        if (pmLower.includes('confirmado')) {
-          payBadge = `<span class="kds-tag-pay kds-pay-green"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Pago confirmado</span>`;
-        } else if (pmLower.includes('transferencia')) {
-          payBadge = `<span class="kds-tag-pay kds-pay-green"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Transferencia verificado</span>`;
-        } else if (pmLower.includes('yape')) {
-          payBadge = `<span class="kds-tag-pay kds-pay-green"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Yape verificado</span>`;
-        } else if (pmLower.includes('pin')) {
-          payBadge = `<span class="kds-tag-pay kds-pay-green"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> PIN verificado</span>`;
-        } else if (pmLower.includes('contraentrega')) {
-          payBadge = `<span class="kds-tag-pay kds-pay-blue">Pago contraentrega</span>`;
-        } else if (pmLower.includes('efectivo')) {
-          payBadge = `<span class="kds-tag-pay kds-pay-blue">Efectivo</span>`;
+        const safePm = escapeHtml(pm || 'Por coordinar');
+        const check = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        let payBadge;
+        if (isDigitalPay(ord)) {
+          payBadge = ord.payVerified
+            ? `<span class="kds-tag-pay kds-pay-green">${check} ${safePm} verificado</span>`
+            : `<span class="kds-tag-pay kds-pay-amber">${safePm} por verificar${ord.receipt ? ' · 📎 constancia' : ''}</span>`;
+        } else if (ord.payVerified) {
+          payBadge = `<span class="kds-tag-pay kds-pay-green">${check} ${safePm} pagado</span>`;
         } else {
-          payBadge = `<span class="kds-tag-pay kds-pay-amber">${safePm || 'Por verificar'}</span>`;
+          payBadge = `<span class="kds-tag-pay kds-pay-blue">${safePm}</span>`;
         }
 
         const modeBadge = ord.mode === 'pickup'
@@ -266,6 +295,7 @@
               <span class="kds-card-id">${safeId}</span>
               ${ord.priority ? `<span class="kds-badge-priority">🔥 Prioridad</span>` : ''}
               ${isDelayed ? `<span class="kds-badge-delayed">⚠️ Retrasado</span>` : ''}
+              ${ord.scheduledFor ? `<span class="kds-badge-priority" title="Pedido programado">📅 ${escapeHtml(scheduleLabel(ord))}</span>` : ''}
             </div>
             ${timeHtml}
           </div>
@@ -274,6 +304,7 @@
             <div class="kds-badges-left">
               ${channelBadge}
               ${payBadge}
+              ${dispatchBadgeHtml(ord)}
             </div>
             ${!isDeliveredCol ? modeBadge : ''}
           </div>
@@ -398,54 +429,6 @@
       if (updated) { playAlertSound(); showToast('Pedido ' + id + ' actualizado y guardado.'); }
     }
 
-    function triggerSimulatedOrder() {
-      const newId = 'RTQ-' + (2065 + Math.floor(Math.random() * 50));
-      const names = ['Martín Carpio', 'Paola Vizcarra', 'Renato Benavides', 'Claudia Zegarra', 'Diego Monroy'];
-      const pickName = names[Math.floor(Math.random() * names.length)];
-      
-      const newOrd = {
-        id: newId,
-        customer: pickName,
-        phone: '+51 952 ' + Math.floor(100000 + Math.random() * 900000),
-        address: 'Av. San Martín 820, Tacna',
-        status: 'new',
-        channel: Math.random() > 0.5 ? 'app' : 'whatsapp',
-        mode: Math.random() > 0.3 ? 'delivery' : 'pickup',
-        priority: Math.random() > 0.8,
-        items: [
-          { name: 'Promo Duo (20 unid. + 2 gaseosas)', qty: 1, sauces: 'Mayonesa de ajo + Mayopalta', price: 35.90 }
-        ],
-        subtotal: 35.90,
-        deliveryFee: 5.90,
-        discount: 0,
-        total: 41.80,
-        payMethod: 'Yape',
-        payVerified: false,
-        reference: 'Referencia enviada por WhatsApp',
-        gps: 'https://maps.google.com/?q=-18.0120,-70.2500',
-        source: 'App Móvil',
-        time: 'Recién recibido',
-        elapsedMinutes: 0,
-        notes: Math.random() > 0.5 ? 'Por favor cremas bien frías.' : ''
-      };
-
-      ORDERS.unshift(newOrd);
-      if (window.saveOrdersData) window.saveOrdersData();
-
-      // Guardar en la base de datos persistente en disco
-      try {
-        fetch('/api/pedidos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newOrd)
-        }).catch(() => {});
-      } catch (e) {}
-
-      renderKanban();
-      playAlertSound();
-      showToast(`🔥 ¡NUEVO PEDIDO RECIBIDO: ${newId} de ${pickName}!`);
-    }
-
     // Modal Details
     function openOrderDetailModal(id) {
       const ord = ORDERS.find(o => o.id === id);
@@ -477,6 +460,8 @@
           ${safeReference ? `<div style="font-size:12.5px; color:var(--text-muted); margin-top:2px;">🏠 Referencia: ${safeReference}</div>` : ''}
           ${safeGps && safeGps !== '#' ? `<div style="font-size:12.5px; margin-top:2px;">🗺️ <a href="${safeGps}" target="_blank" rel="noopener noreferrer" style="color:var(--info); font-weight:600;">Abrir ubicación GPS en Google Maps</a></div>` : ''}
           <div style="font-size:13px; color:var(--text-main); margin-top:2px;">📞 ${safePhone}</div>
+          ${ord.scheduledFor ? `<div style="margin-top:6px; font-weight:700; color:var(--primary);">📅 Programado para: ${escapeHtml(scheduleLabel(ord))}</div>` : ''}
+          ${ord.receipt ? `<div style="margin-top:6px;">📎 <a href="/api/pedidos/${encodeURIComponent(ord.id)}/receipt" target="_blank" rel="noopener noreferrer" style="color:var(--info); font-weight:700;">Ver constancia de pago</a> <span style="color:var(--text-muted); font-size:12px;">(subida ${escapeHtml(new Date(ord.receipt.uploadedAt).toLocaleString('es-PE', { timeZone: 'America/Lima' }))})</span></div>` : (isDigitalPay(ord) && !ord.payVerified ? '<div style="margin-top:6px; color:var(--text-muted); font-size:12px;">📎 El cliente aún no adjuntó constancia: pídela por WhatsApp.</div>' : '')}
           ${safeNotes ? `<div style="margin-top:8px; padding:8px 12px; background:#FFF8EE; border-left:3px solid var(--gold); font-size:12px; color:#6B6662;"><strong>Nota del cliente:</strong> ${safeNotes}</div>` : ''}
         </div>
 
@@ -491,6 +476,7 @@
           ${ord.discount ? `<div style="display:flex; justify-content:space-between; margin-bottom:4px; color:var(--primary);"><span>Descuento cupón:</span><span>-S/ ${(Number(ord.discount) || 0).toFixed(2)}</span></div>` : ''}
           ${paymentSummaryHtml(ord)}
         </div>
+        ${dispatchSectionHtml(ord)}
       `;
 
       let footerBtn = '';
@@ -511,9 +497,9 @@
         <button class="btn btn-outline" onclick="printOrderTicket('${cleanId}')" title="Imprimir comanda térmica 58mm/80mm">
           🖨️ Imprimir Ticket
         </button>
-        <button class="btn btn-gold" onclick="dispatchToDriverWhatsApp('${cleanId}')" title="Enviar comanda y liquidación al repartidor">
+        ${ord.mode === 'delivery' ? `<button class="btn btn-gold" onclick="dispatchToDriverWhatsApp('${cleanId}')" title="Abrir WhatsApp con la comanda para el motorizado (coordinación manual)">
           🛵 WhatsApp Motorizado
-        </button>
+        </button>` : ''}
         <a href="https://wa.me/${cleanPhoneDigits}" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           WhatsApp Cliente
@@ -522,6 +508,59 @@
       `;
 
       document.getElementById('modal-order-detail').classList.add('open');
+      // La lista de motorizados se carga al abrir: si llegó después, se vuelve a pintar la sección
+      if (!DRIVERS.length && ord.mode === 'delivery') loadDrivers().then(list => { if (list.length && document.getElementById('modal-order-detail').classList.contains('open')) openOrderDetailModal(id); });
+    }
+
+    // RFI-14 / RNF-05: estado del despacho automático y coordinación manual si n8n falla
+    let DRIVERS = [];
+    async function loadDrivers() {
+      try {
+        const res = await fetch('/api/drivers', { cache: 'no-store' });
+        if (res.ok) DRIVERS = (await res.json()).drivers.filter(d => d.active !== false);
+      } catch (e) {}
+      return DRIVERS;
+    }
+
+    function dispatchSectionHtml(ord) {
+      if (ord.mode !== 'delivery' || !['kitchen', 'delivery'].includes(ord.status)) return '';
+      const d = ord.dispatch || {};
+      const cleanId = encodeURIComponent(String(ord.id || ''));
+      const states = {
+        offered: `Ofrecido al grupo de motorizados${d.offeredAt ? ' a las ' + new Date(d.offeredAt).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : ''}; esperando que alguien lo tome.`,
+        assigned: `Asignado a <strong>${escapeHtml(d.driverName || '')}</strong>; n8n le envió la comanda por WhatsApp.`,
+        manual: `Coordinado manualmente con <strong>${escapeHtml(d.driverName || '')}</strong>.`,
+        failed: `<strong style="color:var(--danger)">El envío automático falló</strong> (${escapeHtml(d.lastError || 'sin respuesta')}). Coordina por WhatsApp y regístralo aquí, o reintenta.`,
+      };
+      const options = DRIVERS.map(dr => `<option value="${escapeHtml(dr.id)}" ${dr.id === d.driverId ? 'selected' : ''}>${escapeHtml(dr.name)} · ${escapeHtml(dr.phone)}</option>`).join('');
+      return `<div style="margin-top:14px; padding:12px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:12.5px;">
+        <div style="font-size:12px; color:var(--text-muted); font-weight:600; margin-bottom:6px;">DESPACHO AL MOTORIZADO</div>
+        <div>${states[d.status] || 'Aún no se despacha. Al pasar a reparto se ofrece automáticamente al grupo.'}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; align-items:center;">
+          <button class="btn btn-outline btn-sm" onclick="dispatchOrder('${cleanId}')">${d.status ? '↻ Reofrecer al grupo' : '🛵 Ofrecer al grupo'}</button>
+          ${options ? `<select id="dispatch-driver-select" class="form-control" style="max-width:220px; height:32px;" aria-label="Motorizado">${options}</select>
+          <button class="btn btn-outline btn-sm" onclick="dispatchOrder('${cleanId}', true)">Asignar y enviar</button>
+          <button class="btn btn-outline btn-sm" onclick="dispatchOrder('${cleanId}', true, true)">Ya lo coordiné</button>` : '<span style="color:var(--text-muted);">Registra motorizados en Usuarios para asignar directo.</span>'}
+        </div>
+      </div>`;
+    }
+
+    async function dispatchOrder(encodedId, withDriver = false, manual = false) {
+      const id = decodeURIComponent(encodedId);
+      const select = document.getElementById('dispatch-driver-select');
+      const body = withDriver && select ? { driverId: select.value, manual } : {};
+      try {
+        const res = await fetch('/api/pedidos/' + encodeURIComponent(id) + '/dispatch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await res.json();
+        if (res.status === 401) window.lockAdminApp();
+        if (!res.ok) throw new Error(data.error || 'No se pudo despachar.');
+        const index = ORDERS.findIndex(o => o.id === id);
+        if (index !== -1) ORDERS[index] = data.order;
+        renderKanban();
+        openOrderDetailModal(id);
+        const st = data.order.dispatch && data.order.dispatch.status;
+        showToast(st === 'failed' ? '⚠ n8n no respondió: coordina por WhatsApp y marca "Ya lo coordiné".' : 'Despacho de ' + id + ' registrado.');
+      } catch (error) { showToast(error.message); }
     }
 
     function dispatchToDriverWhatsApp(ordId) {
@@ -552,7 +591,10 @@ ${ord.reference ? `• Referencia: ${ord.reference}\n` : ''}${ord.gps ? `• Ubi
 💰 *COBRO / LIQUIDACIÓN:*
 ${cobro}`;
 
-      const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+      // Se envía al motorizado elegido (mensaje privado), nunca al grupo: lleva datos del cliente (RNF-03)
+      const select = document.getElementById('dispatch-driver-select');
+      const driver = DRIVERS.find(d => d.id === (select ? select.value : (ord.dispatch && ord.dispatch.driverId)));
+      const url = `https://wa.me/${driver ? '51' + driver.phone : ''}?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
       showToast(`📲 Comanda ${ord.id} preparada para WhatsApp`);
     }
@@ -605,6 +647,7 @@ ${cobro}`;
             <div><strong>CLIENTE:</strong> ${escapeHtml(ord.customer || 'Cliente')}</div>
             <div><strong>TELÉFONO:</strong> ${escapeHtml(ord.phone || '')}</div>
             <div><strong>TIPO:</strong> ${ord.mode === 'delivery' ? '🛵 DELIVERY' : '🏪 RECOJO EN TIENDA'}</div>
+            ${ord.scheduledFor ? `<div><strong>PROGRAMADO:</strong> ${escapeHtml(scheduleLabel(ord))}</div>` : ''}
             ${ord.address ? `<div><strong>DIRECCIÓN:</strong> ${escapeHtml(ord.address)}</div>` : ''}
             ${ord.reference ? `<div><strong>REFERENCIA:</strong> ${escapeHtml(ord.reference)}</div>` : ''}
             ${ord.notes ? `<div class="ticket-alert"><strong>NOTA:</strong> ${escapeHtml(ord.notes)}</div>` : ''}
@@ -660,10 +703,10 @@ window.paymentSummaryHtml = paymentSummaryHtml;
 window.moveOrderStatus = moveOrderStatus;
 window.confirmWebOrder = confirmWebOrder;
 window.cancelWebOrder = cancelWebOrder;
-window.triggerSimulatedOrder = triggerSimulatedOrder;
-window.simulateIncomingOrder = triggerSimulatedOrder;
 window.openOrderDetailModal = openOrderDetailModal;
 window.dispatchToDriverWhatsApp = dispatchToDriverWhatsApp;
+window.dispatchOrder = dispatchOrder;
+window.loadDrivers = loadDrivers;
 window.closeOrderModal = closeOrderModal;
 window.printOrderTicket = printOrderTicket;
 

@@ -294,13 +294,13 @@ async function runTests() {
   });
 
   // 18. Seguridad: Sanitización XSS en Dashboard Feedback (dashboard.module.js)
-  await assert('Seguridad [SEC-07]: dashboard.module.js sanitiza opiniones de clientes y productos', async () => {
+  await assert('Seguridad [SEC-07]: dashboard.module.js sanitiza los nombres de productos de los pedidos reales', async () => {
     const code = fs.readFileSync(path.resolve(__dirname, '..', 'app', 'js', 'admin', 'modules', 'dashboard.module.js'), 'utf8');
     if (!code.includes('function escapeHtml(str)')) {
       throw new Error('No se encontró función escapeHtml en dashboard.module.js');
     }
-    if (!code.includes('escapeHtml(r.customer)')) {
-      throw new Error('No se está sanitizando r.customer en renderDashboardFeedback');
+    if (!code.includes('escapeHtml(p.name)')) {
+      throw new Error('No se está sanitizando el nombre del producto en renderTopProducts');
     }
   });
 

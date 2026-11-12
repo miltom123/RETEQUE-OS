@@ -7,7 +7,7 @@ import { useCheckoutStore } from '../../store/checkoutStore';
 import { buildFallbackOrderUrl, discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
 import { resetOrderAttempt, StoreUnavailableError, submitOrder, type OrderDetails } from '../../lib/orderApi';
 import { kitchenDetails, specFromItem, type LineAddon, type LineSpec } from '../../lib/cartSpec';
-import { MESSAGES, isValidAddress, isValidName, isValidPeruMobile, sanitizePhoneInput } from '../../lib/validation';
+import { MESSAGES, isValidAddress, isValidName, isValidPeruMobile, sanitizeFreeText, sanitizePhoneInput } from '../../lib/validation';
 import { UPGRADE_REFS } from '../../data/serverRefs';
 import type { PromoConfig } from '../../data/promotions';
 
@@ -34,6 +34,8 @@ interface ProductConfiguratorModalProps {
   onClose: () => void;
   productOrPromo: ConfigurableItem;
   onOpenCartDrawer?: () => void;
+  /** Oculta "Pedir por WhatsApp": en la app móvil el pedido sale del carrito con pago y programación. */
+  hideBuyNow?: boolean;
 }
 
 function isPromotion(item: ConfigurableItem): item is Promotion {
@@ -45,6 +47,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
   onClose,
   productOrPromo,
   onOpenCartDrawer,
+  hideBuyNow = false,
 }) => {
   const addItem = useCartStore((state) => state.addItem);
   const { fullName, phone, deliveryType, address, reference, generalNotes } = useCheckoutStore();
@@ -102,6 +105,9 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
 
   // Upgrades selection
   const [upgradeCounts, setUpgradeCounts] = useState<Record<string, number>>({});
+
+  // Indicaciones para cocina (RFI-04): van al detalle del pedido, no cambian el precio
+  const [kitchenNotes, setKitchenNotes] = useState('');
 
   // Accordion active step
   const [openSection, setOpenSection] = useState<'pizzas' | 'receta' | 'cremas' | 'bebida' | 'agranda' | ''>('receta');
@@ -171,6 +177,8 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
           'salsa-tocino': 1,
           mayopalta: 1,
         });
+      } else if (targetCreams === 0) {
+        setCreamCounts({});
       } else {
         setCreamCounts({
           'mayonesa-ajo': 1,
@@ -180,6 +188,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
 
       setQuantity(1);
       setUpgradeCounts({});
+      setKitchenNotes('');
       setSelectedDrinkId('inka-cola-600');
     }
   }, [productOrPromo, hasPizza, hasTequeños, targetTequeños, targetCreams, targetPizzasCount]);
@@ -328,6 +337,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
       kitchen.push(`${cr?.name.replace(' (2 oz)', '') || id} (x${count})`);
     });
 
+    if (kitchenNotes.trim()) kitchen.push(`Nota: ${kitchenNotes.trim()}`);
     const optionsList = [...kitchen];
     if (includesDrink && selectedDrink) {
       optionsList.push(`Bebida: ${selectedDrink.name}`);
@@ -581,6 +591,19 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
             upgradeCounts={upgradeCounts}
             onUpgradeDelta={handleUpgradeDelta}
           />
+
+          <div className="bg-white border border-line-soft px-3.5 py-3 rounded-xl space-y-1.5">
+            <label htmlFor="config-kitchen-notes" className="text-[13px] font-extrabold text-ink block">Notas para cocina</label>
+            <textarea
+              id="config-kitchen-notes"
+              rows={2}
+              maxLength={120}
+              value={kitchenNotes}
+              onChange={(e) => setKitchenNotes(sanitizeFreeText(e.target.value, 120))}
+              placeholder="Ej. bien doraditos, cremas aparte, sin orégano…"
+              className="w-full px-3 py-2 rounded-[10px] border border-line-soft text-[13px] focus:outline-none focus:border-brand-red resize-none"
+            />
+          </div>
         </div>
 
         {/* Sticky Action Bottom Bar */}
@@ -589,7 +612,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
           onSetQuantity={setQuantity}
           grandTotalPrice={grandTotalPrice}
           onAddToCart={handleAddToCart}
-          onComprarAhora={handleComprarAhora}
+          onComprarAhora={hideBuyNow ? undefined : handleComprarAhora}
           canSubmit={isFlavorsCompleted && isCreamsCompleted}
         />
 

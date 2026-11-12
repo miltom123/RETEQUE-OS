@@ -3,6 +3,8 @@ import { Bike, Store, MapPin, Info } from 'lucide-react';
 import { FulfillmentType } from '../../types/orderRequest';
 import { siteConfig } from '../../config/site';
 import { ADDRESS_MAX, REFERENCE_MAX, sanitizeFreeText } from '../../lib/validation';
+import type { SavedAddress } from '../../types/auth';
+import { MapPicker, type LatLng } from './MapPicker';
 
 interface FulfillmentSelectorProps {
   type: FulfillmentType;
@@ -12,6 +14,15 @@ interface FulfillmentSelectorProps {
   onChangeAddress: (address: string) => void;
   onChangeReference: (reference: string) => void;
   errors?: { address?: string };
+  /** Punto en el mapa (RFI-06). */
+  location?: LatLng;
+  onChangeLocation?: (value: LatLng | undefined) => void;
+  /** Direcciones guardadas en la cuenta; vacío para invitados. */
+  savedAddresses?: SavedAddress[];
+  /** Mostrar "Guardar esta dirección" (solo con sesión). */
+  canSave?: boolean;
+  saveAddress?: boolean;
+  onChangeSaveAddress?: (value: boolean) => void;
 }
 
 export const FulfillmentSelector: React.FC<FulfillmentSelectorProps> = ({
@@ -22,7 +33,20 @@ export const FulfillmentSelector: React.FC<FulfillmentSelectorProps> = ({
   onChangeAddress,
   onChangeReference,
   errors = {},
+  location,
+  onChangeLocation,
+  savedAddresses = [],
+  canSave = false,
+  saveAddress = false,
+  onChangeSaveAddress,
 }) => {
+  const pickSaved = (a: SavedAddress) => {
+    onChangeAddress(a.address);
+    onChangeReference(a.reference || '');
+    onChangeLocation?.(a.lat != null && a.lng != null ? { lat: a.lat, lng: a.lng } : undefined);
+  };
+  const isSaved = savedAddresses.some((a) => a.address.trim() === address.trim());
+
   return (
     <div className="bg-white rounded-2xl border border-[#EFE6D6] p-4 space-y-4 shadow-sm">
       <div className="flex items-center justify-between">
@@ -70,6 +94,26 @@ export const FulfillmentSelector: React.FC<FulfillmentSelectorProps> = ({
 
       {type === 'delivery' ? (
         <div className="space-y-3 pt-2 border-t border-[#F5EDE1]">
+          {savedAddresses.length > 0 && (
+            <div>
+              <span className="block text-xs font-bold text-[#242424] mb-1.5">Mis direcciones</span>
+              <div className="flex flex-wrap gap-2">
+                {savedAddresses.map((a) => (
+                  <button
+                    key={a.id || a.address}
+                    type="button"
+                    onClick={() => pickSaved(a)}
+                    aria-pressed={a.address.trim() === address.trim()}
+                    className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold cursor-pointer ${
+                      a.address.trim() === address.trim() ? 'border-[#FF3038] bg-[#FFF8EE] text-[#C8102E]' : 'border-[#EFE6D6] bg-white text-[#4B4540]'
+                    }`}
+                  >
+                    {a.label}: {a.address.length > 26 ? a.address.slice(0, 26) + '…' : a.address}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div>
             <label
               htmlFor="mobile-address"
@@ -116,6 +160,15 @@ export const FulfillmentSelector: React.FC<FulfillmentSelectorProps> = ({
               className="w-full h-11 px-3.5 rounded-xl border border-[#EFE6D6] text-xs bg-[#FFFDF9] focus:outline-none focus:border-[#FF3038] focus:ring-2 focus:ring-[#FF3038]/10 transition"
             />
           </div>
+
+          {onChangeLocation && <MapPicker value={location} onChange={onChangeLocation} />}
+
+          {canSave && !isSaved && address.trim().length >= 5 && savedAddresses.length < 5 && (
+            <label className="flex items-center gap-2 text-xs text-[#242424] font-medium cursor-pointer">
+              <input type="checkbox" checked={saveAddress} onChange={(e) => onChangeSaveAddress?.(e.target.checked)} className="w-4 h-4 accent-[#FF3038]" />
+              Guardar esta dirección en mi cuenta
+            </label>
+          )}
 
           <div className="flex items-start gap-2 bg-[#FFF8EE] border border-[#EFE6D6] p-3 rounded-xl text-[11px] text-[#6B6662]">
             <Info className="w-4 h-4 text-[#F5A623] shrink-0 mt-0.5" />

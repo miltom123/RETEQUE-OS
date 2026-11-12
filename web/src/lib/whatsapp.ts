@@ -64,6 +64,9 @@ export function buildFallbackOrderUrl(lines: FallbackLine[], details: OrderDetai
   text.push(`Entrega: ${details.mode === 'delivery' ? 'Delivery' : 'Recojo en tienda'}`);
   if (details.address) text.push(`Dirección: ${details.address}`);
   if (details.reference) text.push(`Referencia: ${details.reference}`);
+  if (details.location) text.push(`Ubicación: https://maps.google.com/?q=${details.location.lat},${details.location.lng}`);
+  if (details.scheduledFor) text.push(`Programado para: ${new Date(details.scheduledFor).toLocaleString('es-PE', { dateStyle: 'short', timeStyle: 'short' })}`);
+  if (details.payMethod) text.push(`Pago: ${details.payMethod}`);
   if (details.notes) text.push(`Indicaciones: ${details.notes}`);
   // Si la tienda respondió tarde, el pedido pudo quedar guardado igual: caja no debe tomarlo como otro
   text.push('', 'Si en el panel aparece un pedido por confirmar con mi celular, es este mismo.');

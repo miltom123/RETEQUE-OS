@@ -200,454 +200,76 @@
 
       <!-- TAB 1: DASHBOARD & ANALYTICS -->
       <section id="tab-dashboard" class="tab-content active">
-
-        <!-- Selector de Fecha Superior Derecha -->
+        <!-- RFI-11: todo se calcula con los pedidos reales del servidor (anulados y por confirmar no cuentan como venta) -->
         <div class="dash-date-picker-wrap">
-          <div class="dash-date-picker-btn" id="dash-date-selector">
+          <div class="dash-date-picker-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <span id="dash-date-text">Hoy, 16 de septiembre de 2024</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            <span id="dash-date-text">Hoy</span>
           </div>
         </div>
-        
-        <!-- Fila 1: 6 KPI Cards Superiores -->
+
         <div class="dash-kpi-grid">
-          
-          <!-- KPI 1: Ventas de Hoy -->
-          <div class="dash-kpi-card">
-            <div class="dash-kpi-top">
-              <div class="dash-kpi-icon-wrap" style="background:#FEE2E2; color:#EF4444;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-              </div>
-              <span class="dash-kpi-title">VENTAS DE HOY</span>
-            </div>
-            <div class="dash-kpi-mid">
-              <div class="dash-kpi-value" id="kpi-sales">S/ 2,480.50</div>
-              <div class="dash-sparkline-bars">
-                <span class="dash-sparkline-bar" style="height:7px; background:#FCA5A5;"></span>
-                <span class="dash-sparkline-bar" style="height:11px; background:#FCA5A5;"></span>
-                <span class="dash-sparkline-bar" style="height:15px; background:#FCA5A5;"></span>
-                <span class="dash-sparkline-bar" style="height:18px; background:#EF4444;"></span>
-              </div>
-            </div>
-            <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ +18.4% vs. ayer</span>
-            </div>
-          </div>
-
-          <!-- KPI 2: Pedidos Confirmados -->
-          <div class="dash-kpi-card">
-            <div class="dash-kpi-top">
-              <div class="dash-kpi-icon-wrap" style="background:#DBEAFE; color:#3B82F6;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-              </div>
-              <span class="dash-kpi-title">PEDIDOS CONFIRMADOS</span>
-            </div>
-            <div class="dash-kpi-mid">
-              <div class="dash-kpi-value" id="kpi-orders-count">84</div>
-              <div class="dash-sparkline-bars">
-                <span class="dash-sparkline-bar" style="height:9px; background:#93C5FD;"></span>
-                <span class="dash-sparkline-bar" style="height:13px; background:#93C5FD;"></span>
-                <span class="dash-sparkline-bar" style="height:11px; background:#93C5FD;"></span>
-                <span class="dash-sparkline-bar" style="height:17px; background:#3B82F6;"></span>
-              </div>
-            </div>
-            <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ +12 vs. semana pasada</span>
-            </div>
-          </div>
-
-          <!-- KPI 3: Ticket Promedio -->
-          <div class="dash-kpi-card">
-            <div class="dash-kpi-top">
-              <div class="dash-kpi-icon-wrap" style="background:#FEF3C7; color:#F59E0B;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-              </div>
-              <span class="dash-kpi-title">TICKET PROMEDIO</span>
-            </div>
-            <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">S/ 29.50</div>
-              <div class="dash-sparkline-bars">
-                <span class="dash-sparkline-bar" style="height:8px; background:#FDE68A;"></span>
-                <span class="dash-sparkline-bar" style="height:12px; background:#FDE68A;"></span>
-                <span class="dash-sparkline-bar" style="height:14px; background:#FDE68A;"></span>
-                <span class="dash-sparkline-bar" style="height:17px; background:#F59E0B;"></span>
-              </div>
-            </div>
-            <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ + S/ 2.10 vs. semana pasada</span>
-            </div>
-          </div>
-
-          <!-- KPI 4: Conversión App → WhatsApp -->
-          <div class="dash-kpi-card">
-            <div class="dash-kpi-top">
-              <div class="dash-kpi-icon-wrap" style="background:#EDE9FE; color:#8B5CF6;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-              </div>
-              <span class="dash-kpi-title">CONVERSIÓN APP → WHATSAPP</span>
-            </div>
-            <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">42.7%</div>
-              <div class="dash-sparkline-bars">
-                <span class="dash-sparkline-bar" style="height:6px; background:#DDD6FE;"></span>
-                <span class="dash-sparkline-bar" style="height:10px; background:#DDD6FE;"></span>
-                <span class="dash-sparkline-bar" style="height:15px; background:#DDD6FE;"></span>
-                <span class="dash-sparkline-bar" style="height:18px; background:#8B5CF6;"></span>
-              </div>
-            </div>
-            <div class="dash-kpi-bottom dash-trend-neutral">
-              <span>132 clics / 56 pedidos</span>
-            </div>
-          </div>
-
-          <!-- KPI 5: Clientes Recurrentes -->
-          <div class="dash-kpi-card">
-            <div class="dash-kpi-top">
-              <div class="dash-kpi-icon-wrap" style="background:#D1FAE5; color:#10B981;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-              </div>
-              <span class="dash-kpi-title">CLIENTES RECURRENTES</span>
-            </div>
-            <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">38%</div>
-              <div class="dash-sparkline-bars">
-                <span class="dash-sparkline-bar" style="height:8px; background:#A7F3D0;"></span>
-                <span class="dash-sparkline-bar" style="height:11px; background:#A7F3D0;"></span>
-                <span class="dash-sparkline-bar" style="height:13px; background:#A7F3D0;"></span>
-                <span class="dash-sparkline-bar" style="height:17px; background:#10B981;"></span>
-              </div>
-            </div>
-            <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ +6.2 pts vs. mes pasado</span>
-            </div>
-          </div>
-
-          <!-- KPI 6: Calificación Clientes -->
-          <div class="dash-kpi-card">
-            <div class="dash-kpi-top">
-              <div class="dash-kpi-icon-wrap" style="background:#FEF3C7; color:#F59E0B;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-              </div>
-              <span class="dash-kpi-title">CALIFICACIÓN CLIENTES</span>
-            </div>
-            <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">4.9 ★</div>
-              <div class="dash-sparkline-bars">
-                <span class="dash-sparkline-bar" style="height:10px; background:#FDE68A;"></span>
-                <span class="dash-sparkline-bar" style="height:13px; background:#FDE68A;"></span>
-                <span class="dash-sparkline-bar" style="height:15px; background:#FDE68A;"></span>
-                <span class="dash-sparkline-bar" style="height:18px; background:#F59E0B;"></span>
-              </div>
-            </div>
-            <div class="dash-kpi-bottom dash-trend-teal">
-              <span>96% reseñas de 5 estrellas</span>
-            </div>
-          </div>
-
+          <div class="dash-kpi-card"><div class="dash-kpi-top"><div class="dash-kpi-icon-wrap" style="background:#FEE2E2; color:#B91C1C;">S/</div><span class="dash-kpi-title">VENTAS DE HOY</span></div>
+            <div class="dash-kpi-mid"><div class="dash-kpi-value" id="kpi-sales">S/ 0.00</div></div><div class="dash-kpi-bottom" id="kpi-sales-trend">—</div></div>
+          <div class="dash-kpi-card"><div class="dash-kpi-top"><div class="dash-kpi-icon-wrap" style="background:#DBEAFE; color:#1D4ED8;">#</div><span class="dash-kpi-title">PEDIDOS DE HOY</span></div>
+            <div class="dash-kpi-mid"><div class="dash-kpi-value" id="kpi-orders-count">0</div></div><div class="dash-kpi-bottom" id="kpi-orders-trend">—</div></div>
+          <div class="dash-kpi-card"><div class="dash-kpi-top"><div class="dash-kpi-icon-wrap" style="background:#FEF3C7; color:#92400E;">≈</div><span class="dash-kpi-title">TICKET PROMEDIO</span></div>
+            <div class="dash-kpi-mid"><div class="dash-kpi-value" id="kpi-ticket">S/ 0.00</div></div><div class="dash-kpi-bottom dash-trend-neutral">Ventas de hoy ÷ pedidos</div></div>
+          <div class="dash-kpi-card"><div class="dash-kpi-top"><div class="dash-kpi-icon-wrap" style="background:#EDE9FE; color:#6D28D9;">⏳</div><span class="dash-kpi-title">EN CURSO</span></div>
+            <div class="dash-kpi-mid"><div class="dash-kpi-value" id="kpi-active">0</div></div><div class="dash-kpi-bottom dash-trend-neutral" id="kpi-active-detail">Nuevos, cocina y reparto</div></div>
+          <div class="dash-kpi-card"><div class="dash-kpi-top"><div class="dash-kpi-icon-wrap" style="background:#FFEDD5; color:#9A3412;">💳</div><span class="dash-kpi-title">PAGOS POR VERIFICAR</span></div>
+            <div class="dash-kpi-mid"><div class="dash-kpi-value" id="kpi-unverified">0</div></div><div class="dash-kpi-bottom dash-trend-neutral">Yape, Plin y transferencia</div></div>
+          <div class="dash-kpi-card"><div class="dash-kpi-top"><div class="dash-kpi-icon-wrap" style="background:#D1FAE5; color:#047857;">✓</div><span class="dash-kpi-title">VENTAS DEL MES</span></div>
+            <div class="dash-kpi-mid"><div class="dash-kpi-value" id="kpi-month">S/ 0.00</div></div><div class="dash-kpi-bottom dash-trend-neutral" id="kpi-month-detail">0 pedidos</div></div>
         </div>
 
-        <!-- Fila 2: 4 Insights Operacionales -->
-        <div class="dash-insights-grid">
-          
-          <!-- Insight 1: Hora pico detectada -->
-          <div class="dash-insight-card">
-            <div class="dash-insight-left">
-              <div class="dash-insight-icon-wrap" style="background:#FEE2E2; color:#EF4444;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-              </div>
-              <div>
-                <div class="dash-insight-title" style="color:#EF4444;">Hora pico detectada</div>
-                <div class="dash-insight-value">19:30 - 21:30 hrs</div>
-              </div>
-            </div>
-            <div class="dash-sparkline-bars">
-              <span class="dash-sparkline-bar" style="height:6px; background:#FCA5A5;"></span>
-              <span class="dash-sparkline-bar" style="height:12px; background:#FCA5A5;"></span>
-              <span class="dash-sparkline-bar" style="height:18px; background:#EF4444;"></span>
-              <span class="dash-sparkline-bar" style="height:14px; background:#FCA5A5;"></span>
-            </div>
-          </div>
-
-          <!-- Insight 2: Producto con mejor margen -->
-          <div class="dash-insight-card">
-            <div class="dash-insight-left">
-              <div class="dash-insight-icon-wrap" style="background:#D1FAE5; color:#10B981;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z"></path></svg>
-              </div>
-              <div>
-                <div class="dash-insight-title" style="color:#059669;">Producto con mejor margen</div>
-                <div class="dash-insight-value" title="Promo Duo (20 unid. + 2 gaseosas)">Promo Duo (20 unid. + 2 gaseosas)</div>
-              </div>
-            </div>
-            <div class="dash-sparkline-bars">
-              <span class="dash-sparkline-bar" style="height:8px; background:#A7F3D0;"></span>
-              <span class="dash-sparkline-bar" style="height:13px; background:#A7F3D0;"></span>
-              <span class="dash-sparkline-bar" style="height:18px; background:#10B981;"></span>
-            </div>
-          </div>
-
-          <!-- Insight 3: Cupón con mejor rendimiento -->
-          <div class="dash-insight-card">
-            <div class="dash-insight-left">
-              <div class="dash-insight-icon-wrap" style="background:#EDE9FE; color:#8B5CF6;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-              </div>
-              <div>
-                <div class="dash-insight-title" style="color:#8B5CF6;">Cupón con mejor rendimiento</div>
-                <div class="dash-insight-value">MARTESRETQ</div>
-                <div class="dash-insight-sub" style="color:#6B7280;">56 pedidos • +28% conversión</div>
-              </div>
-            </div>
-            <div class="dash-sparkline-bars">
-              <span class="dash-sparkline-bar" style="height:7px; background:#DDD6FE;"></span>
-              <span class="dash-sparkline-bar" style="height:12px; background:#DDD6FE;"></span>
-              <span class="dash-sparkline-bar" style="height:17px; background:#8B5CF6;"></span>
-            </div>
-          </div>
-
-          <!-- Insight 4: Stock crítico -->
-          <div class="dash-insight-card" style="cursor:pointer;" onclick="document.querySelector('[data-tab=tab-catalog]').click()">
-            <div class="dash-insight-left">
-              <div class="dash-insight-icon-wrap" style="background:#FFEDD5; color:#F97316;">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-              </div>
-              <div>
-                <div class="dash-insight-title" style="color:#4B5563;">Stock crítico</div>
-                <div class="dash-insight-value">Salsa tártara</div>
-                <div class="dash-insight-sub" style="color:#EF4444; font-weight:700;">Solo 6 unidades</div>
-              </div>
-            </div>
-            <div style="color:#9CA3AF; font-size:18px; font-weight:700;">›</div>
-          </div>
-
-        </div>
-
-        <!-- Fila 3: Curva de Ventas por Hora & Mix por Canal -->
         <div class="dash-grid-65-35">
-          
-          <!-- Curva de Ventas por Hora -->
           <div class="card" style="position:relative; overflow:hidden;">
             <div class="card-header" style="padding:16px 20px; border-bottom:1px solid #F3F4F6; display:flex; justify-content:space-between; align-items:center;">
               <div>
-                <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Curva de ventas por hora (14:00 - 23:00 hrs)</div>
-                <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Hora pico detectada: 19:30 - 21:30 hrs (46% de las órdenes)</div>
+                <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;" id="dash-curve-title">Ventas por hora de hoy</div>
+                <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;" id="dash-curve-subtitle">—</div>
               </div>
               <div class="btn-group" style="display:inline-flex; background:#F3F4F6; border-radius:8px; padding:3px;">
-                <button class="btn btn-sm" id="btn-curve-hoy" onclick="setSalesCurvePeriod('hoy')" style="background:#FFF0F1; color:#EF4444; border:none; border-radius:6px; font-weight:700; font-size:11.5px; padding:5px 14px; cursor:pointer;">Hoy</button>
-                <button class="btn btn-sm" id="btn-curve-semana" onclick="setSalesCurvePeriod('semana')" style="background:transparent; color:#6B7280; border:none; border-radius:6px; font-weight:600; font-size:11.5px; padding:5px 14px; cursor:pointer;">Semana</button>
+                <button class="btn btn-sm" id="btn-curve-hoy" onclick="setSalesCurvePeriod('hoy')" style="border:none; border-radius:6px; font-size:11.5px; padding:5px 14px; cursor:pointer;">Hoy</button>
+                <button class="btn btn-sm" id="btn-curve-semana" onclick="setSalesCurvePeriod('semana')" style="border:none; border-radius:6px; font-size:11.5px; padding:5px 14px; cursor:pointer;">7 días</button>
               </div>
             </div>
-            
-            <div style="height:270px; position:relative; padding:16px 20px 10px;">
-              <canvas id="chart-hourly-sales"></canvas>
-              
-              <!-- Callout Tooltip en el pico de ventas (20:00 hrs) -->
-              <div class="dash-chart-tooltip" id="dash-peak-tooltip">
-                <div class="dash-chart-tooltip-title">Pico de ventas</div>
-                <div class="dash-chart-tooltip-val">S/ 862.00</div>
-                <div class="dash-chart-tooltip-time">20:00 hrs</div>
-              </div>
-            </div>
+            <div style="height:270px; position:relative; padding:16px 20px 10px;"><canvas id="chart-hourly-sales" aria-label="Gráfico de ventas" role="img"></canvas></div>
           </div>
 
-          <!-- Mix de Pedidos por Canal -->
           <div class="card" style="padding:16px 20px;">
             <div class="card-header" style="padding:0 0 14px; border-bottom:1px solid #F3F4F6;">
-              <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Mix de pedidos por canal</div>
-              <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Distribución de órdenes por canal de venta</div>
+              <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Pedidos de hoy por canal</div>
+              <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Web/app, caja y WhatsApp · delivery y recojo</div>
             </div>
-            
-            <div style="display:flex; align-items:center; gap:16px; margin-top:16px;">
-              <!-- Donut Canvas con etiqueta central -->
-              <div class="dash-donut-wrap">
-                <canvas id="chart-channels-mix"></canvas>
-                <div class="dash-donut-center">
-                  <div class="dash-donut-center-num">84</div>
-                  <div class="dash-donut-center-lbl">órdenes<br>totales</div>
-                </div>
-              </div>
-
-              <!-- Leyenda con porcentajes y órdenes -->
-              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#EF4444; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">WhatsApp Delivery</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">46%</span>
-                    <span style="color:#6B7280; font-size:11px;">39 órdenes</span>
-                  </div>
-                </div>
-
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#10B981; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">Recojo en tienda</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">34%</span>
-                    <span style="color:#6B7280; font-size:11px;">29 órdenes</span>
-                  </div>
-                </div>
-
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#F59E0B; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">Consumo local</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">12%</span>
-                    <span style="color:#6B7280; font-size:11px;">10 órdenes</span>
-                  </div>
-                </div>
-
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#8B5CF6; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">Promociones/campañas</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">8%</span>
-                    <span style="color:#6B7280; font-size:11px;">6 órdenes</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div id="dash-channel-list" style="display:flex; flex-direction:column; gap:10px; margin-top:16px;"></div>
           </div>
-
         </div>
 
-        <!-- Fila 4: Top 5 Productos & Tiempos de Ciclo SLA -->
         <div class="dash-grid-50-50">
-          
-          <!-- Top 5 Productos Más Pedidos -->
           <div class="card" style="padding:16px 20px;">
             <div class="card-header" style="padding:0 0 14px; border-bottom:1px solid #F3F4F6; display:flex; justify-content:space-between; align-items:center;">
               <div>
                 <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Top 5 productos más pedidos</div>
-                <div class="card-subtitle" id="top-products-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Órdenes despachadas hoy - base para decidir promos y pauta</div>
+                <div class="card-subtitle" id="top-products-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Unidades vendidas hoy</div>
               </div>
               <div class="btn-group" style="display:inline-flex; background:#F3F4F6; border-radius:8px; padding:3px;">
-                <button class="btn btn-sm" id="top-btn-hoy" onclick="renderTopProducts('hoy')" style="background:#FFF0F1; color:#EF4444; border:none; border-radius:6px; font-weight:700; font-size:11.5px; padding:5px 14px; cursor:pointer;">Hoy</button>
-                <button class="btn btn-sm" id="top-btn-mes" onclick="renderTopProducts('mes')" style="background:transparent; color:#6B7280; border:none; border-radius:6px; font-weight:600; font-size:11.5px; padding:5px 14px; cursor:pointer;">Este mes</button>
+                <button class="btn btn-sm" id="top-btn-hoy" onclick="renderTopProducts('hoy')" style="border:none; border-radius:6px; font-size:11.5px; padding:5px 14px; cursor:pointer;">Hoy</button>
+                <button class="btn btn-sm" id="top-btn-mes" onclick="renderTopProducts('mes')" style="border:none; border-radius:6px; font-size:11.5px; padding:5px 14px; cursor:pointer;">Este mes</button>
               </div>
             </div>
-            
-            <div style="display:flex; flex-direction:column; gap:14px; margin-top:16px;" id="top-products-list">
-              <!-- Renderizado dinámico por JS -->
-            </div>
+            <div style="display:flex; flex-direction:column; gap:14px; margin-top:16px;" id="top-products-list"></div>
           </div>
 
-          <!-- Tiempos de Ciclo de Entrega (SLA) -->
-          <div class="card" style="padding:16px 20px; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-              <div class="card-header" style="padding:0 0 14px; border-bottom:1px solid #F3F4F6;">
-                <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Tiempos de ciclo de entrega (SLA)</div>
-                <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Objetivo de marca: ≤ 30 minutos</div>
-              </div>
-              
-              <!-- 3 Cajas Métricas Horizontales -->
-              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-top:16px;">
-                
-                <div style="padding:14px; background:#FAFAFA; border-radius:10px; border:1px solid #E5E7EB;">
-                  <div style="display:flex; align-items:center; gap:6px; font-size:10.5px; color:#6B7280; font-weight:700;">
-                    <span>👨‍🍳</span>
-                    <span>TIEMPO EN COCINA</span>
-                  </div>
-                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;">8.4 min</div>
-                  <div style="font-size:11px; color:#10B981; font-weight:600; margin-top:2px;">▲ Excelente ritmo</div>
-                </div>
-
-                <div style="padding:14px; background:#FAFAFA; border-radius:10px; border:1px solid #E5E7EB;">
-                  <div style="display:flex; align-items:center; gap:6px; font-size:10.5px; color:#6B7280; font-weight:700;">
-                    <span>🛵</span>
-                    <span>TIEMPO EN TRÁNSITO</span>
-                  </div>
-                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;">15.8 min</div>
-                  <div style="font-size:11px; color:#3B82F6; font-weight:600; margin-top:2px;">⚡ 4 motos activas</div>
-                </div>
-
-                <div style="padding:14px; background:#FAFAFA; border-radius:10px; border:1px solid #E5E7EB;">
-                  <div style="display:flex; align-items:center; gap:6px; font-size:10.5px; color:#6B7280; font-weight:700;">
-                    <span>⏱️</span>
-                    <span>PROMEDIO TOTAL DE ENTREGA</span>
-                  </div>
-                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;">24.2 min</div>
-                  <div style="font-size:11px; color:#4B5563; font-weight:600; margin-top:2px;">▲ vs. 30 min objetivo</div>
-                </div>
-
-              </div>
-            </div>
-
-            <!-- Banner Inferior de Desempeño y Satisfacción -->
-            <div style="padding:14px 18px; background:#ECFDF5; border-radius:10px; border:1px solid #A7F3D0; display:flex; align-items:center; justify-content:space-between; margin-top:16px;">
-              <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:26px; height:26px; border-radius:50%; background:#10B981; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0;">✓</div>
-                <div>
-                  <div style="font-weight:700; font-size:12.5px; color:#065F46;">97.4% de los pedidos llegan calientes y en tiempo.</div>
-                  <div style="font-size:12px; color:#047857;">¡Excelente desempeño hoy!</div>
-                </div>
-              </div>
-              <div class="dash-sparkline-bars">
-                <span class="dash-sparkline-bar" style="height:8px; background:#A7F3D0;"></span>
-                <span class="dash-sparkline-bar" style="height:12px; background:#A7F3D0;"></span>
-                <span class="dash-sparkline-bar" style="height:16px; background:#10B981;"></span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Fila 5: ¿Cómo nos conocieron? & Reseñas y Recomendaciones Recientes -->
-        <div class="dash-grid-38-62">
-
-          <!-- ¿Cómo nos conocieron? -->
           <div class="card" style="padding:16px 20px;">
             <div class="card-header" style="padding:0 0 14px; border-bottom:1px solid #F3F4F6;">
-              <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">¿Cómo nos conocieron?</div>
-              <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Respuestas de la encuesta post-pedido - decide dónde destinar presupuesto</div>
+              <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Tiempos de hoy</div>
+              <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Promedios medidos con la hora de cada cambio de estado</div>
             </div>
-
-            <div style="display:flex; align-items:center; gap:16px; margin-top:16px;">
-              <div style="width:140px; height:140px; position:relative; flex-shrink:0;">
-                <canvas id="chart-attribution"></canvas>
-              </div>
-              <div id="attribution-legend" style="flex:1; display:flex; flex-direction:column; gap:7px; font-size:12px;">
-                <!-- Leyenda generada por JS -->
-              </div>
-            </div>
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-top:16px;" id="dash-sla"></div>
           </div>
-
-          <!-- Reseñas y Recomendaciones Recientes -->
-          <div class="card" style="padding:16px 20px; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-              <div class="card-header" style="padding:0 0 14px; border-bottom:1px solid #F3F4F6; display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                  <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Reseñas y recomendaciones recientes</div>
-                  <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Lo que los clientes escriben con sinceridad (y no siempre dicen en persona)</div>
-                </div>
-                <button class="btn btn-outline btn-sm" onclick="document.querySelector('[data-tab=tab-surveys]').click()" style="background:#FFFFFF; border:1px solid #E5E7EB; border-radius:6px; font-size:12px; font-weight:600; color:#374151; padding:5px 12px; cursor:pointer;">Ver todas</button>
-              </div>
-
-              <!-- 4 Tarjetas Horizontales -->
-              <div class="dash-reviews-grid" id="dashboard-reviews-list" style="margin-top:16px;">
-                <!-- Renderizado por JS -->
-              </div>
-            </div>
-
-            <!-- Temas a mejorar -->
-            <div style="margin-top:16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; padding-top:12px; border-top:1px solid #F3F4F6;">
-              <span style="font-weight:700; color:#374151;">Temas a mejorar:</span>
-              <div id="improve-topics" style="display:inline-flex; gap:6px; flex-wrap:wrap;">
-                <!-- Generado por JS -->
-              </div>
-            </div>
-          </div>
-
         </div>
-
       </section>
 
       <!-- TAB 2: KDS & LIVE ORDERS — MONITOR DE COCINA Y DESPACHO EN VIVO -->
@@ -1740,6 +1362,18 @@
           </form>
           <div class="history-card"><div class="history-card-heading"><h2>Usuarios del equipo</h2><button class="btn btn-outline" id="users-refresh">Actualizar</button></div><div class="history-table-wrap"><table class="history-table"><thead><tr><th>Nombre / Usuario</th><th>Tipo</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="users-rows"></tbody></table></div></div>
         </div>
+        <div class="cash-layout" style="margin-top:16px;">
+          <form id="drivers-form" class="history-card cash-form"><h2>Motorizados</h2><p>n8n ofrece cada pedido de delivery al grupo sin datos del cliente; quien lo toma recibe la comanda completa en privado.</p>
+            <label>Nombre<input id="driver-name" required minlength="3" maxlength="60" autocomplete="off" placeholder="Pepe Ramos"></label>
+            <label>Celular (WhatsApp)<input id="driver-phone" required inputmode="numeric" pattern="9[0-9]{8}" maxlength="9" autocomplete="off" placeholder="9XXXXXXXX" title="9 dígitos, empieza con 9"></label>
+            <button class="btn btn-primary" type="submit">Agregar motorizado</button>
+            <label style="margin-top:14px;">Avisar al operador si nadie toma el pedido en (minutos)<input id="drivers-minutes" type="number" min="1" max="60" step="1" value="5"></label>
+            <button class="btn btn-outline" type="button" id="drivers-minutes-save">Guardar minutos</button>
+            <p class="form-feedback" id="drivers-n8n" role="status"></p>
+            <p class="form-feedback" id="drivers-feedback" role="status"></p>
+          </form>
+          <div class="history-card"><div class="history-card-heading"><h2>Motorizados registrados</h2></div><div class="history-table-wrap"><table class="history-table"><thead><tr><th>Nombre</th><th>Celular</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="drivers-rows"></tbody></table></div></div>
+        </div>
       </section>
       <section id="tab-cash" class="tab-content" aria-label="Caja del día">
         <div id="cash-summary" class="history-summary"></div>
@@ -1934,12 +1568,12 @@
   <!-- Services -->
   <script src="js/admin/services/audio.service.js?v=dashboard-restored1"></script>
   <script src="js/admin/services/toast.service.js?v=dashboard-restored1"></script>
-  <script src="js/admin/services/sync.service.js?v=dashboard-restored1"></script>
+  <script src="js/admin/services/sync.service.js?v=req1"></script>
 
   <!-- Feature Modules -->
-  <script src="js/admin/modules/dashboard.module.js?v=dashboard-restored1"></script>
-  <script src="js/admin/modules/kanban.module.js?v=dashboard-restored1"></script>
-  <script src="js/admin/modules/catalog.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/dashboard.module.js?v=req1"></script>
+  <script src="js/admin/modules/kanban.module.js?v=req1"></script>
+  <script src="js/admin/modules/catalog.module.js?v=req1"></script>
   <script src="js/admin/modules/promos.module.js?v=dashboard-restored1"></script>
   <script src="js/admin/modules/customers.module.js?v=dashboard-restored1"></script>
   <script src="js/admin/modules/surveys.module.js?v=dashboard-restored1"></script>
@@ -1948,6 +1582,7 @@
   <script src="js/admin/modules/history.module.js?v=dashboard-restored1"></script>
   <script src="js/admin/services/auth.service.js?v=dashboard-restored1"></script>
   <script src="js/admin/modules/users.module.js?v=validaciones1"></script>
+  <script src="js/admin/modules/drivers.module.js?v=req1"></script>
   <script src="js/admin/modules/cash.module.js?v=validaciones1"></script>
   <script src="js/admin/modules/reports.module.js?v=dashboard-restored1"></script>
   <script src="js/admin/app.js?v=dashboard-restored1"></script>

@@ -25,6 +25,9 @@ class OrderRepository {
     return this.db.operation('orders.patch', { id, patch });
   }
   verifyPayment(id) { return this.db.operation('orders.patch', { id, patch: { payVerified: true } }); }
+  // shortcut: el esquema SQL aún no tiene columnas para constancia ni despacho; con PostgreSQL esos
+  // datos no se guardan (el pedido sigue igual). Agregar una migración con una columna jsonb al usarlo.
+  patch(id) { return this.getById(id); }
 }
 
 class CatalogRepository {

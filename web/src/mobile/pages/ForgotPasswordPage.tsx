@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, KeyRound, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { siteConfig } from '../../config/site';
 import { EMAIL_MAX, MESSAGES, isValidEmail, sanitizeEmailInput } from '../../lib/validation';
 
 export const ForgotPasswordPage: React.FC = () => {
@@ -37,13 +38,21 @@ export const ForgotPasswordPage: React.FC = () => {
                 Enlace enviado
               </h2>
               <p className="text-xs text-[#6B6662] leading-relaxed">
-                Hemos enviado las instrucciones para restablecer tu contraseña a{' '}
-                <strong className="text-[#242424]">{email}</strong>. Revisa tu bandeja de entrada o spam.
+                Para proteger tu cuenta, el cambio de contraseña lo hace nuestro equipo. Escríbenos por WhatsApp
+                desde el celular de tu cuenta <strong className="text-[#242424]">{email}</strong> y te ayudamos.
               </p>
             </div>
+            <a
+              href={`https://wa.me/${siteConfig.whatsappInternational}?text=${encodeURIComponent(`Hola, olvidé la contraseña de mi cuenta ${email.trim()}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 w-full justify-center h-11 bg-[#16B959] text-white font-bold text-xs rounded-xl shadow-md"
+            >
+              <span>Escribir por WhatsApp</span>
+            </a>
             <Link
               to="/app/login"
-              className="inline-flex items-center gap-1.5 w-full justify-center h-11 bg-[#FF3038] text-white font-bold text-xs rounded-xl shadow-md"
+              className="inline-flex items-center gap-1.5 w-full justify-center h-11 border border-[#EFE6D6] text-[#242424] font-bold text-xs rounded-xl"
             >
               <span>Volver a Iniciar Sesión</span>
             </Link>

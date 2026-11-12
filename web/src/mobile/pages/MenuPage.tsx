@@ -4,7 +4,10 @@ import { Search } from 'lucide-react';
 import { PRODUCTS } from '../../data/catalog';
 import { ProductCard } from '../components/ProductCard';
 import { ProductConfigurator } from '../components/ProductConfigurator';
-import { Product, ProductCategory } from '../../types/product';
+import { Product, ProductCategory, getProductPrice } from '../../types/product';
+import { isSoldOut } from '../../services/catalog.api';
+
+type SortOrder = 'recomendados' | 'precio-asc' | 'precio-desc';
 
 export const MenuPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -12,6 +15,9 @@ export const MenuPage: React.FC = () => {
 
   const [activeCategory, setActiveCategory] = useState<string>(catParam || 'todos');
   const [configProduct, setConfigProduct] = useState<Product | null>(null);
+  // Filtros (RFI-02): solo disponibles y orden por precio
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
+  const [sort, setSort] = useState<SortOrder>('recomendados');
 
   useEffect(() => {
     if (catParam) {
@@ -39,10 +45,12 @@ export const MenuPage: React.FC = () => {
     setSearchParams(searchParams);
   };
 
+  const byCategory = activeCategory === 'todos' ? PRODUCTS : PRODUCTS.filter((p) => p.category === activeCategory);
+  const available = onlyAvailable ? byCategory.filter((p) => !isSoldOut(p.id)) : byCategory;
   const filteredProducts =
-    activeCategory === 'todos'
-      ? PRODUCTS
-      : PRODUCTS.filter((p) => p.category === activeCategory);
+    sort === 'recomendados'
+      ? available
+      : [...available].sort((a, b) => (getProductPrice(a) - getProductPrice(b)) * (sort === 'precio-asc' ? 1 : -1));
 
   return (
     <div className="space-y-4 p-4 pb-8">
@@ -74,6 +82,24 @@ export const MenuPage: React.FC = () => {
             </button>
           );
         })}
+      </div>
+
+      {/* Filtros */}
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-xs font-bold text-[#242424] cursor-pointer">
+          <input type="checkbox" checked={onlyAvailable} onChange={(e) => setOnlyAvailable(e.target.checked)} className="w-4 h-4 accent-[#FF3038]" />
+          Solo disponibles
+        </label>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortOrder)}
+          aria-label="Ordenar productos"
+          className="h-9 px-2 rounded-xl border border-[#EFE6D6] bg-white text-xs font-bold text-[#242424] focus:outline-none focus:border-[#FF3038]"
+        >
+          <option value="recomendados">Recomendados</option>
+          <option value="precio-asc">Precio: menor a mayor</option>
+          <option value="precio-desc">Precio: mayor a menor</option>
+        </select>
       </div>
 
       {/* Contador de productos */}
