@@ -65,6 +65,8 @@ export function buildFallbackOrderUrl(lines: FallbackLine[], details: OrderDetai
   if (details.address) text.push(`Dirección: ${details.address}`);
   if (details.reference) text.push(`Referencia: ${details.reference}`);
   if (details.notes) text.push(`Indicaciones: ${details.notes}`);
+  // Si la tienda respondió tarde, el pedido pudo quedar guardado igual: caja no debe tomarlo como otro
+  text.push('', 'Si en el panel aparece un pedido por confirmar con mi celular, es este mismo.');
   return buildWhatsAppUrl(text.join('\n'));
 }
 

@@ -29,7 +29,8 @@ export const CartDrawer: React.FC = () => {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  // La tienda no respondió al último intento: se ofrece enviar el pedido completo por WhatsApp
+  const [storeDown, setStoreDown] = useState(false);
   const [order, setOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
   const mode = deliveryType === 'delivery' ? 'delivery' : 'pickup';
   const coupon = useServerCoupon(items, mode, isOpen);
@@ -62,7 +63,7 @@ export const CartDrawer: React.FC = () => {
   useEffect(() => {
     setSent(false);
     setOrder(null);
-    setFallbackUrl(null);
+    setStoreDown(false);
   }, [items]);
 
   if (!isOpen) return null;
@@ -83,6 +84,15 @@ export const CartDrawer: React.FC = () => {
     showToast({ message: 'Cupón removido' });
   };
 
+  const orderDetails = (): OrderDetails => ({
+    customer: { name: fullName.trim(), phone: phone.trim() },
+    mode,
+    address: mode === 'delivery' ? address.trim() : undefined,
+    reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+    notes: [generalNotes.trim(), mode === 'delivery' ? `Zona: ${selectedZone.name}` : ''].filter(Boolean).join(' · ') || undefined,
+    couponCode: appliedCoupon?.code,
+  });
+
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!isValidName(fullName)) errs.fullName = 'Escribe tu nombre (mínimo 3 letras)';
@@ -98,17 +108,9 @@ export const CartDrawer: React.FC = () => {
     const whatsappWindow = prepareWhatsAppWindow();
     setSending(true);
     setSubmitError(null);
-    setFallbackUrl(null);
-    const details: OrderDetails = {
-      customer: { name: fullName.trim(), phone: phone.trim() },
-      mode,
-      address: mode === 'delivery' ? address.trim() : undefined,
-      reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
-      notes: [generalNotes.trim(), mode === 'delivery' ? `Zona: ${selectedZone.name}` : ''].filter(Boolean).join(' · ') || undefined,
-      couponCode: appliedCoupon?.code,
-    };
+    setStoreDown(false);
     try {
-      const result = await submitOrder(items, details);
+      const result = await submitOrder(items, orderDetails());
       setOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
       if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
       else discardWhatsAppWindow(whatsappWindow);
@@ -117,7 +119,7 @@ export const CartDrawer: React.FC = () => {
       discardWhatsAppWindow(whatsappWindow);
       setSubmitError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
       // Si la tienda no responde, el cliente igual puede pedir: el detalle va completo por WhatsApp
-      if (error instanceof StoreUnavailableError) setFallbackUrl(buildFallbackOrderUrl(items, details));
+      if (error instanceof StoreUnavailableError) setStoreDown(true);
     } finally {
       setSending(false);
     }
@@ -130,7 +132,7 @@ export const CartDrawer: React.FC = () => {
     setSent(false);
     setOrder(null);
     setSubmitError(null);
-    setFallbackUrl(null);
+    setStoreDown(false);
     closeCart();
     showToast({ message: 'Pedido vaciado. ¡Gracias por tu compra!' });
   };
@@ -216,7 +218,7 @@ export const CartDrawer: React.FC = () => {
             sent={sent}
             sending={sending}
             submitError={submitError}
-            fallbackUrl={fallbackUrl ?? undefined}
+            fallbackUrl={storeDown ? buildFallbackOrderUrl(items, orderDetails()) : undefined}
             orderCode={order?.code}
             orderTotal={order?.total}
             whatsappUrl={order?.whatsappUrl ?? undefined}

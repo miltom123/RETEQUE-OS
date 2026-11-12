@@ -45,7 +45,8 @@ export const OrderRequestPage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
+  // La tienda no respondió al último intento: se ofrece enviar el pedido completo por WhatsApp
+  const [storeDown, setStoreDown] = useState(false);
   const [order, setOrder] = useState<{ code: string; total: number; whatsappUrl: string | null } | null>(null);
   const isSent = order !== null;
 
@@ -78,6 +79,15 @@ export const OrderRequestPage: React.FC = () => {
       </div>
     );
   }
+
+  const orderDetails = (): OrderDetails => ({
+    customer: { name: fullName.trim(), phone: phone.replace(/\s+/g, '') },
+    mode,
+    address: mode === 'delivery' ? address.trim() : undefined,
+    reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
+    notes: generalNotes.trim() || undefined,
+    couponCode: coupon.applied?.code,
+  });
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -118,17 +128,9 @@ export const OrderRequestPage: React.FC = () => {
     const whatsappWindow = prepareWhatsAppWindow();
     setSending(true);
     setSubmitError(null);
-    setFallbackUrl(null);
-    const details: OrderDetails = {
-      customer: { name: fullName.trim(), phone: phone.replace(/\s+/g, '') },
-      mode,
-      address: mode === 'delivery' ? address.trim() : undefined,
-      reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
-      notes: generalNotes.trim() || undefined,
-      couponCode: coupon.applied?.code,
-    };
+    setStoreDown(false);
     try {
-      const result = await submitOrder(items, details);
+      const result = await submitOrder(items, orderDetails());
       setOrder({ code: result.code, total: result.total, whatsappUrl: result.whatsappUrl });
       if (result.whatsappUrl) openWhatsAppOrder(whatsappWindow, result.whatsappUrl);
       else discardWhatsAppWindow(whatsappWindow);
@@ -137,7 +139,7 @@ export const OrderRequestPage: React.FC = () => {
       discardWhatsAppWindow(whatsappWindow);
       setSubmitError(error instanceof Error ? error.message : 'No pudimos registrar tu pedido. Inténtalo de nuevo.');
       // Si la tienda no responde, el cliente igual puede pedir: el detalle va completo por WhatsApp
-      if (error instanceof StoreUnavailableError) setFallbackUrl(buildFallbackOrderUrl(items, details));
+      if (error instanceof StoreUnavailableError) setStoreDown(true);
     } finally {
       setSending(false);
     }
@@ -286,9 +288,9 @@ export const OrderRequestPage: React.FC = () => {
               {submitError}
             </p>
           )}
-          {fallbackUrl && (
+          {storeDown && (
             <a
-              href={fallbackUrl}
+              href={buildFallbackOrderUrl(items, orderDetails())}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full h-10 mb-2 rounded-xl border border-[#16B959] text-[#13A24D] text-xs font-black flex items-center justify-center gap-2"
