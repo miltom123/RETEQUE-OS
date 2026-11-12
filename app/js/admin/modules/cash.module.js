@@ -76,6 +76,13 @@
   }
   window.loadCashCatalog = loadCashCatalog; window.renderCash = renderCash; window.resetCashForm = resetCashForm;
   document.addEventListener('DOMContentLoaded', () => {
+    const filterName = input => input.addEventListener('input', () => { input.value = input.value.replace(/[^\p{L}\s'.-]/gu, '').replace(/\s+/g, ' ').replace(/^[\s'.-]+/, '').slice(0, 60); });
+    filterName(el('cash-customer'));
+    // Celular: solo números, empieza con 9 y máximo 9 dígitos (si se pega con +51, se quita el prefijo)
+    el('cash-phone').addEventListener('input', event => {
+      let digits = event.target.value.replace(/\D/g, ''); if (digits.length > 9 && digits.startsWith('51')) digits = digits.slice(2);
+      event.target.value = digits.startsWith('9') ? digits.slice(0, 9) : '';
+    });
     el('cash-refresh').addEventListener('click', async () => { await window.refreshOrders(); await loadCashCatalog(); });
     el('cash-add').addEventListener('click', () => {
       const product = catalog.find(product => product.id === el('cash-product').value); const qty = Number(el('cash-qty').value);
@@ -89,6 +96,8 @@
     el('cash-fee').addEventListener('input', total);
     el('cash-order-form').addEventListener('submit', async event => {
       event.preventDefault(); if (saving || !window.adminAuthenticated) return;
+      if (!/^\p{L}[\p{L}\s'.-]{2,59}$/u.test(el('cash-customer').value.trim())) { el('cash-feedback').textContent = 'El nombre del cliente solo puede llevar letras (mínimo 3).'; return; }
+      if (el('cash-phone').value && !/^9\d{8}$/.test(el('cash-phone').value)) { el('cash-feedback').textContent = 'El teléfono debe tener 9 dígitos y empezar con 9.'; return; }
       if (!cart.length) { el('cash-feedback').textContent = 'Agrega al menos un producto.'; return; }
       const payload = { customer: el('cash-customer').value, phone: el('cash-phone').value, mode: el('cash-mode').value,
         payMethod: el('cash-payment').value, payVerified: el('cash-paid').checked, address: el('cash-address').value,

@@ -19,6 +19,19 @@ import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useCartStore } from '../../store/cartStore';
+import {
+  ADDRESS_MAX,
+  MESSAGES,
+  NAME_MAX,
+  PHONE_LENGTH,
+  REFERENCE_MAX,
+  isValidAddress,
+  isValidName,
+  isValidPeruMobile,
+  sanitizeFreeText,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '../../lib/validation';
 
 export const ProfilePage: React.FC = () => {
   const { user, isAuthenticated, logout, updateProfile, isLoading } = useAuthStore();
@@ -26,17 +39,31 @@ export const ProfilePage: React.FC = () => {
   const favoriteCount = useFavoritesStore((s) => s.favoriteIds.length);
   const cartCount = useCartStore((s) => s.getTotalCount());
 
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [displayName, setDisplayName] = useState(sanitizeNameInput(user?.displayName || ''));
+  const [phone, setPhone] = useState(sanitizePhoneInput(user?.phone || ''));
   const [address, setAddress] = useState(user?.defaultAddress || '');
   const [reference, setReference] = useState(user?.defaultReference || '');
   const [isEditing, setIsEditing] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const isIos = platform === 'ios';
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated) return;
+    if (!isValidName(displayName)) {
+      setFormError(MESSAGES.name);
+      return;
+    }
+    if (phone && !isValidPeruMobile(phone)) {
+      setFormError(MESSAGES.phone);
+      return;
+    }
+    if (address.trim() && !isValidAddress(address)) {
+      setFormError(MESSAGES.address);
+      return;
+    }
+    setFormError(null);
     const ok = await updateProfile({
       displayName: displayName.trim(),
       phone: phone.trim(),
@@ -99,8 +126,10 @@ export const ProfilePage: React.FC = () => {
                 <label className="text-[11px] font-bold text-[#6B6662] block">Nombre Completo</label>
                 <input
                   type="text"
+                  autoComplete="name"
+                  maxLength={NAME_MAX}
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => setDisplayName(sanitizeNameInput(e.target.value))}
                   className="w-full h-10 px-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
                 />
               </div>
@@ -109,8 +138,11 @@ export const ProfilePage: React.FC = () => {
                 <label className="text-[11px] font-bold text-[#6B6662] block">Teléfono de Delivery</label>
                 <input
                   type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  maxLength={PHONE_LENGTH}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                  onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
                   className="w-full h-10 px-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
                 />
               </div>
@@ -119,8 +151,9 @@ export const ProfilePage: React.FC = () => {
                 <label className="text-[11px] font-bold text-[#6B6662] block">Dirección Predeterminada</label>
                 <input
                   type="text"
+                  maxLength={ADDRESS_MAX}
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => setAddress(sanitizeFreeText(e.target.value, ADDRESS_MAX))}
                   placeholder="Calle, número, urbanización en Tacna"
                   className="w-full h-10 px-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
                 />
@@ -130,12 +163,19 @@ export const ProfilePage: React.FC = () => {
                 <label className="text-[11px] font-bold text-[#6B6662] block">Referencia de entrega</label>
                 <input
                   type="text"
+                  maxLength={REFERENCE_MAX}
                   value={reference}
-                  onChange={(e) => setReference(e.target.value)}
+                  onChange={(e) => setReference(sanitizeFreeText(e.target.value, REFERENCE_MAX))}
                   placeholder="Frente a la plaza, portón blanco..."
                   className="w-full h-10 px-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
                 />
               </div>
+
+              {formError && (
+                <p role="alert" className="text-[11px] text-[#FF3038] font-bold">
+                  {formError}
+                </p>
+              )}
 
               <button
                 type="submit"

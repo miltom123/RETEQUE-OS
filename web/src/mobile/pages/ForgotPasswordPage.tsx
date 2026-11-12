@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, KeyRound, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { EMAIL_MAX, MESSAGES, isValidEmail, sanitizeEmailInput } from '../../lib/validation';
 
 export const ForgotPasswordPage: React.FC = () => {
   const { resetPassword, isLoading } = useAuthStore();
@@ -12,17 +13,15 @@ export const ForgotPasswordPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!email.trim() || !email.includes('@')) {
-      setError('Por favor ingresa un correo electrónico válido');
+    if (!isValidEmail(email)) {
+      setError(MESSAGES.email);
       return;
     }
 
-    try {
-      await resetPassword(email.trim());
-      setIsSent(true);
-    } catch {
-      setError('No pudimos enviar el enlace. Intenta nuevamente.');
-    }
+    // resetPassword no lanza errores: devuelve false si falla, así que hay que revisar el resultado
+    const sent = await resetPassword(email.trim());
+    if (sent) setIsSent(true);
+    else setError(useAuthStore.getState().error || 'No pudimos enviar el enlace. Intenta nuevamente.');
   };
 
   return (
@@ -79,8 +78,10 @@ export const ForgotPasswordPage: React.FC = () => {
                   <input
                     id="forgot-email"
                     type="email"
+                    autoComplete="email"
+                    maxLength={EMAIL_MAX}
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(sanitizeEmailInput(e.target.value))}
                     placeholder="ejemplo@correo.com"
                     className="w-full h-11 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
                   />

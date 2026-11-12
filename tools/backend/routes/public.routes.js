@@ -7,7 +7,7 @@
 const crypto = require('crypto');
 const { readJsonBody, sendJson } = require('../http');
 const { quoteCart, QuoteError } = require('../pricing');
-const { sanitizeString } = require('../sanitize');
+const { sanitizeString, isValidPersonName, normalizePeruMobile } = require('../sanitize');
 const { IdempotencyConflict } = require('../idempotency');
 const { newOrderId } = require('./orders.routes');
 
@@ -20,17 +20,12 @@ async function loadPricingData(repos) {
   return { products, coupons: (config && config.coupons) || [], config: config || {} };
 }
 
-// Celular peruano: 9 dígitos que empiezan en 9, con o sin el 51 delante
-function normalizePhone(value) {
-  const digits = String(value || '').replace(/\D/g, '');
-  const local = digits.length === 11 && digits.startsWith('51') ? digits.slice(2) : digits;
-  return /^9\d{8}$/.test(local) ? local : null;
-}
+const normalizePhone = normalizePeruMobile;
 
 function readCustomer(body) {
   const customer = body && typeof body.customer === 'object' && body.customer ? body.customer : {};
-  const name = sanitizeString(String(customer.name || '')).slice(0, 60);
-  if (name.length < 2) throw new QuoteError('Escribe tu nombre.');
+  const name = String(customer.name || '').trim();
+  if (!isValidPersonName(name)) throw new QuoteError('Escribe tu nombre completo, solo con letras.');
   const phone = normalizePhone(customer.phone);
   if (!phone) throw new QuoteError('Escribe un celular válido de 9 dígitos que empiece en 9.');
   const address = sanitizeString(String(body.address || '')).slice(0, 300);

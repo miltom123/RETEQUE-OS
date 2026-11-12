@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { isValidPersonName } = require('./backend/sanitize');
 
 const normalizeUsername = value => String(value || '').trim().toLowerCase();
 function publicUser(user) {
@@ -36,7 +37,7 @@ class UsersRepository {
     username = normalizeUsername(username);
     if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username) || ['atencion', 'atención'].includes(username)) throw new Error('Usa un usuario de 3 a 32 caracteres: letras, números, punto, guion o guion bajo.');
     if (this.find(username)) throw new Error('Ese usuario ya existe.');
-    if (typeof name !== 'string' || !name.trim() || name.trim().length > 60) throw new Error('Ingresa un nombre de hasta 60 caracteres.');
+    if (!isValidPersonName(name)) throw new Error('Ingresa un nombre de 3 a 60 caracteres, solo con letras.');
     if (typeof password !== 'string' || password.length < 4 || password.length > 128) throw new Error('La contraseña debe tener entre 4 y 128 caracteres.');
     const salt = crypto.randomBytes(16).toString('hex');
     const user = { username, name: name.trim(), role, active: true, salt, passwordHash: passwordHash(password, salt), createdAt: new Date().toISOString() };

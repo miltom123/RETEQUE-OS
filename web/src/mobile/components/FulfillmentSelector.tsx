@@ -2,6 +2,7 @@ import React from 'react';
 import { Bike, Store, MapPin, Info } from 'lucide-react';
 import { FulfillmentType } from '../../types/orderRequest';
 import { siteConfig } from '../../config/site';
+import { ADDRESS_MAX, REFERENCE_MAX, sanitizeFreeText } from '../../lib/validation';
 
 interface FulfillmentSelectorProps {
   type: FulfillmentType;
@@ -80,8 +81,9 @@ export const FulfillmentSelector: React.FC<FulfillmentSelectorProps> = ({
               <input
                 id="mobile-address"
                 type="text"
+                maxLength={ADDRESS_MAX}
                 value={address}
-                onChange={(e) => onChangeAddress(e.target.value)}
+                onChange={(e) => onChangeAddress(sanitizeFreeText(e.target.value, ADDRESS_MAX))}
                 placeholder="Ej. Av. Bolognesi 845 / Urb. Vigil"
                 className={`w-full h-11 px-3.5 rounded-xl border text-xs bg-[#FFFDF9] focus:outline-none transition ${
                   errors.address
@@ -107,8 +109,9 @@ export const FulfillmentSelector: React.FC<FulfillmentSelectorProps> = ({
             <input
               id="mobile-reference"
               type="text"
+              maxLength={REFERENCE_MAX}
               value={reference}
-              onChange={(e) => onChangeReference(e.target.value)}
+              onChange={(e) => onChangeReference(sanitizeFreeText(e.target.value, REFERENCE_MAX))}
               placeholder="Ej. Frente al colegio, portón negro"
               className="w-full h-11 px-3.5 rounded-xl border border-[#EFE6D6] text-xs bg-[#FFFDF9] focus:outline-none focus:border-[#FF3038] focus:ring-2 focus:ring-[#FF3038]/10 transition"
             />

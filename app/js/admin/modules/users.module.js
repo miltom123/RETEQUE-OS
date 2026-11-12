@@ -43,12 +43,15 @@
   }
   window.loadUsers = loadUsers;
   document.addEventListener('DOMContentLoaded', () => {
+    el('user-name').addEventListener('input', event => { event.target.value = event.target.value.replace(/[^\p{L}\s'.-]/gu, '').replace(/\s+/g, ' ').replace(/^[\s'.-]+/, '').slice(0, 60); });
+    el('user-username').addEventListener('input', event => { event.target.value = event.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 32); });
     el('users-refresh').addEventListener('click', loadUsers);
     el('users-form').addEventListener('submit', async event => {
       event.preventDefault();
       if (window.currentUser?.role !== 'admin') return;
       const button = event.currentTarget.querySelector('button[type="submit"]'); button.disabled = true;
       el('users-feedback').textContent = '';
+      if (!/^\p{L}[\p{L}\s'.-]{2,59}$/u.test(el('user-name').value.trim())) { el('users-feedback').textContent = 'El nombre solo puede llevar letras (mínimo 3).'; button.disabled = false; return; }
       try {
         const data = await api('/api/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
           name: el('user-name').value, username: el('user-username').value, password: el('user-password').value, role: 'cashier'

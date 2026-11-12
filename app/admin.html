@@ -1733,7 +1733,7 @@
         <div class="history-card users-intro"><h2>Un equipo, dos tipos de acceso</h2><p>El administrador gestiona el negocio. Caja se encarga de los pedidos y cobros del día.</p><div class="role-grid"><div><strong>Administrador</strong><p>Historial completo, métricas, catálogo, promociones y gestión de usuarios.</p></div><div><strong>Caja</strong><p>Nuevos pedidos, pagos, resumen del día y seguimiento de cocina y despacho.</p></div></div></div>
         <div class="cash-layout">
           <form id="users-form" class="history-card cash-form"><h2>Agregar usuario de caja</h2><p>Crea una cuenta para cada persona o punto de caja.</p>
-            <label>Nombre<input id="user-name" required maxlength="60" placeholder="Caja de mostrador"></label>
+            <label>Nombre<input id="user-name" required minlength="3" maxlength="60" autocomplete="off" title="Solo letras, de 3 a 60 caracteres" placeholder="Caja de mostrador"></label>
             <label>Usuario<input id="user-username" required minlength="3" maxlength="32" pattern="[a-z0-9][a-z0-9._-]{2,31}" autocomplete="off" placeholder="caja2"></label>
             <label>Contraseña<input id="user-password" type="password" required minlength="4" maxlength="128" autocomplete="new-password"></label>
             <p class="form-feedback" id="users-feedback" role="status"></p><button class="btn btn-primary" type="submit">Crear usuario de caja</button>
@@ -1746,7 +1746,7 @@
         <div class="cash-layout">
           <form id="cash-order-form" class="history-card cash-form">
             <h2>Nuevo pedido</h2><p>Registra la venta y envía la comanda a cocina.</p>
-            <div class="cash-fields"><label>Cliente<input id="cash-customer" required maxlength="100" placeholder="Nombre del cliente"></label><label>Teléfono<input id="cash-phone" type="tel" maxlength="30" placeholder="Opcional"></label></div>
+            <div class="cash-fields"><label>Cliente<input id="cash-customer" required minlength="3" maxlength="60" autocomplete="off" title="Solo letras, de 3 a 60 caracteres" placeholder="Nombre del cliente"></label><label>Teléfono<input id="cash-phone" type="tel" inputmode="numeric" maxlength="9" pattern="9[0-9]{8}" autocomplete="off" title="9 dígitos, empieza con 9" placeholder="Opcional (9 dígitos)"></label></div>
             <div class="cash-fields"><label>Modalidad<select id="cash-mode"><option value="pickup">Recojo en tienda</option><option value="delivery">Delivery</option></select></label><label>Medio de pago<select id="cash-payment"><option>Efectivo</option><option>Yape</option><option>Plin</option><option>Transferencia</option></select></label></div>
             <div id="cash-delivery-fields" hidden class="cash-fields"><label>Dirección<input id="cash-address" maxlength="300"></label><label>Costo de delivery (S/)<input id="cash-fee" type="number" min="0" max="100" step="0.10" value="0"></label></div>
             <div class="cash-add-row"><label>Producto<select id="cash-product"><option value="">Cargando carta…</option></select></label><label>Cantidad<input id="cash-qty" type="number" min="1" max="99" value="1"></label><button id="cash-add" type="button" class="btn btn-outline">Agregar</button></div>
@@ -1947,8 +1947,8 @@
   <!-- App Bootstrap & Orchestration -->
   <script src="js/admin/modules/history.module.js?v=dashboard-restored1"></script>
   <script src="js/admin/services/auth.service.js?v=dashboard-restored1"></script>
-  <script src="js/admin/modules/users.module.js?v=dashboard-restored1"></script>
-  <script src="js/admin/modules/cash.module.js?v=dashboard-restored1"></script>
+  <script src="js/admin/modules/users.module.js?v=validaciones1"></script>
+  <script src="js/admin/modules/cash.module.js?v=validaciones1"></script>
   <script src="js/admin/modules/reports.module.js?v=dashboard-restored1"></script>
   <script src="js/admin/app.js?v=dashboard-restored1"></script>
 </body>

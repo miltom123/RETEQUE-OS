@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageCircle, CheckCircle2, Tag, X } from 'lucide-react';
 import { formatMoney } from '../../lib/money';
+import { COUPON_MAX, sanitizeCouponInput } from '../../lib/validation';
 
 interface CartDrawerFooterProps {
   subtotal: number;
@@ -74,7 +75,8 @@ export const CartDrawerFooter: React.FC<CartDrawerFooterProps> = ({
             <input
               type="text"
               value={inputCode}
-              onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+              maxLength={COUPON_MAX}
+              onChange={(e) => setInputCode(sanitizeCouponInput(e.target.value))}
               placeholder="¿Tienes un cupón? (ej. BIENVENIDO10)"
               className="w-full h-9 pl-8 pr-2.5 rounded-lg border border-neutral-200 text-xs uppercase font-medium placeholder:normal-case placeholder:font-normal focus:outline-none focus:border-[#D31728] focus:ring-1 focus:ring-[#D31728]/20"
             />

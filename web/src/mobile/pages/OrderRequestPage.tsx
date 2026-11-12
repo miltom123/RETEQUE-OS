@@ -6,7 +6,7 @@ import { useCheckoutStore } from '../../store/checkoutStore';
 import { useAuthStore } from '../../store/authStore';
 import { customerAccountsEnabled } from '../../config/features';
 import { formatMoney, roundMoney } from '../../lib/money';
-import { isValidName, isValidPeruMobile } from '../../lib/validation';
+import { MESSAGES, isValidAddress, isValidName, isValidPeruMobile, sanitizePhoneInput } from '../../lib/validation';
 import { buildFallbackOrderUrl, discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
 import { resetOrderAttempt, StoreUnavailableError, submitOrder, type OrderDetails } from '../../lib/orderApi';
 import { useServerCoupon } from '../../hooks/useServerCoupon';
@@ -81,7 +81,7 @@ export const OrderRequestPage: React.FC = () => {
   }
 
   const orderDetails = (): OrderDetails => ({
-    customer: { name: fullName.trim(), phone: phone.replace(/\s+/g, '') },
+    customer: { name: fullName.trim(), phone: sanitizePhoneInput(phone) },
     mode,
     address: mode === 'delivery' ? address.trim() : undefined,
     reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
@@ -94,22 +94,21 @@ export const OrderRequestPage: React.FC = () => {
 
     if (!fullName.trim()) {
       errs.name = 'Por favor ingresa tu nombre completo';
-    } else if (!isValidName(fullName.trim())) {
-      errs.name = 'Ingresa un nombre válido (mínimo 3 letras)';
+    } else if (!isValidName(fullName)) {
+      errs.name = MESSAGES.name;
     }
 
-    const cleanPhone = phone.replace(/\s+/g, '');
-    if (!cleanPhone) {
+    if (!phone.trim()) {
       errs.phone = 'Por favor ingresa tu número de celular';
-    } else if (!isValidPeruMobile(cleanPhone)) {
-      errs.phone = 'Ingresa un celular de 9 dígitos que empiece con 9';
+    } else if (!isValidPeruMobile(phone)) {
+      errs.phone = MESSAGES.phone;
     }
 
     if (deliveryType === 'delivery') {
       if (!address.trim()) {
         errs.address = 'Ingresa la dirección para coordinar el delivery';
-      } else if (address.trim().length < 5) {
-        errs.address = 'Ingresa una dirección más detallada (calle, número o urbanización)';
+      } else if (!isValidAddress(address)) {
+        errs.address = MESSAGES.address;
       }
     }
 

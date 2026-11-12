@@ -90,6 +90,7 @@ export const SearchBox: React.FC<SearchBoxProps> = ({ autoFocus = false }) => {
         <input
           id="buscador"
           type="search"
+          maxLength={60}
           autoComplete="off"
           autoFocus={autoFocus}
           value={term}

@@ -8,6 +8,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useFavoritesStore } from '../../store/favoritesStore';
 import { useUiStore } from '../../store/uiStore';
 import { ProductOption, getProductPrice } from '../../types/product';
+import { sanitizeFreeText } from '../../lib/validation';
 
 export const ProductPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -238,7 +239,7 @@ export const ProductPage: React.FC = () => {
             id="prod-notes"
             type="text"
             value={notes}
-            onChange={(e) => setNotes(e.target.value.slice(0, 100))}
+            onChange={(e) => setNotes(sanitizeFreeText(e.target.value, 100))}
             placeholder="Ej. Servilletas extra, cremas aparte..."
             className="w-full h-11 px-3.5 rounded-xl border border-[#EFE6D6] text-xs bg-[#FFFDF9] focus:outline-none focus:border-[#FF3038] transition"
           />

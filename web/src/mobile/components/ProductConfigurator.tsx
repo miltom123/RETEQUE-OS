@@ -5,6 +5,7 @@ import { formatMoney } from '../../lib/money';
 import { ImageWithFallback } from '../../components/ui/ImageWithFallback';
 import { useCartStore } from '../../store/cartStore';
 import { useUiStore } from '../../store/uiStore';
+import { sanitizeFreeText } from '../../lib/validation';
 
 interface ProductConfiguratorProps {
   product: Product;
@@ -193,7 +194,7 @@ export const ProductConfigurator: React.FC<ProductConfiguratorProps> = ({
               id="config-notes"
               type="text"
               value={notes}
-              onChange={(e) => setNotes(e.target.value.slice(0, 100))}
+              onChange={(e) => setNotes(sanitizeFreeText(e.target.value, 100))}
               placeholder="Ej. Sin orégano, bien doraditos..."
               className="w-full h-10 px-3 rounded-xl border border-[#EFE6D6] text-xs bg-[#FFFDF9] focus:outline-none focus:border-[#FF3038]"
             />

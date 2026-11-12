@@ -59,6 +59,13 @@ async function run() {
   const [p1, p2] = await Promise.all([a.order(cartA(), 'clave-doble-clic'), a.order(cartA(), 'clave-doble-clic')]);
   assert.equal(p1.body.code, p2.body.code, 'Dos envíos simultáneos crean un solo pedido');
   assert.match((await a.order(cartA({ customer: { name: 'Ana', phone: '12345' } }))).body.error, /celular válido/);
+  // Validaciones de nombre y celular (sin pasar por HTTP para no gastar el límite por IP de esta prueba)
+  const { isValidPersonName, normalizePeruMobile } = require('./backend/sanitize');
+  assert.equal(isValidPersonName('Ana 123'), false, 'Un nombre no puede llevar números');
+  assert.equal(isValidPersonName('José Núñez'), true);
+  assert.equal(normalizePeruMobile('812345678'), null, 'El celular debe empezar con 9');
+  assert.equal(normalizePeruMobile('9123456789'), null, 'El celular tiene solo 9 dígitos');
+  assert.equal(normalizePeruMobile('912345678'), '912345678');
   assert.match((await a.order(cartA({ mode: 'delivery' }))).body.error, /dirección/);
   assert.match((await a.order(cartA({ items: [{ productId: 'no-existe', qty: 1 }] }))).body.error, /ya no está en la carta/);
   const forged = await a.order(cartA({ status: 'delivered', payVerified: true, channel: 'caja', total: 1, createdBy: 'administrador' }));

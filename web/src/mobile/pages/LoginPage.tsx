@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, LogIn, ArrowRight, UserCheck, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
+import { EMAIL_MAX, MESSAGES, PASSWORD_MAX, isValidEmail, sanitizeEmailInput } from '../../lib/validation';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,7 +28,12 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    const success = await loginWithEmail(email, password);
+    if (!isValidEmail(email)) {
+      setFormError(MESSAGES.email);
+      return;
+    }
+
+    const success = await loginWithEmail(email.trim(), password);
     if (success) {
       showToast({ message: '¡Bienvenido a Retequeños!' });
       navigate(from, { replace: true });
@@ -119,8 +125,10 @@ export const LoginPage: React.FC = () => {
               <input
                 id="login-email"
                 type="email"
+                autoComplete="email"
+                maxLength={EMAIL_MAX}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(sanitizeEmailInput(e.target.value))}
                 placeholder="ejemplo@correo.com"
                 className="w-full h-11 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
               />
@@ -144,6 +152,8 @@ export const LoginPage: React.FC = () => {
               <input
                 id="login-pass"
                 type="password"
+                autoComplete="current-password"
+                maxLength={PASSWORD_MAX}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

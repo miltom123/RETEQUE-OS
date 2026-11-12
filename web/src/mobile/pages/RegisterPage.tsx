@@ -3,7 +3,20 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Lock, UserPlus, ArrowRight, AlertCircle, UserCheck } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
-import { isValidPeruMobile } from '../../lib/validation';
+import {
+  EMAIL_MAX,
+  MESSAGES,
+  NAME_MAX,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+  PHONE_LENGTH,
+  isValidEmail,
+  isValidName,
+  isValidPeruMobile,
+  sanitizeEmailInput,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '../../lib/validation';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -26,18 +39,27 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
-    const cleanPhone = phone.replace(/\s+/g, '');
-    if (!isValidPeruMobile(cleanPhone)) {
-      setFormError('Ingresa un número de celular peruano válido (9 dígitos que empiece con 9).');
+    if (!isValidName(name)) {
+      setFormError(MESSAGES.name);
       return;
     }
 
-    if (password.length < 6) {
-      setFormError('La contraseña debe tener al menos 6 caracteres.');
+    if (!isValidPeruMobile(phone)) {
+      setFormError(MESSAGES.phone);
       return;
     }
 
-    const success = await registerWithEmail(email, password, name, cleanPhone);
+    if (!isValidEmail(email)) {
+      setFormError(MESSAGES.email);
+      return;
+    }
+
+    if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
+      setFormError(MESSAGES.password);
+      return;
+    }
+
+    const success = await registerWithEmail(email.trim(), password, name.trim(), sanitizePhoneInput(phone));
     if (success) {
       showToast({ message: '¡Cuenta creada con éxito!' });
       navigate('/app', { replace: true });
@@ -120,8 +142,10 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-name"
                 type="text"
+                autoComplete="name"
+                maxLength={NAME_MAX}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(sanitizeNameInput(e.target.value))}
                 placeholder="Ej. Milton Flores"
                 className="w-full h-10 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
               />
@@ -137,9 +161,12 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-phone"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                maxLength={PHONE_LENGTH}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                placeholder="952 000 000"
+                onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
+                placeholder="952000000"
                 className="w-full h-10 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
               />
             </div>
@@ -154,8 +181,10 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-email"
                 type="email"
+                autoComplete="email"
+                maxLength={EMAIL_MAX}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(sanitizeEmailInput(e.target.value))}
                 placeholder="ejemplo@correo.com"
                 className="w-full h-10 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
               />
@@ -171,6 +200,8 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-pass"
                 type="password"
+                autoComplete="new-password"
+                maxLength={PASSWORD_MAX}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

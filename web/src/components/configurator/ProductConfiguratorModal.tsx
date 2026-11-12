@@ -7,7 +7,7 @@ import { useCheckoutStore } from '../../store/checkoutStore';
 import { buildFallbackOrderUrl, discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
 import { resetOrderAttempt, StoreUnavailableError, submitOrder, type OrderDetails } from '../../lib/orderApi';
 import { kitchenDetails, specFromItem, type LineAddon, type LineSpec } from '../../lib/cartSpec';
-import { isValidName, isValidPeruMobile } from '../../lib/validation';
+import { MESSAGES, isValidAddress, isValidName, isValidPeruMobile, sanitizePhoneInput } from '../../lib/validation';
 import { UPGRADE_REFS } from '../../data/serverRefs';
 import type { PromoConfig } from '../../data/promotions';
 
@@ -365,7 +365,7 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
 
   const directMode = deliveryType === 'delivery' ? 'delivery' : 'pickup';
   const directDetails = (): OrderDetails => ({
-    customer: { name: fullName.trim(), phone: phone.trim() },
+    customer: { name: fullName.trim(), phone: sanitizePhoneInput(phone) },
     mode: directMode,
     address: directMode === 'delivery' ? address.trim() : undefined,
     reference: directMode === 'delivery' ? reference.trim() || undefined : undefined,
@@ -397,9 +397,9 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
   const handleModalConfirmWhatsApp = async () => {
     if (directSending) return;
     const errs: Record<string, string> = {};
-    if (!isValidName(fullName)) errs.fullName = 'Escribe tu nombre (mínimo 3 letras)';
-    if (!isValidPeruMobile(phone)) errs.phone = 'Ingresa un celular válido de 9 dígitos (empieza en 9)';
-    if (deliveryType === 'delivery' && address.trim().length < 5) errs.address = 'Ingresa tu dirección en Tacna';
+    if (!isValidName(fullName)) errs.fullName = MESSAGES.name;
+    if (!isValidPeruMobile(phone)) errs.phone = MESSAGES.phone;
+    if (deliveryType === 'delivery' && !isValidAddress(address)) errs.address = MESSAGES.address;
 
     if (Object.keys(errs).length > 0) {
       setCheckoutErrors(errs);
