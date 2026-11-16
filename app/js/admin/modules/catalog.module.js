@@ -116,25 +116,45 @@
       }).join('');
     }
 
-    function toggleStock(id, inStock) {
-      const prod = CATALOG.find(p => p.id === id);
-      if (prod) {
-        prod.stock = inStock;
-        if (window.saveCatalogData) window.saveCatalogData();
-        renderCatalog();
-        showToast(`Stock de "${prod.name}" actualizado a ${inStock ? 'DISPONIBLE' : 'AGOTADO'}`);
+    // Toda escritura va primero al servidor: el panel solo cambia si el servidor la guardó.
+    // Antes los cambios se veían guardados aunque el servidor los rechazara.
+    async function catalogRequest(url, options = {}) {
+      const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+      const token = window.getAdminToken ? window.getAdminToken() : '';
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      let res;
+      try {
+        res = await fetch(url, { ...options, headers });
+      } catch (e) {
+        throw new Error('No hay conexión con el servidor. El cambio no se guardó.');
+      }
+      let data = {};
+      try { data = await res.json(); } catch (e) {}
+      if (res.status === 401 && window.lockAdminApp) window.lockAdminApp();
+      if (!res.ok || data.ok === false) throw new Error(data.error || 'El servidor no guardó el cambio.');
+      return data;
+    }
 
-        // Sincronizar persistencia centralizada en backend
-        try {
-          const token = window.getAdminToken ? window.getAdminToken() : '';
-          const headers = { 'Content-Type': 'application/json' };
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-          fetch(`/api/catalog/${encodeURIComponent(id)}/stock`, {
-            method: 'PATCH',
-            headers,
-            body: JSON.stringify({ stock: inStock })
-          }).catch(() => {});
-        } catch (e) {}
+    function replaceInCatalog(product) {
+      const idx = CATALOG.findIndex(p => p.id === product.id);
+      if (idx > -1) CATALOG[idx] = product; else CATALOG.unshift(product);
+      if (window.saveCatalogData) window.saveCatalogData();
+      renderCatalog();
+    }
+
+    async function toggleStock(id, inStock) {
+      const prod = CATALOG.find(p => p.id === id);
+      if (!prod) return;
+      try {
+        const data = await catalogRequest(`/api/catalog/${encodeURIComponent(id)}/stock`, {
+          method: 'PATCH',
+          body: JSON.stringify({ stock: inStock })
+        });
+        replaceInCatalog(data.product);
+        showToast(`Stock de "${prod.name}" actualizado a ${inStock ? 'DISPONIBLE' : 'AGOTADO'}`);
+      } catch (error) {
+        renderCatalog(); // vuelve el interruptor a su estado real
+        showToast(`⚠️ ${error.message}`);
       }
     }
 
@@ -216,79 +236,50 @@
         return;
       }
 
+      let product;
       if (editId) {
-        // Edit existing product
-        const idx = CATALOG.findIndex(p => p.id === editId);
-        if (idx > -1) {
-          CATALOG[idx] = {
-            ...CATALOG[idx],
-            name, cat, qty, price, promo, sauces, badge, desc, icon, stock
-          };
-          showToast(`✅ Producto "${name}" actualizado con éxito.`);
-        }
+        const current = CATALOG.find(p => p.id === editId);
+        if (!current) return;
+        // Se conservan tamaños, extras y bebidas: el formulario no los edita
+        product = { ...current, name, cat, qty, price, promo, sauces, badge, desc, icon, stock };
       } else {
-        // Create new product
-        const cleanId = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) + '_' + Math.floor(100 + Math.random() * 900);
-        const newProduct = {
-          id: cleanId,
-          name,
-          cat,
-          qty,
-          price,
-          promo,
-          sauces,
-          badge,
-          desc,
-          icon,
-          stock
-        };
-        CATALOG.unshift(newProduct);
-        showToast(`🎉 ¡Nuevo producto "${name}" agregado al menú de la App!`);
+        // Antes este producto nunca llegaba al servidor (la variable quedaba fuera de alcance)
+        const base = name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 20) || 'producto';
+        let id = base;
+        for (let n = 2; CATALOG.some(p => p.id === id); n++) id = `${base}-${n}`;
+        product = { id, name, cat, qty, price, promo, sauces, badge, desc, icon, stock };
       }
 
-      if (window.saveCatalogData) window.saveCatalogData();
-      renderCatalog();
-      playAlertSound();
-      closeProductModal();
-
-      // Sincronizar con backend centralizado
-      try {
-        const token = window.getAdminToken ? window.getAdminToken() : '';
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        const prodToSave = editId ? CATALOG.find(p => p.id === editId) : newProduct;
-        fetch('/api/catalog', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(prodToSave)
-        }).catch(() => {});
-      } catch (err) {}
+      const submit = document.querySelector('#product-form button[type="submit"]');
+      if (submit) submit.disabled = true;
+      catalogRequest('/api/catalog', { method: 'POST', body: JSON.stringify(product) })
+        .then(data => {
+          replaceInCatalog(data.product);
+          playAlertSound();
+          closeProductModal();
+          showToast(editId ? `✅ Producto "${name}" actualizado y guardado.` : `🎉 Producto "${name}" agregado y guardado.`);
+        })
+        .catch(error => showToast(`⚠️ ${error.message}`))
+        .finally(() => { if (submit) submit.disabled = false; });
     }
 
-    function handleDeleteProduct() {
+    async function handleDeleteProduct() {
       const editId = document.getElementById('prod-edit-id').value;
       if (!editId) return;
 
       const prod = CATALOG.find(p => p.id === editId);
       const name = prod ? prod.name : 'el producto';
+      if (!confirm(`¿Estás seguro de eliminar "${name}" del menú? Esta acción no se puede deshacer.`)) return;
 
-      if (confirm(`¿Estás seguro de eliminar "${name}" del menú? Esta acción no se puede deshacer.`)) {
+      try {
+        await catalogRequest(`/api/catalog/${encodeURIComponent(editId)}`, { method: 'DELETE' });
         CATALOG = CATALOG.filter(p => p.id !== editId);
         if (window.saveCatalogData) window.saveCatalogData();
         renderCatalog();
         closeProductModal();
-        showToast(`🗑️ "${name}" ha sido eliminado del catálogo.`);
-
-        // Sincronizar eliminación con backend
-        try {
-          const token = window.getAdminToken ? window.getAdminToken() : '';
-          const headers = {};
-          if (token) headers['Authorization'] = `Bearer ${token}`;
-          fetch(`/api/catalog/${encodeURIComponent(editId)}`, {
-            method: 'DELETE',
-            headers
-          }).catch(() => {});
-        } catch (err) {}
+        showToast(`🗑️ "${name}" eliminado del catálogo.`);
+      } catch (error) {
+        showToast(`⚠️ ${error.message}`);
       }
     }
 
