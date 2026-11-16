@@ -3,7 +3,7 @@
   const el = id => document.getElementById(id);
   const money = value => new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(value);
   const day = value => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
-  const labels = { new: 'Nuevo', kitchen: 'En cocina', delivery: 'En reparto', delivered: 'Entregado', cancelled: 'Cancelado' };
+  const labels = { pending_confirmation: 'Web · por confirmar', new: 'Nuevo', kitchen: 'En cocina', delivery: 'En reparto', delivered: 'Entregado', cancelled: 'Cancelado' };
   let catalog = [], cart = [];
   let saving = false;
   function total() {
@@ -42,10 +42,12 @@
   function renderCash() {
     const today = day(Date.now());
     const orders = window.ORDERS.filter(order => order.createdAt && !Number.isNaN(Date.parse(order.createdAt)) && day(order.createdAt) === today);
-    const confirmed = orders.filter(order => order.payVerified && order.status !== 'cancelled');
-    const pending = orders.filter(order => !order.payVerified && order.status !== 'cancelled');
+    // Un pedido web por confirmar todavía no es una venta: no suma en caja hasta que se confirme
+    const sales = orders.filter(order => !['cancelled', 'pending_confirmation'].includes(order.status));
+    const confirmed = sales.filter(order => order.payVerified);
+    const pending = sales.filter(order => !order.payVerified);
     const summary = el('cash-summary'); summary.replaceChildren();
-    [['Pedidos de hoy', orders.length], ['Pagos confirmados', money(confirmed.reduce((sum, order) => sum + Math.round(order.total * 100), 0) / 100)], ['Por cobrar / verificar', money(pending.reduce((sum, order) => sum + Math.round(order.total * 100), 0) / 100)]].forEach(([label, value]) => {
+    [['Pedidos de hoy', sales.length], ['Pagos confirmados', money(confirmed.reduce((sum, order) => sum + Math.round(order.total * 100), 0) / 100)], ['Por cobrar / verificar', money(pending.reduce((sum, order) => sum + Math.round(order.total * 100), 0) / 100)]].forEach(([label, value]) => {
       const card = document.createElement('div'); card.className = 'history-stat';
       const title = document.createElement('span'); title.textContent = label;
       const amount = document.createElement('strong'); amount.textContent = value; card.append(title, amount); summary.append(card);
@@ -60,7 +62,7 @@
       const amount = document.createElement('td'); amount.textContent = money(order.total);
       const action = document.createElement('td'); const button = document.createElement('button'); button.className = 'btn btn-outline btn-sm'; button.textContent = 'Ver detalle';
       button.setAttribute('aria-label', `Ver pedido ${order.id}`); button.addEventListener('click', () => window.openOrderDetailModal(order.id)); action.append(button);
-      if (!order.payVerified) {
+      if (!order.payVerified && !['cancelled', 'pending_confirmation'].includes(order.status)) {
         const verify = document.createElement('button'); verify.className = 'btn btn-outline btn-sm'; verify.textContent = 'Confirmar pago';
         verify.setAttribute('aria-label', `Confirmar pago ${order.id}`);
         verify.addEventListener('click', async () => { verify.disabled = true; await window.verifyPayment(order.id); verify.disabled = false; }); action.append(verify);
