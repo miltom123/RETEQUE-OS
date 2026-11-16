@@ -8,6 +8,7 @@
  * `details` es texto libre para cocina (sabores, cremas incluidas, notas) y no cambia el precio.
  */
 const { cleanId, sanitizeString } = require('./sanitize');
+const { outsideValidity } = require('./coupons');
 
 // Errores con un mensaje que se puede mostrar al cliente tal cual
 class QuoteError extends Error {}
@@ -111,11 +112,13 @@ function quoteLine(raw, catalog) {
 }
 
 // Misma regla que tenía la web: monto fijo (sin pasar del subtotal) o porcentaje, con pedido mínimo
-function applyCoupon(rawCode, subtotalCents, coupons) {
+function applyCoupon(rawCode, subtotalCents, coupons, now = Date.now()) {
   const code = String(rawCode || '').trim().toUpperCase().slice(0, 30);
   if (!code) return null;
   const rule = (Array.isArray(coupons) ? coupons : []).find(c => c && c.active !== false && String(c.code).toUpperCase() === code);
   if (!rule) return { code, applied: false, discount: 0, message: `El cupón "${code}" no es válido o ha expirado.` };
+  const notValid = outsideValidity(rule, now);
+  if (notValid) return { code, applied: false, discount: 0, message: `El cupón "${code}" ${notValid}.` };
   const minCents = toCents(rule.minOrder || 0);
   if (subtotalCents < minCents) {
     return { code, applied: false, discount: 0, message: `El cupón "${code}" requiere un pedido mínimo de S/ ${toSoles(minCents).toFixed(2)}.` };
@@ -128,9 +131,9 @@ function applyCoupon(rawCode, subtotalCents, coupons) {
 
 /**
  * @param body { items, mode, couponCode }
- * @param data { products: lista del catálogo, coupons: cupones de la configuración }
+ * @param data { products: lista del catálogo, coupons: cupones de la configuración, now?: reloj para las fechas de vigencia }
  */
-function quoteCart(body, { products, coupons }) {
+function quoteCart(body, { products, coupons, now }) {
   const items = body && Array.isArray(body.items) ? body.items : null;
   if (!items || !items.length) throw new QuoteError('Tu carrito está vacío.');
   if (items.length > LIMITS.lines) throw new QuoteError(`El pedido admite hasta ${LIMITS.lines} productos distintos.`);
@@ -140,7 +143,7 @@ function quoteCart(body, { products, coupons }) {
   const catalog = new Map(products.map(p => [p.id, p]));
   const lines = items.map(item => quoteLine(item, catalog));
   const subtotalCents = lines.reduce((sum, line) => sum + line.unitCents * line.qty, 0);
-  const coupon = applyCoupon(body.couponCode, subtotalCents, coupons);
+  const coupon = applyCoupon(body.couponCode, subtotalCents, coupons, now);
   const discountCents = coupon && coupon.applied ? coupon.discountCents : 0;
   if (coupon) delete coupon.discountCents;
 

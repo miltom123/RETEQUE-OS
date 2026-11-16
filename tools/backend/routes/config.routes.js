@@ -1,5 +1,6 @@
 // /api/config: lectura pública, modificación solo de administrador
 const { extractToken, readJsonBody, sendJson } = require('../http');
+const { normalizeCoupons } = require('../coupons');
 
 async function handleConfig({ req, res, pathname, currentUser }, { repos, auth }) {
   if (pathname !== '/api/config') return false;
@@ -19,6 +20,9 @@ async function handleConfig({ req, res, pathname, currentUser }, { repos, auth }
 
     try {
       const patch = await readJsonBody(req);
+      if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return sendJson(res, 400, { ok: false, error: 'Configuración inválida.' });
+      // Los cupones se validan aquí: el servidor los aplica al cotizar, un dato malo afectaría a todos los pedidos
+      if ('coupons' in patch) patch.coupons = normalizeCoupons(patch.coupons);
       const updated = await repos.config.update(patch);
       return sendJson(res, 200, { ok: true, config: updated });
     } catch (e) {

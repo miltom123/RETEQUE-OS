@@ -62,6 +62,26 @@ assert.equal(quoteCart({ items: [{ productId: 'promo-familiar', qty: 1 }], coupo
 assert.equal(quote([{ productId: 'promo-solo', qty: 1 }]).coupon, null);
 assert.equal(quote([{ productId: 'clasicos', qty: 1 }], { mode: 'delivery' }).deliveryNote, 'El costo del delivery se coordina por WhatsApp.');
 
+// 4b. Vigencia de los cupones (fecha de Perú) y validación de lo que guarda el panel
+const { normalizeCoupons } = require('./backend/coupons');
+const dated = [{ code: 'NAVIDAD', name: 'Navidad', type: 'percent', value: 10, minOrder: 0, active: true, startDate: '2026-12-20', endDate: '2026-12-25' }];
+const dQuote = iso => quoteCart({ items: [{ productId: 'clasicos', qty: 1 }], couponCode: 'navidad' }, { products, coupons: dated, now: Date.parse(iso) });
+assert.match(dQuote('2026-12-19T12:00:00-05:00').coupon.message, /todavía no está vigente/);
+assert.equal(dQuote('2026-12-20T00:30:00-05:00').discount, 1.6, 'Vale desde el primer minuto del día en Perú');
+assert.equal(dQuote('2026-12-25T23:30:00-05:00').discount, 1.6, 'Vale hasta el último minuto del día en Perú');
+assert.match(dQuote('2026-12-26T00:30:00-05:00').coupon.message, /ya venció/);
+assert.deepEqual(normalizeCoupons([{ code: ' verano5 ', type: 'fixed', value: '5', minOrder: '' }]), [{ code: 'VERANO5', name: 'VERANO5', type: 'fixed', value: 5, minOrder: 0, active: true }]);
+for (const [bad, message] of [
+  [[{ code: 'AB', type: 'fixed', value: 5 }], /3 a 30/],
+  [[{ code: 'ENVIO', type: 'shipping', value: 5 }], /monto fijo o de porcentaje/],
+  [[{ code: 'MUCHO', type: 'percent', value: 150 }], /entre 1 y 100/],
+  [[{ code: 'CERO', type: 'fixed', value: 0 }], /entre 0.1/],
+  [[{ code: 'DOBLE', type: 'fixed', value: 1 }, { code: 'doble', type: 'fixed', value: 2 }], /repetido/],
+  [[{ code: 'FECHA', type: 'fixed', value: 1, endDate: '30/10/2026' }], /AAAA-MM-DD/],
+  [[{ code: 'ALREVES', type: 'fixed', value: 1, startDate: '2026-12-10', endDate: '2026-12-01' }], /anterior/],
+  ['no', /no es válida/],
+]) assert.throws(() => normalizeCoupons(bad), message);
+
 // 5. Ruta HTTP y configuración pública sin cupones
 const tempDirs = [];
 let server;
@@ -89,6 +109,20 @@ async function http() {
   const cookie = login.headers.get('set-cookie').split(';')[0];
   assert.equal((await (await fetch(base + '/api/config', { headers: { Cookie: cookie } })).json()).coupons.length, 5, 'El administrador sí los ve');
   assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'store.config.json'), 'utf8')).coupons.length, 5);
+
+  // El panel guarda cupones: se validan, se aplican al cotizar y se restauran (con PostgreSQL la base es compartida)
+  const patch = body => fetch(base + '/api/config', { method: 'PATCH', headers: { 'Content-Type': 'application/json', Cookie: cookie }, body: JSON.stringify(body) });
+  const original = (await (await fetch(base + '/api/config', { headers: { Cookie: cookie } })).json()).coupons;
+  try {
+    const rejected = await patch({ coupons: [{ code: 'X', type: 'fixed', value: 1 }] });
+    assert.equal(rejected.status, 400); assert.match((await rejected.json()).error, /3 a 30/);
+    assert.equal((await patch({ coupons: [...original, { code: 'nuevo7', type: 'fixed', value: 7, minOrder: 10 }] })).status, 200);
+    const withNew = await (await post('/api/public/quote', { mode: 'pickup', couponCode: 'NUEVO7', items: [{ productId: 'clasicos', qty: 1 }] })).json();
+    assert.equal(withNew.discount, 7, 'Un cupón creado en el panel ya aplica en la tienda');
+    assert.equal((await fetch(base + '/api/config', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: '{}' })).status, 401, 'Sin sesión no se cambian cupones');
+  } finally {
+    assert.equal((await patch({ coupons: original })).status, 200);
+  }
 }
 
 http().then(() => {
