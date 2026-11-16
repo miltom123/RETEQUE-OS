@@ -1,13 +1,17 @@
 // POST /api/caja/pedidos: pedido registrado por personal autenticado con precios tomados del catálogo
 const crypto = require('crypto');
 const { readJsonBody, sendJson } = require('../http');
+const { isValidPersonName, normalizePeruMobile } = require('../sanitize');
 
 async function handleCaja({ req, res, pathname, currentUser }, { repos }) {
   if (pathname !== '/api/caja/pedidos' || req.method !== 'POST') return false;
   if (!currentUser) return sendJson(res, 401, { error: 'Inicia sesión para registrar pedidos.' });
   try {
     const body = await readJsonBody(req);
-    if (typeof body.customer !== 'string' || !body.customer.trim() || body.customer.length > 100) throw new Error('Ingresa el nombre del cliente.');
+    if (!isValidPersonName(body.customer)) throw new Error('Ingresa el nombre del cliente, solo con letras.');
+    const rawPhone = String(body.phone || '').trim();
+    const phone = rawPhone ? normalizePeruMobile(rawPhone) : '';
+    if (rawPhone && !phone) throw new Error('El celular debe tener 9 dígitos y empezar con 9.');
     if (!['pickup', 'delivery'].includes(body.mode)) throw new Error('Modalidad inválida.');
     if (!['Efectivo', 'Yape', 'Plin', 'Transferencia'].includes(body.payMethod)) throw new Error('Selecciona el medio de pago.');
     if (!Array.isArray(body.items) || !body.items.length || body.items.length > 50) throw new Error('Agrega entre 1 y 50 productos.');
@@ -22,8 +26,8 @@ async function handleCaja({ req, res, pathname, currentUser }, { repos }) {
     if (!Number.isFinite(fee) || fee < 0 || fee > 100) throw new Error('El costo de delivery debe estar entre 0 y 100 soles.');
     if (body.mode === 'delivery' && (typeof body.address !== 'string' || !body.address.trim())) throw new Error('Ingresa la dirección del delivery.');
     const subtotal = items.reduce((sum, item) => sum + Math.round(item.price * 100) * item.qty, 0) / 100;
-    const order = await repos.orders.insert({ id: 'RTQ-' + crypto.randomBytes(6).toString('hex').toUpperCase(), customer: body.customer,
-      phone: String(body.phone || '').slice(0, 30), items, mode: body.mode, deliveryFee: fee, subtotal, total: subtotal + fee,
+    const order = await repos.orders.insert({ id: 'RTQ-' + crypto.randomBytes(6).toString('hex').toUpperCase(), customer: body.customer.trim(),
+      phone, items, mode: body.mode, deliveryFee: fee, subtotal, total: subtotal + fee,
       discount: 0, status: 'new', payMethod: body.payMethod, payVerified: body.payVerified === true,
       address: String(body.address || '').slice(0, 300), notes: String(body.notes || '').slice(0, 500), createdAt: new Date().toISOString(),
       createdBy: currentUser.username, channel: 'caja' });

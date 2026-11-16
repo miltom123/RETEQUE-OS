@@ -4,6 +4,15 @@ import { SegmentedControl } from '../home/SegmentedControl';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { siteConfig } from '../../config/site';
 import { TACNA_ZONES, TacnaZone } from '../../config/tacnaZones';
+import {
+  ADDRESS_MAX,
+  NAME_MAX,
+  PHONE_LENGTH,
+  REFERENCE_MAX,
+  sanitizeFreeText,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '../../lib/validation';
 
 interface CartCustomerFormProps {
   errors: Record<string, string>;
@@ -44,8 +53,10 @@ export const CartCustomerForm: React.FC<CartCustomerFormProps> = ({
         <input
           id="cart-nombre"
           type="text"
+          autoComplete="name"
+          maxLength={NAME_MAX}
           value={fullName}
-          onChange={(e) => setField('fullName', e.target.value)}
+          onChange={(e) => setField('fullName', sanitizeNameInput(e.target.value))}
           placeholder="Ej. Milton Flores"
           className={inputClass(Boolean(errors.fullName))}
           aria-invalid={Boolean(errors.fullName)}
@@ -60,9 +71,12 @@ export const CartCustomerForm: React.FC<CartCustomerFormProps> = ({
         <input
           id="cart-celular"
           type="tel"
+          inputMode="numeric"
+          autoComplete="tel-national"
+          maxLength={PHONE_LENGTH}
           value={phone}
-          onChange={(e) => setField('phone', e.target.value.replace(/[^\d\s]/g, ''))}
-          placeholder="Ej. 912 266 950"
+          onChange={(e) => setField('phone', sanitizePhoneInput(e.target.value))}
+          placeholder="Ej. 912266950"
           className={inputClass(Boolean(errors.phone))}
           aria-invalid={Boolean(errors.phone)}
         />
@@ -107,8 +121,9 @@ export const CartCustomerForm: React.FC<CartCustomerFormProps> = ({
             <input
               id="cart-direccion"
               type="text"
+              maxLength={ADDRESS_MAX}
               value={address}
-              onChange={(e) => setField('address', e.target.value)}
+              onChange={(e) => setField('address', sanitizeFreeText(e.target.value, ADDRESS_MAX))}
               placeholder="Ej. Calle Alto Lima 1488, Tacna"
               className={inputClass(Boolean(errors.address))}
               aria-invalid={Boolean(errors.address)}
@@ -123,8 +138,9 @@ export const CartCustomerForm: React.FC<CartCustomerFormProps> = ({
             <input
               id="cart-referencia"
               type="text"
+              maxLength={REFERENCE_MAX}
               value={reference}
-              onChange={(e) => setField('reference', e.target.value)}
+              onChange={(e) => setField('reference', sanitizeFreeText(e.target.value, REFERENCE_MAX))}
               placeholder="Ej. Frente al parque, puerta verde"
               className={inputClass(false)}
             />
@@ -139,7 +155,7 @@ export const CartCustomerForm: React.FC<CartCustomerFormProps> = ({
         <textarea
           id="cart-notas"
           value={generalNotes}
-          onChange={(e) => setField('generalNotes', e.target.value.slice(0, 200))}
+          onChange={(e) => setField('generalNotes', sanitizeFreeText(e.target.value, 200))}
           placeholder="Ej. Cremas aparte, sin servilletas"
           rows={2}
           className="w-full p-3 rounded-xl border border-neutral-200 bg-white text-sm focus:outline-none focus:border-[#D31728] focus:ring-2 focus:ring-[#D31728]/15 resize-none"

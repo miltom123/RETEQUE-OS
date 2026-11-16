@@ -116,28 +116,25 @@
       }).join('');
     }
 
-    // Toda escritura va primero al servidor: el panel solo cambia si el servidor la guardó.
-    // Antes los cambios se veían guardados aunque el servidor los rechazara.
-    async function catalogRequest(url, options = {}) {
-      const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-      const token = window.getAdminToken ? window.getAdminToken() : '';
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+    // RFI-15: todo cambio de la carta se guarda primero en el servidor; si falla, la tabla no cambia
+    async function catalogApi(url, options) {
       let res;
       try {
-        res = await fetch(url, { ...options, headers });
+        res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json' } });
       } catch (e) {
         throw new Error('No hay conexión con el servidor. El cambio no se guardó.');
       }
       let data = {};
       try { data = await res.json(); } catch (e) {}
-      if (res.status === 401 && window.lockAdminApp) window.lockAdminApp();
-      if (!res.ok || data.ok === false) throw new Error(data.error || 'El servidor no guardó el cambio.');
+      if (res.status === 401) { window.lockAdminApp(); throw new Error('Tu sesión venció. Ingresa de nuevo.'); }
+      if (res.status === 403) throw new Error('Solo el administrador puede cambiar la carta.');
+      if (!res.ok) throw new Error(data.error || 'No se pudo guardar el cambio.');
       return data;
     }
 
-    function replaceInCatalog(product) {
-      const idx = CATALOG.findIndex(p => p.id === product.id);
-      if (idx > -1) CATALOG[idx] = product; else CATALOG.unshift(product);
+    function replaceProduct(saved) {
+      const idx = CATALOG.findIndex(p => p.id === saved.id);
+      if (idx > -1) CATALOG[idx] = saved; else CATALOG.unshift(saved);
       if (window.saveCatalogData) window.saveCatalogData();
       renderCatalog();
     }
@@ -146,15 +143,12 @@
       const prod = CATALOG.find(p => p.id === id);
       if (!prod) return;
       try {
-        const data = await catalogRequest(`/api/catalog/${encodeURIComponent(id)}/stock`, {
-          method: 'PATCH',
-          body: JSON.stringify({ stock: inStock })
-        });
-        replaceInCatalog(data.product);
+        const data = await catalogApi(`/api/catalog/${encodeURIComponent(id)}/stock`, { method: 'PATCH', body: JSON.stringify({ stock: inStock }) });
+        replaceProduct(data.product);
         showToast(`Stock de "${prod.name}" actualizado a ${inStock ? 'DISPONIBLE' : 'AGOTADO'}`);
       } catch (error) {
-        renderCatalog(); // vuelve el interruptor a su estado real
-        showToast(`⚠️ ${error.message}`);
+        renderCatalog(); // devuelve el interruptor a su estado real
+        showToast('⚠️ ' + error.message);
       }
     }
 
@@ -216,7 +210,7 @@
       });
     }
 
-    function handleSaveProduct(e) {
+    async function handleSaveProduct(e) {
       e.preventDefault();
       const editId = document.getElementById('prod-edit-id').value;
       const name = document.getElementById('prod-name').value.trim();
@@ -236,31 +230,25 @@
         return;
       }
 
-      let product;
-      if (editId) {
-        const current = CATALOG.find(p => p.id === editId);
-        if (!current) return;
-        // Se conservan tamaños, extras y bebidas: el formulario no los edita
-        product = { ...current, name, cat, qty, price, promo, sauces, badge, desc, icon, stock };
-      } else {
-        // Antes este producto nunca llegaba al servidor (la variable quedaba fuera de alcance)
-        const base = name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 20) || 'producto';
-        let id = base;
-        for (let n = 2; CATALOG.some(p => p.id === id); n++) id = `${base}-${n}`;
-        product = { id, name, cat, qty, price, promo, sauces, badge, desc, icon, stock };
-      }
-
+      const base = editId ? CATALOG.find(p => p.id === editId) : null;
+      const product = {
+        ...(base || {}),
+        id: editId || name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 20) + '_' + Math.floor(100 + Math.random() * 900),
+        name, cat, qty, price, promo, sauces, badge, desc, icon, stock
+      };
       const submit = document.querySelector('#product-form button[type="submit"]');
       if (submit) submit.disabled = true;
-      catalogRequest('/api/catalog', { method: 'POST', body: JSON.stringify(product) })
-        .then(data => {
-          replaceInCatalog(data.product);
-          playAlertSound();
-          closeProductModal();
-          showToast(editId ? `✅ Producto "${name}" actualizado y guardado.` : `🎉 Producto "${name}" agregado y guardado.`);
-        })
-        .catch(error => showToast(`⚠️ ${error.message}`))
-        .finally(() => { if (submit) submit.disabled = false; });
+      try {
+        const data = await catalogApi('/api/catalog', { method: 'POST', body: JSON.stringify(product) });
+        replaceProduct(data.product);
+        playAlertSound();
+        closeProductModal();
+        showToast(editId ? `✅ Producto "${data.product.name}" actualizado.` : `🎉 "${data.product.name}" agregado a la carta.`);
+      } catch (error) {
+        showToast('⚠️ ' + error.message);
+      } finally {
+        if (submit) submit.disabled = false;
+      }
     }
 
     async function handleDeleteProduct() {
@@ -269,18 +257,17 @@
 
       const prod = CATALOG.find(p => p.id === editId);
       const name = prod ? prod.name : 'el producto';
-      if (!confirm(`¿Estás seguro de eliminar "${name}" del menú? Esta acción no se puede deshacer.`)) return;
 
+      if (!confirm(`¿Estás seguro de eliminar "${name}" del menú? Esta acción no se puede deshacer.`)) return;
       try {
-        await catalogRequest(`/api/catalog/${encodeURIComponent(editId)}`, { method: 'DELETE' });
+        await catalogApi(`/api/catalog/${encodeURIComponent(editId)}`, { method: 'DELETE' });
         CATALOG = CATALOG.filter(p => p.id !== editId);
+        window.CATALOG = CATALOG;
         if (window.saveCatalogData) window.saveCatalogData();
         renderCatalog();
         closeProductModal();
-        showToast(`🗑️ "${name}" eliminado del catálogo.`);
-      } catch (error) {
-        showToast(`⚠️ ${error.message}`);
-      }
+        showToast(`🗑️ "${name}" ha sido eliminado del catálogo.`);
+      } catch (error) { showToast('⚠️ ' + error.message); }
     }
 
 window.filterCatalogTable = filterCatalogTable;

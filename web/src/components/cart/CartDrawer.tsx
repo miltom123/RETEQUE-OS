@@ -5,7 +5,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { useUiStore } from '../../store/uiStore';
 import { buildFallbackOrderUrl, discardWhatsAppWindow, openWhatsAppOrder, prepareWhatsAppWindow } from '../../lib/whatsapp';
-import { isValidName, isValidPeruMobile } from '../../lib/validation';
+import { MESSAGES, isValidAddress, isValidName, isValidPeruMobile, sanitizePhoneInput } from '../../lib/validation';
 import { CartItemRow } from './CartItemRow';
 import { CartCustomerForm } from './CartCustomerForm';
 import { CartDrawerFooter } from './CartDrawerFooter';
@@ -85,7 +85,7 @@ export const CartDrawer: React.FC = () => {
   };
 
   const orderDetails = (): OrderDetails => ({
-    customer: { name: fullName.trim(), phone: phone.trim() },
+    customer: { name: fullName.trim(), phone: sanitizePhoneInput(phone) },
     mode,
     address: mode === 'delivery' ? address.trim() : undefined,
     reference: mode === 'delivery' ? reference.trim() || undefined : undefined,
@@ -95,9 +95,9 @@ export const CartDrawer: React.FC = () => {
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!isValidName(fullName)) errs.fullName = 'Escribe tu nombre (mínimo 3 letras)';
-    if (!isValidPeruMobile(phone)) errs.phone = 'Ingresa un celular válido de 9 dígitos (empieza en 9)';
-    if (deliveryType === 'delivery' && address.trim().length < 5) errs.address = 'Ingresa tu dirección en Tacna';
+    if (!isValidName(fullName)) errs.fullName = MESSAGES.name;
+    if (!isValidPeruMobile(phone)) errs.phone = MESSAGES.phone;
+    if (deliveryType === 'delivery' && !isValidAddress(address)) errs.address = MESSAGES.address;
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };

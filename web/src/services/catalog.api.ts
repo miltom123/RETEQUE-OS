@@ -8,6 +8,13 @@
 import { PRODUCTS, PROMOTIONS, CREMAS_EXTRAS, PIZZA_ADICIONALES } from '../data/catalog';
 import { DRINKS, UPGRADES } from '../components/configurator/configuratorData';
 import { SERVER_REFS, UPGRADE_REFS } from '../data/serverRefs';
+import type { ProductCategory } from '../types/product';
+
+// Categoría del panel (campo `cat`) -> sección de la web
+const CATEGORY_BY_CAT: Record<string, ProductCategory> = {
+  'Clásicos': 'tequenos', Especiales: 'tequenos', Combos: 'promociones', Pizzas: 'pizzas',
+  Pastelitos: 'pastelitos', Bebidas: 'bebidas', Salsas: 'cremas', Cremas: 'cremas',
+};
 
 interface ServerOption {
   id: string;
@@ -87,6 +94,30 @@ export async function syncCatalogWithServer(): Promise<boolean> {
       soldOut.add(promo.id);
       promo.badge = 'Agotado';
     }
+  }
+
+  // RFI-15: lo que el panel borra deja de venderse y lo que crea aparece en la carta
+  const referenced = new Set([...Object.values(SERVER_REFS), ...Object.values(UPGRADE_REFS)].map((r) => r.productId));
+  for (const product of PRODUCTS) {
+    const ref = SERVER_REFS[product.id];
+    if (ref && !byId.has(ref.productId)) soldOut.add(product.id);
+  }
+  for (const remote of data as (ServerProduct & { name: string; cat: string; desc?: string; badge?: string })[]) {
+    if (referenced.has(remote.id) || PRODUCTS.some((p) => p.id === remote.id)) continue;
+    const category = CATEGORY_BY_CAT[remote.cat] || 'tequenos';
+    PRODUCTS.push({
+      id: remote.id,
+      slug: remote.id,
+      name: remote.name,
+      category,
+      description: remote.desc || undefined,
+      // Sin foto propia: se usa la de otro producto de la misma categoría
+      image: PRODUCTS.find((p) => p.category === category)?.image || '/assets/hero-banner.jpg',
+      basePrice: basePrice(remote),
+      badge: remote.stock === false ? 'Agotado' : remote.badge || undefined,
+    });
+    SERVER_REFS[remote.id] = { productId: remote.id };
+    if (remote.stock === false) soldOut.add(remote.id);
   }
 
   // Opciones compartidas por varios productos: cremas de los tequeños, adicionales de pizza y bebidas de las promos

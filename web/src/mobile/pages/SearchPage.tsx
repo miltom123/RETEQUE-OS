@@ -37,6 +37,7 @@ export const SearchPage: React.FC = () => {
         <input
           type="text"
           autoFocus
+          maxLength={60}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Busca por nombre, ingrediente o salsa..."

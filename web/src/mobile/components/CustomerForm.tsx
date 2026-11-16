@@ -1,5 +1,6 @@
 import React from 'react';
 import { User, Phone, FileText } from 'lucide-react';
+import { NAME_MAX, PHONE_LENGTH, sanitizeFreeText, sanitizeNameInput, sanitizePhoneInput } from '../../lib/validation';
 
 interface CustomerFormProps {
   name: string;
@@ -37,8 +38,10 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         <input
           id="mobile-name"
           type="text"
+          autoComplete="name"
+          maxLength={NAME_MAX}
           value={name}
-          onChange={(e) => onChangeName(e.target.value)}
+          onChange={(e) => onChangeName(sanitizeNameInput(e.target.value))}
           placeholder="Ej. Milton Flores"
           className={`w-full h-11 px-3.5 rounded-xl border text-xs bg-[#FFFDF9] focus:outline-none transition ${
             errors.name
@@ -69,10 +72,12 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
           <input
             id="mobile-phone"
             type="tel"
-            maxLength={11}
+            inputMode="numeric"
+            autoComplete="tel-national"
+            maxLength={PHONE_LENGTH}
             value={phone}
-            onChange={(e) => onChangePhone(e.target.value.replace(/[^\d\s]/g, ''))}
-            placeholder="912 345 678"
+            onChange={(e) => onChangePhone(sanitizePhoneInput(e.target.value))}
+            placeholder="912345678"
             className={`w-full h-11 pl-14 pr-3.5 rounded-xl border text-xs bg-[#FFFDF9] focus:outline-none transition font-medium ${
               errors.phone
                 ? 'border-[#FF3038] focus:ring-2 focus:ring-[#FF3038]/20'
@@ -96,7 +101,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({
         <textarea
           id="mobile-notes"
           value={notes}
-          onChange={(e) => onChangeNotes(e.target.value.slice(0, 200))}
+          onChange={(e) => onChangeNotes(sanitizeFreeText(e.target.value, 200))}
           placeholder="Ej. Servilletas extra, cremas separadas, tocar timbre..."
           rows={2}
           className="w-full p-3 rounded-xl border border-[#EFE6D6] text-xs bg-[#FFFDF9] focus:outline-none focus:border-[#FF3038] focus:ring-2 focus:ring-[#FF3038]/10 resize-none transition"

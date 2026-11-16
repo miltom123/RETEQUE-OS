@@ -9,6 +9,7 @@ const { extractToken, readJsonBody, sendJson } = require('../http');
 const { cleanId, sanitizeId } = require('../sanitize');
 const { canAccessOrder } = require('../auth');
 const { cashierNextStatuses } = require('../order-status');
+const { publicOrderView, staffOrderView } = require('../order-view');
 
 async function newOrderId(ordersRepo) {
   let id;
@@ -16,7 +17,17 @@ async function newOrderId(ordersRepo) {
   return id;
 }
 
-async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { repos, auth, checkOrderRateLimit, expirePendingOrders, logger }) {
+// Las líneas del panel que nombran un producto del catálogo toman su precio del catálogo (RNF-02)
+async function priceFromCatalog(items, catalogRepo) {
+  if (!Array.isArray(items)) return items;
+  const catalog = new Map((await catalogRepo.getAll()).map(p => [p.id, p]));
+  return items.map(item => {
+    const product = item && typeof item.productId === 'string' ? catalog.get(item.productId) : null;
+    return product ? { ...item, name: item.name || product.name, price: product.promo != null ? product.promo : product.price } : item;
+  });
+}
+
+async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { repos, auth, checkOrderRateLimit, expirePendingOrders, logger, dispatcher }) {
   if (pathname === '/api/pedidos') {
     // GET: Obtener todos los pedidos (Exclusivo Administrador autenticado para evitar fuga de PII)
     if (req.method === 'GET') {
@@ -34,7 +45,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
       if (user.role !== 'admin' && parsedUrl.searchParams.get('scope') === 'all') return sendJson(res, 403, { error: 'Solo el administrador puede consultar el historial completo.' });
       // Antes de listar se anulan los pedidos web que vencieron sin confirmar; si falla, igual se lista
       try { await expirePendingOrders(); } catch (error) { logger.warn('[PEDIDOS WEB] No se pudieron vencer los pedidos sin confirmar.'); }
-      const orders = (await repos.orders.getAll()).filter(order => canAccessOrder(user, order));
+      const orders = (await repos.orders.getAll()).filter(order => canAccessOrder(user, order)).map(staffOrderView);
       return sendJson(res, 200, orders);
     }
 
@@ -59,6 +70,9 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
 
         const newOrder = await repos.orders.insert({
           ...payload,
+          items: await priceFromCatalog(payload.items, repos.catalog),
+          customerId: null,
+          accessTokenHash: null,
           id,
           channel: ['web', 'app', 'whatsapp'].includes(payload.channel) ? payload.channel : 'app',
           status: 'new',
@@ -67,7 +81,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
           createdBy: currentUser.username
         });
         logger.log(`[PEDIDO CREADO] ${newOrder.id} - Total: S/ ${newOrder.total.toFixed(2)} (${newOrder.channel})`);
-        return sendJson(res, 201, { ok: true, order: newOrder });
+        return sendJson(res, 201, { ok: true, order: staffOrderView(newOrder) });
       } catch (err) {
         if (err.code === '23505') return sendJson(res, 409, { error: 'El pedido ya existe.' });
         return sendJson(res, 400, { ok: false, error: err.message });
@@ -85,22 +99,10 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
     }
     const token = extractToken(req);
     const isAuth = await auth.isValidSession(token);
-    if (!isAuth) {
-      return sendJson(res, 200, {
-        id: ord.id,
-        status: ord.status,
-        mode: ord.mode,
-        time: ord.time,
-        elapsedMinutes: ord.elapsedMinutes,
-        channel: ord.channel,
-        total: ord.total,
-        payMethod: ord.payMethod,
-        payVerified: ord.payVerified,
-        createdAt: ord.createdAt
-      });
-    }
+    // Sin sesión: seguimiento del cliente sin datos personales (RFI-09, RNF-03)
+    if (!isAuth) return sendJson(res, 200, publicOrderView(ord));
     if (!canAccessOrder(auth.sessionUser(token), ord)) return sendJson(res, 403, { error: 'Caja solo puede consultar pedidos del día.' });
-    return sendJson(res, 200, ord);
+    return sendJson(res, 200, staffOrderView(ord));
   }
 
   // PATCH /api/pedidos/:id (Actualizar estado o verificar pago - Requiere sesión de personal)
@@ -124,9 +126,14 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
         if (currentUser.role === 'cashier' && order) {
           if (!cashierNextStatuses(order).includes(body.status)) return sendJson(res, 400, { error: 'Ese cambio de estado no está permitido para caja.' });
         }
-        const updated = await repos.orders.updateStatus(orderId, body.status);
+        let updated = await repos.orders.updateStatus(orderId, body.status);
+        // Al salir a reparto se avisa a n8n; si falla, el estado ya quedó guardado y el panel ofrece coordinar a mano
+        const assigned = updated && updated.dispatch && ['assigned', 'manual', 'offered'].includes(updated.dispatch.status);
+        if (updated && body.status === 'delivery' && updated.mode === 'delivery' && !assigned) {
+          try { updated = await dispatcher.offer(updated); } catch (error) { logger.warn(`[DESPACHO] ${orderId}: no se pudo registrar el despacho.`); }
+        }
         if (updated) {
-          return sendJson(res, 200, { ok: true, order: updated });
+          return sendJson(res, 200, { ok: true, order: staffOrderView(updated) });
         }
         return sendJson(res, 404, { ok: false, error: 'Pedido no encontrado' });
       }
@@ -134,7 +141,7 @@ async function handleOrders({ req, res, pathname, parsedUrl, currentUser }, { re
       if (body.verifyPayment) {
         const updated = await repos.orders.verifyPayment(orderId);
         if (updated) {
-          return sendJson(res, 200, { ok: true, order: updated });
+          return sendJson(res, 200, { ok: true, order: staffOrderView(updated) });
         }
         return sendJson(res, 404, { ok: false, error: 'Pedido no encontrado' });
       }

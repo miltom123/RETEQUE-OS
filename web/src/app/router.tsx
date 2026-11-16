@@ -29,6 +29,8 @@ import { LoginPage as MobileLoginPage } from '../mobile/pages/LoginPage';
 import { RegisterPage as MobileRegisterPage } from '../mobile/pages/RegisterPage';
 import { ForgotPasswordPage as MobileForgotPasswordPage } from '../mobile/pages/ForgotPasswordPage';
 import { ProfilePage as MobileProfilePage } from '../mobile/pages/ProfilePage';
+import { OrdersPage as MobileOrdersPage } from '../mobile/pages/OrdersPage';
+import { OrderTrackingPage as MobileOrderTrackingPage } from '../mobile/pages/OrderTrackingPage';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -89,6 +91,8 @@ export const AppRouter: React.FC = () => {
         <Route path="/app/register" element={accountPage(withMobileLayout(<MobileRegisterPage />, 'Crear Cuenta', true, true))} />
         <Route path="/app/forgot-password" element={accountPage(withMobileLayout(<MobileForgotPasswordPage />, 'Recuperar Contraseña', true, true))} />
         <Route path="/app/profile" element={accountPage(withMobileLayout(<MobileProfilePage />, 'Mi Perfil', true))} />
+        <Route path="/app/pedidos" element={withMobileLayout(<MobileOrdersPage />, 'Mis Pedidos', true)} />
+        <Route path="/app/seguimiento/:code" element={withMobileLayout(<MobileOrderTrackingPage />, 'Estado del Pedido', true)} />
         <Route path="/app/offline" element={withMobileLayout(<MobileOfflinePage />, 'Sin Conexión', true)} />
 
         {/* ============================================================== */}

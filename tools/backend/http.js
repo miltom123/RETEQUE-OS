@@ -43,7 +43,7 @@ function handleCors(req, res) {
   }
 
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-token, x-customer-token, x-order-token, Idempotency-Key');
 }
 
 // Lector seguro de body JSON con límite de tamaño (DoS protection)

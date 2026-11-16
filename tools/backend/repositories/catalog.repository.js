@@ -70,7 +70,8 @@ function normalizeProduct(product, existingOptions = null) {
     return {
       id: sanitizeId(product.id || `prod_${Date.now()}`),
       name: sanitizeString(product.name || 'Producto'),
-      icon: product.icon || '🥟',
+      // El ícono se pinta en el panel: solo un emoji o texto corto, sin etiquetas
+      icon: sanitizeString(String(product.icon || '')).replace(/[&"'`]/g, '').slice(0, 8) || '🥟',
       cat: sanitizeString(product.cat || 'Clásicos'),
       qty: sanitizeString(product.qty || 'Porción estándar'),
       price: Math.max(0, parseFloat(product.price) || 0),

@@ -8,6 +8,10 @@ web/tsconfig.tsbuildinfo
 tools/*.log
 data/*.tmp
 data/users.db.json
+# Datos personales y secretos (RNF-03): cuentas de clientes, constancias de pago y clave de sesiones
+data/customers.db.json
+data/receipts/
+data/secret.key
 
 # Sistema
 Thumbs.db

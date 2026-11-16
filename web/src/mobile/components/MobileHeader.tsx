@@ -90,10 +90,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({ title, showBack }) =
         ) : (
           <Link to="/app" className="flex items-center gap-2 shrink-0">
             <img
-              src="/assets/logo-retequenos.png"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo.png';
-              }}
+              src="/assets/brand/logo-retequenos.png"
               alt="Retequeños"
               className="w-8 h-8 rounded-xl object-cover shadow-sm border border-[#EFE6D6]"
             />

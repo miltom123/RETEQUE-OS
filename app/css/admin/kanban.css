@@ -647,6 +647,7 @@
     }
     .kds-pay-green { background: #DCFCE7; color: #15803D; }
     .kds-pay-amber { background: #FEF3C7; color: #B45309; }
+    .kds-pay-red { background: #FEE2E2; color: #B91C1C; }
     .kds-pay-blue { background: #EFF6FF; color: #1D4ED8; }
 
     .kds-tag-mode {

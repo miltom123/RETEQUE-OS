@@ -3,11 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, Lock, UserPlus, ArrowRight, AlertCircle, UserCheck } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
-import { isValidPeruMobile } from '../../lib/validation';
+import {
+  EMAIL_MAX,
+  MESSAGES,
+  NAME_MAX,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+  PHONE_LENGTH,
+  isValidEmail,
+  isValidName,
+  isValidPeruMobile,
+  sanitizeEmailInput,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '../../lib/validation';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { registerWithEmail, loginWithGoogle, continueAsGuest, isLoading, error, clearError } = useAuthStore();
+  const { registerWithEmail, continueAsGuest, isLoading, error, clearError } = useAuthStore();
   const showToast = useUiStore((s) => s.showToast);
 
   const [name, setName] = useState('');
@@ -26,33 +39,33 @@ export const RegisterPage: React.FC = () => {
       return;
     }
 
-    const cleanPhone = phone.replace(/\s+/g, '');
-    if (!isValidPeruMobile(cleanPhone)) {
-      setFormError('Ingresa un número de celular peruano válido (9 dígitos que empiece con 9).');
+    if (!isValidName(name)) {
+      setFormError(MESSAGES.name);
       return;
     }
 
-    if (password.length < 6) {
-      setFormError('La contraseña debe tener al menos 6 caracteres.');
+    if (!isValidPeruMobile(phone)) {
+      setFormError(MESSAGES.phone);
       return;
     }
 
-    const success = await registerWithEmail(email, password, name, cleanPhone);
+    if (!isValidEmail(email)) {
+      setFormError(MESSAGES.email);
+      return;
+    }
+
+    if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
+      setFormError(MESSAGES.password);
+      return;
+    }
+
+    const success = await registerWithEmail(email.trim(), password, name.trim(), sanitizePhoneInput(phone));
     if (success) {
       showToast({ message: '¡Cuenta creada con éxito!' });
       navigate('/app', { replace: true });
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setFormError(null);
-    clearError();
-    const success = await loginWithGoogle();
-    if (success) {
-      showToast({ message: '¡Sesión iniciada con Google!' });
-      navigate('/app', { replace: true });
-    }
-  };
 
   return (
     <div className="p-4 sm:p-6 max-w-md mx-auto w-full flex-1 flex flex-col justify-center my-auto">
@@ -67,40 +80,6 @@ export const RegisterPage: React.FC = () => {
           <p className="text-xs text-[#8C867F]">
             Guarda tus datos para pedir más rápido tus tequeños favoritos
           </p>
-        </div>
-
-        {/* Botón de Google */}
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={isLoading}
-          className="w-full h-11 bg-white border border-[#D9CDBB] hover:bg-[#FFFDF9] text-[#242424] font-bold text-xs rounded-xl flex items-center justify-center gap-3 transition active:scale-[0.98] shadow-sm cursor-pointer disabled:opacity-50"
-        >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
-            <path
-              fill="#4285F4"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-            />
-            <path
-              fill="#EA4335"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-            />
-          </svg>
-          <span>Registrarme con Google</span>
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-[1px] bg-[#EFE6D6]" />
-          <span className="text-[11px] font-bold text-[#8C867F] uppercase tracking-wider">o con tus datos</span>
-          <div className="flex-1 h-[1px] bg-[#EFE6D6]" />
         </div>
 
         {(formError || error) && (
@@ -120,8 +99,10 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-name"
                 type="text"
+                autoComplete="name"
+                maxLength={NAME_MAX}
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => setName(sanitizeNameInput(e.target.value))}
                 placeholder="Ej. Milton Flores"
                 className="w-full h-10 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
               />
@@ -137,9 +118,12 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-phone"
                 type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                maxLength={PHONE_LENGTH}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))}
-                placeholder="952 000 000"
+                onChange={(e) => setPhone(sanitizePhoneInput(e.target.value))}
+                placeholder="952000000"
                 className="w-full h-10 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
               />
             </div>
@@ -154,8 +138,10 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-email"
                 type="email"
+                autoComplete="email"
+                maxLength={EMAIL_MAX}
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => setEmail(sanitizeEmailInput(e.target.value))}
                 placeholder="ejemplo@correo.com"
                 className="w-full h-10 pl-9 pr-3 text-xs bg-[#FFFDF9] border border-[#EFE6D6] rounded-xl focus:outline-none focus:border-[#FF3038]"
               />
@@ -171,6 +157,8 @@ export const RegisterPage: React.FC = () => {
               <input
                 id="reg-pass"
                 type="password"
+                autoComplete="new-password"
+                maxLength={PASSWORD_MAX}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

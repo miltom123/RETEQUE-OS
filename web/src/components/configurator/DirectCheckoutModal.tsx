@@ -2,6 +2,14 @@ import React from 'react';
 import { X, Bike, Store, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { formatMoney } from '../../lib/money';
 import { useCheckoutStore } from '../../store/checkoutStore';
+import {
+  ADDRESS_MAX,
+  NAME_MAX,
+  PHONE_LENGTH,
+  sanitizeFreeText,
+  sanitizeNameInput,
+  sanitizePhoneInput,
+} from '../../lib/validation';
 
 interface DirectCheckoutModalProps {
   isOpen: boolean;
@@ -119,8 +127,10 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
             </label>
             <input
               type="text"
+              autoComplete="name"
+              maxLength={NAME_MAX}
               value={fullName}
-              onChange={(e) => setField('fullName', e.target.value)}
+              onChange={(e) => setField('fullName', sanitizeNameInput(e.target.value))}
               placeholder="Ej. Milton Flores"
               className={`w-full h-10 px-3 rounded-[10px] border text-sm focus:outline-none focus:ring-2 ${
                 errors.fullName ? 'border-[#D31728] focus:ring-[#D31728]/20' : 'border-neutral-200 focus:border-[#D31728]'
@@ -137,9 +147,12 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
             </label>
             <input
               type="tel"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              maxLength={PHONE_LENGTH}
               value={phone}
-              onChange={(e) => setField('phone', e.target.value)}
-              placeholder="Ej. 912 266 950"
+              onChange={(e) => setField('phone', sanitizePhoneInput(e.target.value))}
+              placeholder="Ej. 912266950"
               className={`w-full h-10 px-3 rounded-[10px] border text-sm focus:outline-none focus:ring-2 ${
                 errors.phone ? 'border-[#D31728] focus:ring-[#D31728]/20' : 'border-neutral-200 focus:border-[#D31728]'
               }`}
@@ -186,8 +199,9 @@ export const DirectCheckoutModal: React.FC<DirectCheckoutModalProps> = ({
               </label>
               <input
                 type="text"
+                maxLength={ADDRESS_MAX}
                 value={address}
-                onChange={(e) => setField('address', e.target.value)}
+                onChange={(e) => setField('address', sanitizeFreeText(e.target.value, ADDRESS_MAX))}
                 placeholder="Ej. Av. San Martín 450, Tacna"
                 className={`w-full h-10 px-3 rounded-[10px] border text-sm focus:outline-none focus:ring-2 ${
                   errors.address ? 'border-[#D31728] focus:ring-[#D31728]/20' : 'border-neutral-200 focus:border-[#D31728]'

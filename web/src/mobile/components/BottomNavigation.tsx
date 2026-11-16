@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Utensils, Sparkles, Heart, ShoppingBag } from 'lucide-react';
+import { Home, Utensils, Sparkles, ClipboardList, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '../../store/cartStore';
 
 export const BottomNavigation: React.FC = () => {
@@ -10,7 +10,7 @@ export const BottomNavigation: React.FC = () => {
     { to: '/app', label: 'Inicio', icon: Home, end: true },
     { to: '/app/menu', label: 'Menú', icon: Utensils, end: false },
     { to: '/app/promociones', label: 'Promos', icon: Sparkles, end: false },
-    { to: '/app/favoritos', label: 'Favoritos', icon: Heart, end: false },
+    { to: '/app/pedidos', label: 'Pedidos', icon: ClipboardList, end: false },
     { to: '/app/carrito', label: 'Carrito', icon: ShoppingBag, end: false, badge: totalCount },
   ];
 

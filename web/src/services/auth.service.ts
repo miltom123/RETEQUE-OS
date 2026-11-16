@@ -1,64 +1,86 @@
 // ============================================================================
-// RETEQUEÑOS - AUTH SERVICE
-// Servicio desacoplado para autenticación de clientes
-// Compatible con Firebase Auth / Mock Local con persistencia en localStorage
+// RETEQUEÑOS - CUENTAS DE CLIENTE (RFI-01)
+// Registro, inicio de sesión, perfil y direcciones contra /api/customers.
+// La sesión es un token firmado por el servidor; aquí solo se guarda ese token y una copia del perfil.
 // ============================================================================
 
-import { UserProfile } from '../types/auth';
+import type { SavedAddress, UserProfile } from '../types/auth';
+import { API_BASE } from './catalog.api';
 
-const STORAGE_KEY_SESSION = 'retequenos_auth_session';
-const STORAGE_KEY_USERS = 'retequenos_registered_users';
+const STORAGE_KEY_SESSION = 'retequenos_customer_session_v2';
 
-interface StoredAccount extends UserProfile {
-  passwordHash?: string;
+interface ServerCustomer {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  addresses: SavedAddress[];
+  createdAt?: string;
 }
 
-// Cuenta de demostración precargada para pruebas inmediatas
-const DEFAULT_DEMO_ACCOUNTS: StoredAccount[] = [
-  {
-    uid: 'usr-demo-1',
-    email: 'cliente@retequenos.pe',
-    displayName: 'Milton Flores',
-    phone: '952001122',
-    defaultAddress: 'Av. Bolognesi 450, Tacna',
-    defaultReference: 'Frente al parque',
+interface StoredSession {
+  token: string;
+  user: UserProfile;
+}
+
+function toProfile(c: ServerCustomer): UserProfile {
+  const first = c.addresses?.[0];
+  return {
+    uid: c.id,
+    email: c.email,
+    displayName: c.name,
+    phone: c.phone,
+    addresses: c.addresses || [],
+    defaultAddress: first?.address,
+    defaultReference: first?.reference,
     provider: 'password',
-    createdAt: new Date().toISOString(),
-  },
-];
+    createdAt: c.createdAt,
+  };
+}
 
-function getRegisteredAccounts(): StoredAccount[] {
+function readSession(): StoredSession | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY_USERS);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(DEFAULT_DEMO_ACCOUNTS));
-      return DEFAULT_DEMO_ACCOUNTS;
-    }
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(STORAGE_KEY_SESSION);
+    return raw ? (JSON.parse(raw) as StoredSession) : null;
   } catch {
-    return DEFAULT_DEMO_ACCOUNTS;
+    return null;
   }
 }
 
-function saveRegisteredAccounts(accounts: StoredAccount[]): void {
+function writeSession(session: StoredSession | null) {
   try {
-    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(accounts));
-  } catch (e) {
-    console.error('Error saving accounts', e);
+    if (session) localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(session));
+    else localStorage.removeItem(STORAGE_KEY_SESSION);
+  } catch {
+    // Navegador sin almacenamiento (modo privado): la sesión dura lo que la pestaña
   }
+}
+
+export class SessionExpiredError extends Error {}
+
+async function request<T>(path: string, init: RequestInit = {}, token?: string): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'x-customer-token': token } : {}), ...(init.headers || {}) },
+    });
+  } catch {
+    throw new Error('No pudimos conectar con la tienda. Revisa tu conexión.');
+  }
+  const data = (await res.json().catch(() => ({}))) as { error?: string } & T;
+  if (res.status === 401 && token) throw new SessionExpiredError(data.error || 'Tu sesión venció. Inicia sesión otra vez.');
+  if (!res.ok) throw new Error(data.error || 'No pudimos completar la acción. Inténtalo de nuevo.');
+  return data;
 }
 
 class AuthService {
   private listeners: Array<(user: UserProfile | null) => void> = [];
 
   constructor() {
-    // Escuchar cambios de storage entre pestañas
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e) => {
-        if (e.key === STORAGE_KEY_SESSION) {
-          const user = this.getCurrentUser();
-          this.notify(user);
-        }
+        if (e.key === STORAGE_KEY_SESSION) this.notify(this.getCurrentUser());
       });
     }
   }
@@ -67,14 +89,20 @@ class AuthService {
     this.listeners.forEach((cb) => cb(user));
   }
 
+  private start(token: string, customer: ServerCustomer): UserProfile {
+    const user = toProfile(customer);
+    writeSession({ token, user });
+    this.notify(user);
+    return user;
+  }
+
   public getCurrentUser(): UserProfile | null {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY_SESSION);
-      if (!raw) return null;
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
+    return readSession()?.user ?? null;
+  }
+
+  /** Token para la cabecera x-customer-token; null si no hay sesión. */
+  public getToken(): string | null {
+    return readSession()?.token ?? null;
   }
 
   public onAuthStateChanged(callback: (user: UserProfile | null) => void): () => void {
@@ -85,120 +113,81 @@ class AuthService {
     };
   }
 
-  public async loginWithEmail(email: string, _password: string): Promise<UserProfile> {
-    await new Promise((r) => setTimeout(r, 400)); // Latencia realista
-    const cleanEmail = email.trim().toLowerCase();
-    const accounts = getRegisteredAccounts();
-
-    let account = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-
-    if (!account) {
-      // Para facilidad en demos locales, si no existe el correo pero es válido lo auto-crea
-      account = {
-        uid: `usr-${Date.now()}`,
-        email: cleanEmail,
-        displayName: cleanEmail.split('@')[0],
-        provider: 'password',
-        createdAt: new Date().toISOString(),
-      };
-      accounts.push(account);
-      saveRegisteredAccounts(accounts);
-    }
-
-    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(account));
-    this.notify(account);
-    return account;
+  public async loginWithEmail(email: string, password: string): Promise<UserProfile> {
+    const data = await request<{ token: string; customer: ServerCustomer }>('/api/customers/login', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), password }),
+    });
+    return this.start(data.token, data.customer);
   }
 
-  public async registerWithEmail(
-    email: string,
-    _password: string,
-    name: string,
-    phone: string
-  ): Promise<UserProfile> {
-    await new Promise((r) => setTimeout(r, 450));
-    const cleanEmail = email.trim().toLowerCase();
-    const accounts = getRegisteredAccounts();
-
-    const existing = accounts.find((a) => a.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      existing.displayName = name.trim();
-      existing.phone = phone.trim();
-      saveRegisteredAccounts(accounts);
-      localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(existing));
-      this.notify(existing);
-      return existing;
-    }
-
-    const newAccount: StoredAccount = {
-      uid: `usr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      email: cleanEmail,
-      displayName: name.trim(),
-      phone: phone.trim(),
-      provider: 'password',
-      createdAt: new Date().toISOString(),
-    };
-
-    accounts.push(newAccount);
-    saveRegisteredAccounts(accounts);
-    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(newAccount));
-    this.notify(newAccount);
-    return newAccount;
+  public async registerWithEmail(email: string, password: string, name: string, phone: string): Promise<UserProfile> {
+    const data = await request<{ token: string; customer: ServerCustomer }>('/api/customers/register', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim(), password, name: name.trim(), phone }),
+    });
+    return this.start(data.token, data.customer);
   }
 
-  public async loginWithGoogle(): Promise<UserProfile> {
-    await new Promise((r) => setTimeout(r, 500));
-    // Simula flujo OAuth con cuenta verificada de Google
-    const accounts = getRegisteredAccounts();
-    const googleEmail = 'cliente.google@gmail.com';
-    let account = accounts.find((a) => a.email === googleEmail);
-
-    if (!account) {
-      account = {
-        uid: `usr-google-${Date.now()}`,
-        email: googleEmail,
-        displayName: 'Amante de Retequeños',
-        phone: '952334455',
-        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&h=120&q=80',
-        provider: 'google',
-        createdAt: new Date().toISOString(),
-      };
-      accounts.push(account);
-      saveRegisteredAccounts(accounts);
+  /** Vuelve a leer el perfil del servidor. Si la sesión venció, la cierra. */
+  public async refresh(): Promise<UserProfile | null> {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const data = await request<{ customer: ServerCustomer }>('/api/customers/me', {}, token);
+      return this.start(token, data.customer);
+    } catch (error) {
+      if (error instanceof SessionExpiredError) await this.logout();
+      return this.getCurrentUser();
     }
-
-    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(account));
-    this.notify(account);
-    return account;
   }
 
   public async resetPassword(email: string): Promise<boolean> {
-    await new Promise((r) => setTimeout(r, 400));
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes('@')) {
-      throw new Error('Ingresa un correo electrónico válido');
-    }
+    if (!email.trim() || !email.includes('@')) throw new Error('Ingresa un correo electrónico válido');
+    // Sin servidor de correo: la recuperación se atiende por WhatsApp (ver ForgotPasswordPage)
     return true;
   }
 
   public async updateProfile(data: Partial<UserProfile>): Promise<UserProfile> {
+    const token = this.getToken();
     const current = this.getCurrentUser();
-    if (!current) throw new Error('No hay sesión activa');
-
-    const updated: UserProfile = { ...current, ...data };
-    localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(updated));
-
-    const accounts = getRegisteredAccounts().map((a) => (a.uid === updated.uid ? { ...a, ...updated } : a));
-    saveRegisteredAccounts(accounts);
-
-    this.notify(updated);
-    return updated;
+    if (!token || !current) throw new Error('No hay sesión activa');
+    const body: Record<string, unknown> = {};
+    if (data.displayName !== undefined) body.name = data.displayName;
+    if (data.phone !== undefined) body.phone = data.phone;
+    if (data.addresses !== undefined) body.addresses = data.addresses;
+    else if (data.defaultAddress !== undefined) {
+      // Formulario simple del perfil: edita la primera dirección guardada
+      const rest = (current.addresses || []).slice(1);
+      body.addresses = data.defaultAddress.trim()
+        ? [{ ...(current.addresses?.[0] || {}), label: current.addresses?.[0]?.label || 'Casa', address: data.defaultAddress, reference: data.defaultReference || '' }, ...rest]
+        : rest;
+    }
+    try {
+      const res = await request<{ customer: ServerCustomer }>('/api/customers/me', { method: 'PATCH', body: JSON.stringify(body) }, token);
+      return this.start(token, res.customer);
+    } catch (error) {
+      if (error instanceof SessionExpiredError) await this.logout();
+      throw error;
+    }
   }
 
   public async logout(): Promise<void> {
-    localStorage.removeItem(STORAGE_KEY_SESSION);
+    writeSession(null);
     this.notify(null);
   }
 }
 
 export const authService = new AuthService();
+
+/** Pedidos del cliente con sesión (RFI-10). */
+export async function fetchMyOrders<T>(): Promise<T[]> {
+  const token = authService.getToken();
+  if (!token) return [];
+  try {
+    return await request<T[]>('/api/customers/me/orders', {}, token);
+  } catch (error) {
+    if (error instanceof SessionExpiredError) await authService.logout();
+    throw error;
+  }
+}

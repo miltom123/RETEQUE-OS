@@ -3,6 +3,7 @@
 const TYPES = ['fixed', 'percent'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_COUPONS = 100;
+const { sanitizeString } = require('./sanitize');
 
 class CouponError extends Error {}
 
@@ -34,7 +35,7 @@ function normalizeCoupons(list) {
     const value = raw.type === 'percent'
       ? money(raw.value, `El porcentaje de ${code}`, { min: 1, max: 100 })
       : money(raw.value, `El descuento de ${code}`, { min: 0.1, max: 1000 });
-    const name = String(raw.name || '').trim().slice(0, 80) || code;
+    const name = sanitizeString(String(raw.name || '')).trim().slice(0, 80) || code;
     const startDate = cleanDate(raw.startDate, `La fecha de inicio de ${code}`);
     const endDate = cleanDate(raw.endDate, `La fecha de fin de ${code}`);
     if (startDate && endDate && startDate > endDate) throw new CouponError(`En ${code}, la fecha de fin es anterior a la de inicio.`);

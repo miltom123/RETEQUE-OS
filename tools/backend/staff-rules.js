@@ -1,6 +1,9 @@
 // Reglas de nombre y contraseña del personal, iguales para JSON y PostgreSQL
+const { isValidPersonName } = require('./sanitize');
+
+// Mismo criterio que al crear la cuenta: de 3 a 60 caracteres, solo letras
 function cleanStaffName(name) {
-  if (typeof name !== 'string' || !name.trim() || name.trim().length > 60) throw new Error('Ingresa un nombre de hasta 60 caracteres.');
+  if (!isValidPersonName(name)) throw new Error('Ingresa un nombre de 3 a 60 caracteres, solo con letras.');
   return name.trim();
 }
 

@@ -11,6 +11,7 @@ import { QuantityStepper } from '../components/ui/QuantityStepper';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 import { NotFoundPage } from './NotFoundPage';
 import { siteConfig } from '../config/site';
+import { sanitizeFreeText } from '../lib/validation';
 
 // Crema extra (id de la carta) -> crema suelta que vende la tienda
 const CREAM_ADDONS: Record<string, string> = {
@@ -268,7 +269,7 @@ const ProductDetail: React.FC<{ product: ProductType }> = ({ product }) => {
             <textarea
               id="detalle-notas"
               value={notes}
-              onChange={(e) => setNotes(e.target.value.slice(0, 200))}
+              onChange={(e) => setNotes(sanitizeFreeText(e.target.value, 200))}
               placeholder="Ej. Sin sal, extra crocante, salsas separadas, etc."
               rows={2}
               className="w-full p-3 rounded-xl border border-neutral-200 bg-white text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-red/30 focus:border-brand-red resize-none shadow-sm"

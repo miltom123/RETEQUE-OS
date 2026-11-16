@@ -7,6 +7,7 @@ import { CartItem } from '../components/CartItem';
 import { useUiStore } from '../../store/uiStore';
 import { useCheckoutStore } from '../../store/checkoutStore';
 import { useServerCoupon } from '../../hooks/useServerCoupon';
+import { COUPON_MAX, sanitizeCouponInput } from '../../lib/validation';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -117,7 +118,8 @@ export const CartPage: React.FC = () => {
                 <input
                   type="text"
                   value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  maxLength={COUPON_MAX}
+                  onChange={(e) => setCouponCode(sanitizeCouponInput(e.target.value))}
                   placeholder="Cupón de descuento (ej. BIENVENIDO10)"
                   className="w-full h-9 pl-8.5 pr-2.5 rounded-xl border border-[#EFE6D6] text-xs uppercase font-medium bg-[#FFFDF9] focus:outline-none focus:border-[#FF3038]"
                 />

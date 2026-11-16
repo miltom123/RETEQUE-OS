@@ -27,4 +27,20 @@ function sanitizeUrl(url) {
   return '';
 }
 
-module.exports = { cleanId, sanitizeId, sanitizeString, sanitizeUrl };
+// Nombre de persona: solo letras (con tildes y ñ), espacios, apóstrofo, guion y punto; de 3 a 60 caracteres
+function isValidPersonName(value) {
+  if (typeof value !== 'string') return false;
+  const name = value.trim();
+  if (name.length < 3 || name.length > 60) return false;
+  if (!/^\p{L}[\p{L}\s'.-]*$/u.test(name)) return false;
+  return (name.match(/\p{L}/gu) || []).length >= 3;
+}
+
+// Celular peruano: 9 dígitos que empiezan en 9, con o sin el 51 delante. Devuelve los 9 dígitos o null.
+function normalizePeruMobile(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  const local = digits.length === 11 && digits.startsWith('51') ? digits.slice(2) : digits;
+  return /^9\d{8}$/.test(local) ? local : null;
+}
+
+module.exports = { cleanId, sanitizeId, sanitizeString, sanitizeUrl, isValidPersonName, normalizePeruMobile };

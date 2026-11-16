@@ -1,0 +1,182 @@
+{
+  "name": "RETEQUE-OS · Despacho al motorizado",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rtq-despacho",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "a1",
+      "name": "Evento RETEQUE-OS",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "rtq-despacho"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.headers['x-rtq-token'] }}",
+              "rightValue": "={{ $env.RTQ_N8N_TOKEN }}",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a2",
+      "name": "Token válido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict" },
+                "conditions": [
+                  { "leftValue": "={{ $json.body.event }}", "rightValue": "dispatch.offered", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ofrecido"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "typeValidation": "strict" },
+                "conditions": [
+                  { "leftValue": "={{ $json.body.event }}", "rightValue": "dispatch.assigned", "operator": { "type": "string", "operation": "equals" } }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Asignado"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a3",
+      "name": "Tipo de evento",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_API_TOKEN }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $env.WHATSAPP_GROUP_ID, text: $json.body.text }) }}",
+        "options": {}
+      },
+      "id": "a4",
+      "name": "Avisar al grupo (sin datos del cliente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 180]
+    },
+    {
+      "parameters": {
+        "amount": "={{ $('Evento RETEQUE-OS').item.json.body.alertAfterMinutes || 5 }}",
+        "unit": "minutes"
+      },
+      "id": "a5",
+      "name": "Esperar plazo para tomarlo",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [900, 180],
+      "webhookId": "rtq-espera"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Evento RETEQUE-OS').item.json.body.statusUrl }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "x-rtq-token", "value": "={{ $env.RTQ_N8N_TOKEN }}" }] },
+        "options": {}
+      },
+      "id": "a6",
+      "name": "¿Alguien lo tomó?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 180]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c2", "leftValue": "={{ $json.assigned }}", "rightValue": false, "operator": { "type": "boolean", "operation": "equals" } },
+            { "id": "c3", "leftValue": "={{ $json.orderStatus }}", "rightValue": "delivery", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a7",
+      "name": "Nadie lo tomó",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_API_TOKEN }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $('Evento RETEQUE-OS').item.json.body.operatorPhone, text: '⚠ Nadie tomó el pedido ' + $json.orderId + ' en ' + $json.alertAfterMinutes + ' min. Asígnalo desde el panel (KDS > Ver detalle > Despacho).' }) }}",
+        "options": {}
+      },
+      "id": "a8",
+      "name": "Alertar al operador",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 120]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API_URL }}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_API_TOKEN }}" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ to: $json.body.driver.phone, text: $json.body.text }) }}",
+        "options": {}
+      },
+      "id": "a9",
+      "name": "Comanda privada al motorizado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 420]
+    }
+  ],
+  "connections": {
+    "Evento RETEQUE-OS": { "main": [[{ "node": "Token válido", "type": "main", "index": 0 }]] },
+    "Token válido": { "main": [[{ "node": "Tipo de evento", "type": "main", "index": 0 }], []] },
+    "Tipo de evento": { "main": [[{ "node": "Avisar al grupo (sin datos del cliente)", "type": "main", "index": 0 }], [{ "node": "Comanda privada al motorizado", "type": "main", "index": 0 }]] },
+    "Avisar al grupo (sin datos del cliente)": { "main": [[{ "node": "Esperar plazo para tomarlo", "type": "main", "index": 0 }]] },
+    "Esperar plazo para tomarlo": { "main": [[{ "node": "¿Alguien lo tomó?", "type": "main", "index": 0 }]] },
+    "¿Alguien lo tomó?": { "main": [[{ "node": "Nadie lo tomó", "type": "main", "index": 0 }]] },
+    "Nadie lo tomó": { "main": [[{ "node": "Alertar al operador", "type": "main", "index": 0 }], []] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
