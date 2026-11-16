@@ -299,9 +299,11 @@ async function runTests() {
     if (!code.includes('function escapeHtml(str)')) {
       throw new Error('No se encontró función escapeHtml en dashboard.module.js');
     }
-    if (!code.includes('escapeHtml(r.customer)')) {
-      throw new Error('No se está sanitizando r.customer en renderDashboardFeedback');
+    // El dashboard muestra nombres de productos tomados de los pedidos reales y las respuestas de encuesta
+    for (const field of ['escapeHtml(p.name)', 'escapeHtml(r.label)', 'escapeHtml(a.source)']) {
+      if (!code.includes(field)) throw new Error(`No se está sanitizando ${field.slice(11, -1)} en el dashboard`);
     }
+    if (code.includes('REVIEWS.slice(')) throw new Error('El dashboard volvió a mostrar reseñas de ejemplo');
   });
 
   // 19. Seguridad: Sanitización XSS en Encuestas (surveys.module.js)

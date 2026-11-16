@@ -19,13 +19,8 @@ const TOP_PRODUCTS = {
       ]
     };;
 
-const ATTRIBUTION = [
-      { source: 'Facebook / Instagram', pct: 41, color: '#EF4444' },
-      { source: 'TikTok', pct: 27, color: '#111827' },
-      { source: 'Recomendación', pct: 17, color: '#10B981' },
-      { source: 'Pasó por el local', pct: 10, color: '#F59E0B' },
-      { source: 'Google', pct: 5, color: '#3B82F6' }
-    ];;
+// Origen de la publicidad: se llenará con las respuestas reales de la encuesta
+const ATTRIBUTION = [];;
 
 let SURVEYS = [
       { id: 'SV-2026-08', title: '¿Cómo estuvo tu pedido?', until: '2026-09-30', reward: 3, couponCode: 'ENCUESTA3', couponUntil: '2026-09-30', google: true, responses: 34, coupons: 31, active: true, link: 'retequenos.com/encuesta/ago-2026' }

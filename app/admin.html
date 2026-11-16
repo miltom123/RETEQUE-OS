@@ -14,10 +14,10 @@
   <link rel="icon" type="image/png" href="assets/logo-retequenos.png">
   
   <!-- Master Admin Stylesheet (Modular Architecture) -->
-  <link rel="stylesheet" href="css/admin.css?v=crud-servidor1">
+  <link rel="stylesheet" href="css/admin.css?v=crud-servidor4">
   
   <!-- Chart.js (Local Vendor + CDN Fallback) -->
-  <script src="js/admin/vendor/chart.umd.min.js?v=crud-servidor1"></script>
+  <script src="js/admin/vendor/chart.umd.min.js?v=crud-servidor4"></script>
   <script>
     if (typeof Chart === 'undefined') {
       document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"><\/script>');
@@ -231,7 +231,7 @@
               </div>
             </div>
             <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ +18.4% vs. ayer</span>
+              <span id="kpi-sales-trend">Calculando…</span>
             </div>
           </div>
 
@@ -253,7 +253,7 @@
               </div>
             </div>
             <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ +12 vs. semana pasada</span>
+              <span id="kpi-orders-trend">Calculando…</span>
             </div>
           </div>
 
@@ -266,7 +266,7 @@
               <span class="dash-kpi-title">TICKET PROMEDIO</span>
             </div>
             <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">S/ 29.50</div>
+              <div class="dash-kpi-value" id="kpi-ticket">—</div>
               <div class="dash-sparkline-bars">
                 <span class="dash-sparkline-bar" style="height:8px; background:#FDE68A;"></span>
                 <span class="dash-sparkline-bar" style="height:12px; background:#FDE68A;"></span>
@@ -275,7 +275,7 @@
               </div>
             </div>
             <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ + S/ 2.10 vs. semana pasada</span>
+              <span id="kpi-ticket-trend">Calculando…</span>
             </div>
           </div>
 
@@ -288,7 +288,7 @@
               <span class="dash-kpi-title">CONVERSIÓN APP → WHATSAPP</span>
             </div>
             <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">42.7%</div>
+              <div class="dash-kpi-value" id="kpi-conv">—</div>
               <div class="dash-sparkline-bars">
                 <span class="dash-sparkline-bar" style="height:6px; background:#DDD6FE;"></span>
                 <span class="dash-sparkline-bar" style="height:10px; background:#DDD6FE;"></span>
@@ -297,7 +297,7 @@
               </div>
             </div>
             <div class="dash-kpi-bottom dash-trend-neutral">
-              <span>132 clics / 56 pedidos</span>
+              <span id="kpi-conv-sub">Calculando…</span>
             </div>
           </div>
 
@@ -310,7 +310,7 @@
               <span class="dash-kpi-title">CLIENTES RECURRENTES</span>
             </div>
             <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">38%</div>
+              <div class="dash-kpi-value" id="kpi-repeat">—</div>
               <div class="dash-sparkline-bars">
                 <span class="dash-sparkline-bar" style="height:8px; background:#A7F3D0;"></span>
                 <span class="dash-sparkline-bar" style="height:11px; background:#A7F3D0;"></span>
@@ -319,7 +319,7 @@
               </div>
             </div>
             <div class="dash-kpi-bottom dash-trend-up">
-              <span>▲ +6.2 pts vs. mes pasado</span>
+              <span id="kpi-repeat-sub">Calculando…</span>
             </div>
           </div>
 
@@ -332,7 +332,7 @@
               <span class="dash-kpi-title">CALIFICACIÓN CLIENTES</span>
             </div>
             <div class="dash-kpi-mid">
-              <div class="dash-kpi-value">4.9 ★</div>
+              <div class="dash-kpi-value" id="kpi-rating">—</div>
               <div class="dash-sparkline-bars">
                 <span class="dash-sparkline-bar" style="height:10px; background:#FDE68A;"></span>
                 <span class="dash-sparkline-bar" style="height:13px; background:#FDE68A;"></span>
@@ -341,7 +341,7 @@
               </div>
             </div>
             <div class="dash-kpi-bottom dash-trend-teal">
-              <span>96% reseñas de 5 estrellas</span>
+              <span id="kpi-rating-sub">Calculando…</span>
             </div>
           </div>
 
@@ -358,7 +358,7 @@
               </div>
               <div>
                 <div class="dash-insight-title" style="color:#EF4444;">Hora pico detectada</div>
-                <div class="dash-insight-value">19:30 - 21:30 hrs</div>
+                <div class="dash-insight-value" id="ins-peak">—</div>
               </div>
             </div>
             <div class="dash-sparkline-bars">
@@ -376,8 +376,8 @@
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14v2H5v-2z"></path></svg>
               </div>
               <div>
-                <div class="dash-insight-title" style="color:#059669;">Producto con mejor margen</div>
-                <div class="dash-insight-value" title="Promo Duo (20 unid. + 2 gaseosas)">Promo Duo (20 unid. + 2 gaseosas)</div>
+                <div class="dash-insight-title" style="color:#059669;">Producto más vendido del mes</div>
+                <div class="dash-insight-value" id="ins-top">—</div>
               </div>
             </div>
             <div class="dash-sparkline-bars">
@@ -395,8 +395,8 @@
               </div>
               <div>
                 <div class="dash-insight-title" style="color:#8B5CF6;">Cupón con mejor rendimiento</div>
-                <div class="dash-insight-value">MARTESRETQ</div>
-                <div class="dash-insight-sub" style="color:#6B7280;">56 pedidos • +28% conversión</div>
+                <div class="dash-insight-value" id="ins-coupon">—</div>
+                <div class="dash-insight-sub" style="color:#6B7280;"><span id="ins-coupon-sub">Calculando…</span></div>
               </div>
             </div>
             <div class="dash-sparkline-bars">
@@ -413,9 +413,9 @@
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
               </div>
               <div>
-                <div class="dash-insight-title" style="color:#4B5563;">Stock crítico</div>
-                <div class="dash-insight-value">Salsa tártara</div>
-                <div class="dash-insight-sub" style="color:#EF4444; font-weight:700;">Solo 6 unidades</div>
+                <div class="dash-insight-title" style="color:#4B5563;">Productos agotados</div>
+                <div class="dash-insight-value" id="ins-stock">—</div>
+                <div class="dash-insight-sub" style="color:#EF4444; font-weight:700;"><span id="ins-stock-sub">Calculando…</span></div>
               </div>
             </div>
             <div style="color:#9CA3AF; font-size:18px; font-weight:700;">›</div>
@@ -430,8 +430,8 @@
           <div class="card" style="position:relative; overflow:hidden;">
             <div class="card-header" style="padding:16px 20px; border-bottom:1px solid #F3F4F6; display:flex; justify-content:space-between; align-items:center;">
               <div>
-                <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Curva de ventas por hora (14:00 - 23:00 hrs)</div>
-                <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;">Hora pico detectada: 19:30 - 21:30 hrs (46% de las órdenes)</div>
+                <div class="card-title" style="font-size:15px; font-weight:800; color:#111827;">Curva de ventas por hora</div>
+                <div class="card-subtitle" style="font-size:12px; color:#6B7280; margin-top:2px;"><span id="curve-subtitle">Calculando…</span></div>
               </div>
               <div class="btn-group" style="display:inline-flex; background:#F3F4F6; border-radius:8px; padding:3px;">
                 <button class="btn btn-sm" id="btn-curve-hoy" onclick="setSalesCurvePeriod('hoy')" style="background:#FFF0F1; color:#EF4444; border:none; border-radius:6px; font-weight:700; font-size:11.5px; padding:5px 14px; cursor:pointer;">Hoy</button>
@@ -463,56 +463,13 @@
               <div class="dash-donut-wrap">
                 <canvas id="chart-channels-mix"></canvas>
                 <div class="dash-donut-center">
-                  <div class="dash-donut-center-num">84</div>
+                  <div class="dash-donut-center-num" id="channels-total">0</div>
                   <div class="dash-donut-center-lbl">órdenes<br>totales</div>
                 </div>
               </div>
 
-              <!-- Leyenda con porcentajes y órdenes -->
-              <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#EF4444; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">WhatsApp Delivery</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">46%</span>
-                    <span style="color:#6B7280; font-size:11px;">39 órdenes</span>
-                  </div>
-                </div>
-
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#10B981; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">Recojo en tienda</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">34%</span>
-                    <span style="color:#6B7280; font-size:11px;">29 órdenes</span>
-                  </div>
-                </div>
-
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#F59E0B; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">Consumo local</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">12%</span>
-                    <span style="color:#6B7280; font-size:11px;">10 órdenes</span>
-                  </div>
-                </div>
-
-                <div class="dash-channel-legend-item">
-                  <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="width:10px; height:10px; border-radius:50%; background:#8B5CF6; flex-shrink:0;"></span>
-                    <span style="font-weight:600; color:#374151;">Promociones/campañas</span>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:10px;">
-                    <span style="font-weight:800; color:#111827;">8%</span>
-                    <span style="color:#6B7280; font-size:11px;">6 órdenes</span>
-                  </div>
-                </div>
+              <!-- Leyenda con porcentajes y órdenes (la llena el dashboard con datos reales) -->
+              <div id="channels-legend" style="flex:1; display:flex; flex-direction:column; gap:8px;">
               </div>
             </div>
           </div>
@@ -556,8 +513,8 @@
                     <span>👨‍🍳</span>
                     <span>TIEMPO EN COCINA</span>
                   </div>
-                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;">8.4 min</div>
-                  <div style="font-size:11px; color:#10B981; font-weight:600; margin-top:2px;">▲ Excelente ritmo</div>
+                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;" id="sla-kitchen">—</div>
+                  <div style="font-size:11px; color:#10B981; font-weight:600; margin-top:2px;"><span id="sla-kitchen-sub">Sin datos</span></div>
                 </div>
 
                 <div style="padding:14px; background:#FAFAFA; border-radius:10px; border:1px solid #E5E7EB;">
@@ -565,8 +522,8 @@
                     <span>🛵</span>
                     <span>TIEMPO EN TRÁNSITO</span>
                   </div>
-                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;">15.8 min</div>
-                  <div style="font-size:11px; color:#3B82F6; font-weight:600; margin-top:2px;">⚡ 4 motos activas</div>
+                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;" id="sla-transit">—</div>
+                  <div style="font-size:11px; color:#3B82F6; font-weight:600; margin-top:2px;"><span id="sla-transit-sub">Sin datos</span></div>
                 </div>
 
                 <div style="padding:14px; background:#FAFAFA; border-radius:10px; border:1px solid #E5E7EB;">
@@ -574,8 +531,8 @@
                     <span>⏱️</span>
                     <span>PROMEDIO TOTAL DE ENTREGA</span>
                   </div>
-                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;">24.2 min</div>
-                  <div style="font-size:11px; color:#4B5563; font-weight:600; margin-top:2px;">▲ vs. 30 min objetivo</div>
+                  <div style="font-family:var(--font-display); font-size:22px; font-weight:800; color:#111827; margin-top:6px;" id="sla-total">—</div>
+                  <div style="font-size:11px; color:#4B5563; font-weight:600; margin-top:2px;"><span id="sla-total-sub">Sin datos</span></div>
                 </div>
 
               </div>
@@ -586,8 +543,8 @@
               <div style="display:flex; align-items:center; gap:12px;">
                 <div style="width:26px; height:26px; border-radius:50%; background:#10B981; color:#FFFFFF; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; flex-shrink:0;">✓</div>
                 <div>
-                  <div style="font-weight:700; font-size:12.5px; color:#065F46;">97.4% de los pedidos llegan calientes y en tiempo.</div>
-                  <div style="font-size:12px; color:#047857;">¡Excelente desempeño hoy!</div>
+                  <div style="font-weight:700; font-size:12.5px; color:#065F46;"><span id="sla-banner">Todavía no se mide el tiempo de cada etapa.</span></div>
+                  <div style="font-size:12px; color:#047857;"><span id="sla-banner-sub">Para medirlo hay que guardar la hora en que cada pedido cambia de estado.</span></div>
                 </div>
               </div>
               <div class="dash-sparkline-bars">
@@ -1735,7 +1692,7 @@
         <div class="cash-layout">
           <form id="users-form" class="history-card cash-form"><h2>Agregar usuario de caja</h2><p>Crea una cuenta para cada persona o punto de caja.</p>
             <label>Nombre<input id="user-name" required maxlength="60" placeholder="Caja de mostrador"></label>
-            <label>Usuario<input id="user-username" required minlength="3" maxlength="32" pattern="[a-z0-9][a-z0-9._-]{2,31}" autocomplete="off" placeholder="caja2"></label>
+            <label>Usuario<input id="user-username" required minlength="3" maxlength="32" pattern="[a-z0-9][a-z0-9._\-]{2,31}" autocomplete="off" placeholder="caja2"></label>
             <label>Contraseña<input id="user-password" type="password" required minlength="4" maxlength="128" autocomplete="new-password"></label>
             <p class="form-feedback" id="users-feedback" role="status"></p><button class="btn btn-primary" type="submit">Crear usuario de caja</button>
           </form>
@@ -1927,30 +1884,30 @@
 
 
   <!-- Modular Data Stores -->
-  <script src="js/admin/data/catalog.data.js?v=crud-servidor1"></script>
-  <script src="js/admin/data/coupons.data.js?v=crud-servidor1"></script>
-  <script src="js/admin/data/orders.data.js?v=crud-servidor1"></script>
-  <script src="js/admin/data/analytics.data.js?v=crud-servidor1"></script>
+  <script src="js/admin/data/catalog.data.js?v=crud-servidor4"></script>
+  <script src="js/admin/data/coupons.data.js?v=crud-servidor4"></script>
+  <script src="js/admin/data/orders.data.js?v=crud-servidor4"></script>
+  <script src="js/admin/data/analytics.data.js?v=crud-servidor4"></script>
 
   <!-- Services -->
-  <script src="js/admin/services/audio.service.js?v=crud-servidor1"></script>
-  <script src="js/admin/services/toast.service.js?v=crud-servidor1"></script>
-  <script src="js/admin/services/sync.service.js?v=crud-servidor1"></script>
+  <script src="js/admin/services/audio.service.js?v=crud-servidor4"></script>
+  <script src="js/admin/services/toast.service.js?v=crud-servidor4"></script>
+  <script src="js/admin/services/sync.service.js?v=crud-servidor4"></script>
 
   <!-- Feature Modules -->
-  <script src="js/admin/modules/dashboard.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/kanban.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/catalog.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/promos.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/customers.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/surveys.module.js?v=crud-servidor1"></script>
+  <script src="js/admin/modules/dashboard.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/kanban.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/catalog.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/promos.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/customers.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/surveys.module.js?v=crud-servidor4"></script>
 
   <!-- App Bootstrap & Orchestration -->
-  <script src="js/admin/modules/history.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/services/auth.service.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/users.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/cash.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/modules/reports.module.js?v=crud-servidor1"></script>
-  <script src="js/admin/app.js?v=crud-servidor1"></script>
+  <script src="js/admin/modules/history.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/services/auth.service.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/users.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/cash.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/reports.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/app.js?v=crud-servidor4"></script>
 </body>
 </html>

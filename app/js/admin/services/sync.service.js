@@ -95,6 +95,7 @@
           if (hasDifference) {
             window.ORDERS = remoteOrders;
             if (window.saveOrdersData) window.saveOrdersData();
+            if (window.refreshDashboard) window.refreshDashboard();
             if (window.renderKanban) {
               if (window.requestAnimationFrame) {
                 window.requestAnimationFrame(() => window.renderKanban());

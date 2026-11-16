@@ -62,6 +62,7 @@ function initNavigation() {
       if (tabId === 'tab-promos' && window.loadServerCoupons) window.loadServerCoupons();
       if (tabId === 'tab-dashboard') {
         setTimeout(() => {
+          if (window.renderDashboardKpis) window.renderDashboardKpis();
           if (window.initCharts) window.initCharts();
           if (window.renderTopProducts) window.renderTopProducts('hoy');
           if (window.renderDashboardFeedback) window.renderDashboardFeedback();
@@ -106,6 +107,7 @@ window.startAdminApp = function() {
   if (window.renderTopProducts) window.renderTopProducts('hoy');
   if (window.renderDashboardFeedback) window.renderDashboardFeedback();
   if (window.renderSurveys) window.renderSurveys();
+  if (window.renderDashboardKpis) window.renderDashboardKpis();
   if (window.initCharts) window.initCharts();
 };
 window.addEventListener('DOMContentLoaded', () => window.initAdminAuth());
