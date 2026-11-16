@@ -59,6 +59,7 @@ function initNavigation() {
       if (tabId === 'tab-cash' && window.loadCashCatalog) window.loadCashCatalog();
       if (tabId === 'tab-users' && window.loadUsers) window.loadUsers();
       if (tabId === 'tab-reports' && window.loadReports) window.loadReports();
+      if (tabId === 'tab-promos' && window.loadServerCoupons) window.loadServerCoupons();
       if (tabId === 'tab-dashboard') {
         setTimeout(() => {
           if (window.initCharts) window.initCharts();
@@ -100,6 +101,7 @@ window.startAdminApp = function() {
   if (window.renderKanban) window.renderKanban();
   if (window.renderCatalog) window.renderCatalog();
   if (window.renderCoupons) window.renderCoupons();
+  if (window.loadServerCoupons) window.loadServerCoupons();
   if (window.renderWeekPromos) window.renderWeekPromos();
   if (window.renderTopProducts) window.renderTopProducts('hoy');
   if (window.renderDashboardFeedback) window.renderDashboardFeedback();

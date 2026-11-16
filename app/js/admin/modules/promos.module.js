@@ -59,7 +59,7 @@
             <td><span style="font-size:11.5px;color:#4B5563;white-space:nowrap;">${escapeHtml(c.validity)}</span></td>
             <td><span style="font-size:11.5px;color:#4B5563;white-space:nowrap;">${escapeHtml(c.schedule)}</span></td>
             <td><span style="font-size:11.5px;font-weight:600;color:#4B5563;">${escapeHtml(c.segment)}</span></td>
-            <td><span style="font-size:11.5px;font-weight:700;color:#111827;">${Number(c.uses || 0)} / ${Number(c.limit || 0)}</span></td>
+            <td><span style="font-size:11.5px;font-weight:700;color:#111827;" title="Pedidos de la web que usaron el cupón">${Number(c.uses || 0)}</span></td>
             <td>${pushBadge}</td>
             <td style="text-align:right;">
               <div class="co-table-actions">
@@ -84,10 +84,10 @@
         `;
       }).join('');
 
-      // Update KPI Cards Counts (exact baseline match from reference image)
-      const activeCount = 12 + (DETAILED_COUPONS.filter(c => c.status === 'Activo').length - 3);
-      const scheduledCount = 3 + (DETAILED_COUPONS.filter(c => c.status === 'Programado').length - 1);
-      const totalCreated = 28 + (DETAILED_COUPONS.length - 5);
+      // Contadores reales de los cupones guardados en el servidor
+      const activeCount = DETAILED_COUPONS.filter(c => c.status === 'Activo').length;
+      const scheduledCount = DETAILED_COUPONS.filter(c => c.status === 'Programado').length;
+      const totalCreated = DETAILED_COUPONS.length;
       const activeEl = document.getElementById('kpi-active-count');
       const activeSub = document.getElementById('kpi-active-sub');
       const schedEl = document.getElementById('kpi-scheduled-count');
@@ -215,109 +215,129 @@
       showToast(`🎲 Código generado: ${code}`);
     }
 
+    // ---- Cupones guardados en el servidor ----
+    // La tienda aplica código, tipo (monto fijo o porcentaje), valor, pedido mínimo, estado y fechas.
+    // Segmento, horario, límite de usos y push se muestran en el formulario pero la tienda no los aplica.
+
+    const toIsoDate = text => {
+      const value = String(text || '').trim();
+      if (!value) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+      const m = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (!m) throw new Error(`La fecha "${value}" debe ser DD/MM/AAAA.`);
+      return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    };
+    const toDmy = iso => iso ? iso.split('-').reverse().join('/') : '';
+    const amount = text => {
+      const n = parseFloat(String(text || '').replace(',', '.').replace(/[^0-9.]/g, ''));
+      return Number.isFinite(n) ? n : NaN;
+    };
+    const peruToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
+    function couponUses(code) {
+      const mark = `Cupón ${code}`;
+      return (window.ORDERS || []).filter(o => o.status !== 'cancelled' && String(o.notes || '').split(' · ').includes(mark)).length;
+    }
+
+    // Fila de la tabla a partir del cupón del servidor
+    function toRow(c) {
+      const today = peruToday();
+      let status = c.active ? 'Activo' : 'Pausado';
+      if (c.active && c.startDate && today < c.startDate) status = 'Programado';
+      if (c.endDate && today > c.endDate) status = 'Vencido';
+      return {
+        code: c.code, name: c.name, status, server: c,
+        validity: `${toDmy(c.startDate) || 'Desde hoy'} - ${toDmy(c.endDate) || 'Sin fin'}`,
+        schedule: 'Todo el día', segment: 'Todos', uses: couponUses(c.code), push: false,
+        discountVal: c.type === 'percent' ? `${c.value}%` : `S/ ${Number(c.value).toFixed(2)}`,
+        benefitType: c.type, minOrder: `S/ ${Number(c.minOrder || 0).toFixed(2)}`,
+        startDate: toDmy(c.startDate), endDate: toDmy(c.endDate)
+      };
+    }
+
+    let serverCoupons = [];
+    function showServerCoupons(list) {
+      serverCoupons = Array.isArray(list) ? list : [];
+      DETAILED_COUPONS = serverCoupons.map(toRow);
+      window.DETAILED_COUPONS = DETAILED_COUPONS;
+      renderCoupons(document.getElementById('co-search-table')?.value || '');
+    }
+
+    async function loadServerCoupons() {
+      if (window.currentUser?.role !== 'admin') return;
+      try {
+        const res = await fetch('/api/config', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'No se pudieron cargar los cupones.');
+        showServerCoupons(data.coupons || []);
+      } catch (error) {
+        showToast(`⚠️ ${error.message}`);
+      }
+    }
+
+    // Guarda la lista completa; el panel solo cambia si el servidor la aceptó
+    async function saveServerCoupons(list, okMessage) {
+      let res, data = {};
+      try {
+        res = await fetch('/api/config', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ coupons: list }) });
+        try { data = await res.json(); } catch (e) {}
+      } catch (e) {
+        showToast('⚠️ No hay conexión con el servidor. El cupón no se guardó.');
+        return false;
+      }
+      if (res.status === 401 && window.lockAdminApp) window.lockAdminApp();
+      if (!res.ok) { showToast(`⚠️ ${data.error || 'El servidor no guardó el cupón.'}`); return false; }
+      showServerCoupons(data.config?.coupons || list);
+      if (okMessage) showToast(okMessage);
+      return true;
+    }
+
+    // Lee el formulario y arma el cupón tal como lo guarda el servidor
+    function couponFromForm(statusOverride) {
+      const type = document.getElementById('form-benefit-type').value;
+      if (!['fixed', 'percent'].includes(type)) throw new Error('Por ahora la tienda solo aplica cupones de monto fijo o porcentaje.');
+      const value = amount(document.getElementById('form-discount-val').value);
+      if (!(value > 0)) throw new Error('Escribe el valor del descuento, por ejemplo S/ 5.00 o 10%.');
+      const status = statusOverride || document.getElementById('form-status').value;
+      return {
+        code: document.getElementById('form-code').value.trim().toUpperCase(),
+        name: document.getElementById('form-name').value.trim(),
+        type, value,
+        minOrder: amount(document.getElementById('form-min-order').value) || 0,
+        active: status === 'Activo' || status === 'Programado',
+        startDate: toIsoDate(document.getElementById('form-start-date').value),
+        endDate: toIsoDate(document.getElementById('form-end-date').value)
+      };
+    }
+
+    async function saveCouponFromForm(statusOverride) {
+      let coupon;
+      try { coupon = couponFromForm(statusOverride); } catch (error) { showToast(`⚠️ ${error.message}`); return; }
+      const editing = editingCouponCode;
+      const others = serverCoupons.filter(c => c.code !== editing);
+      if (others.some(c => c.code === coupon.code)) { showToast(`⚠️ Ya existe un cupón con el código ${coupon.code}.`); return; }
+      const list = editing
+        ? serverCoupons.map(c => (c.code === editing ? coupon : c))
+        : [coupon, ...serverCoupons];
+      const saved = await saveServerCoupons(list, editing ? `✅ Cupón "${coupon.code}" actualizado.` : `⚡ Cupón "${coupon.code}" creado.`);
+      if (!saved) return;
+      editingCouponCode = null;
+      document.getElementById('form-coupon-title').textContent = 'Crear / Editar cupón';
+    }
+
     function handleFormSubmit(e) {
       e.preventDefault();
-      const code = document.getElementById('form-code').value.trim().toUpperCase();
-      const name = document.getElementById('form-name').value.trim();
-      const discountVal = document.getElementById('form-discount-val').value.trim();
-      const minOrder = document.getElementById('form-min-order').value.trim();
-      const totalLimit = parseInt(document.getElementById('form-total-limit').value) || 999;
-      const startDate = document.getElementById('form-start-date').value.trim();
-      const endDate = document.getElementById('form-end-date').value.trim();
-      const startTime = document.getElementById('form-start-time').value.trim();
-      const endTime = document.getElementById('form-end-time').value.trim();
-      const status = document.getElementById('form-status').value;
-      const push = document.getElementById('form-send-push').checked;
-
-      if (editingCouponCode) {
-        const item = DETAILED_COUPONS.find(c => c.code === editingCouponCode);
-        if (item) {
-          item.code = code;
-          item.name = name;
-          item.discountVal = discountVal;
-          item.minOrder = minOrder;
-          item.totalLimit = totalLimit;
-          item.startDate = startDate;
-          item.endDate = endDate;
-          item.startTime = startTime;
-          item.endTime = endTime;
-          item.validity = `${startDate} - ${endDate}`;
-          item.schedule = `${startTime} - ${endTime}`;
-          item.status = status;
-          item.segment = currentAudience;
-          item.push = push;
-        }
-        editingCouponCode = null;
-        document.getElementById('form-coupon-title').textContent = 'Crear / Editar cupón';
-        showToast(`✅ Cupón "${code}" actualizado y publicado`);
-      } else {
-        DETAILED_COUPONS.unshift({
-          code,
-          name,
-          status,
-          validity: `${startDate} - ${endDate}`,
-          schedule: `${startTime} - ${endTime}`,
-          segment: currentAudience,
-          uses: 0,
-          limit: totalLimit,
-          push,
-          discountVal,
-          benefitType: document.getElementById('form-benefit-type').value,
-          minOrder,
-          startDate,
-          endDate,
-          startTime,
-          endTime,
-          badge: code
-        });
-        showToast(`⚡ ¡Cupón "${code}" creado y publicado exitosamente!`);
-      }
-
-      renderCoupons();
+      saveCouponFromForm();
     }
 
     function handleSaveDraft() {
-      const code = document.getElementById('form-code').value.trim().toUpperCase() || 'BORRADOR_' + Math.floor(Math.random()*100);
-      const name = document.getElementById('form-name').value.trim() || 'Borrador sin título';
-      DETAILED_COUPONS.unshift({
-        code,
-        name,
-        status: 'Borrador',
-        validity: 'Borrador',
-        schedule: 'Sin horario',
-        segment: currentAudience,
-        uses: 0,
-        limit: 100,
-        push: false,
-        discountVal: document.getElementById('form-discount-val').value.trim() || 'S/ 5.00',
-        benefitType: document.getElementById('form-benefit-type').value,
-        minOrder: document.getElementById('form-min-order').value.trim() || 'S/ 20.00',
-        badge: code
-      });
-      renderCoupons();
-      showToast(`📋 Cupón "${code}" guardado como borrador`);
+      saveCouponFromForm('Borrador');
     }
 
     function handleScheduleCoupon() {
-      const code = document.getElementById('form-code').value.trim().toUpperCase() || 'PROG_' + Math.floor(Math.random()*100);
-      const name = document.getElementById('form-name').value.trim() || 'Promoción programada';
-      DETAILED_COUPONS.unshift({
-        code,
-        name,
-        status: 'Programado',
-        validity: document.getElementById('form-start-date').value + ' - ' + document.getElementById('form-end-date').value,
-        schedule: document.getElementById('form-start-time').value + ' - ' + document.getElementById('form-end-time').value,
-        segment: currentAudience,
-        uses: 0,
-        limit: parseInt(document.getElementById('form-total-limit').value) || 999,
-        push: document.getElementById('form-send-push').checked,
-        discountVal: document.getElementById('form-discount-val').value.trim() || 'S/ 5.00',
-        benefitType: document.getElementById('form-benefit-type').value,
-        minOrder: document.getElementById('form-min-order').value.trim() || 'S/ 20.00',
-        badge: code
-      });
-      renderCoupons();
-      showToast(`🚀 Cupón "${code}" programado para activación futura`);
+      const start = document.getElementById('form-start-date').value.trim();
+      if (!start) { showToast('⚠️ Para programar el cupón indica la fecha de inicio.'); return; }
+      saveCouponFromForm('Programado');
     }
 
     function editCoupon(rawCode) {
@@ -362,32 +382,27 @@
 
     function toggleCouponStatus(rawCode) {
       const code = decodeURIComponent(rawCode || '');
-      const c = DETAILED_COUPONS.find(item => item.code === code);
-      if (!c) return;
-      c.status = c.status === 'Activo' ? 'Pausado' : 'Activo';
-      renderCoupons();
-      showToast(`Estado de "${code}" cambiado a ${c.status}`);
+      const current = serverCoupons.find(c => c.code === code);
+      if (!current) return;
+      const active = !current.active;
+      saveServerCoupons(serverCoupons.map(c => (c.code === code ? { ...c, active } : c)),
+        `Cupón "${code}" ${active ? 'reactivado' : 'pausado'}.`);
     }
 
-    function duplicateCoupon(rawCode) {
+    async function duplicateCoupon(rawCode) {
       const code = decodeURIComponent(rawCode || '');
-      const c = DETAILED_COUPONS.find(item => item.code === code);
-      if (!c) return;
-      const newCode = `${c.code}_COPIA`;
-      const copy = { ...c, code: newCode, name: `${c.name} (Copia)`, uses: 0, status: 'Borrador' };
-      DETAILED_COUPONS.unshift(copy);
-      renderCoupons();
-      editCoupon(newCode);
-      showToast(`📋 Cupón duplicado como "${newCode}"`);
+      const current = serverCoupons.find(c => c.code === code);
+      if (!current) return;
+      let copyCode = `${code.slice(0, 24)}_COPIA`;
+      for (let n = 2; serverCoupons.some(c => c.code === copyCode); n++) copyCode = `${code.slice(0, 22)}_COPIA${n}`;
+      const copy = { ...current, code: copyCode, name: `${current.name} (copia)`.slice(0, 80), active: false };
+      if (await saveServerCoupons([copy, ...serverCoupons], `📋 Cupón duplicado como "${copyCode}" (pausado).`)) editCoupon(encodeURIComponent(copyCode));
     }
 
     function deleteCoupon(rawCode) {
       const code = decodeURIComponent(rawCode || '');
-      if (confirm(`¿Estás seguro de eliminar el cupón "${code}"? Esta acción no se puede deshacer.`)) {
-        DETAILED_COUPONS = DETAILED_COUPONS.filter(c => c.code !== code);
-        renderCoupons();
-        showToast(`🗑️ Cupón "${code}" eliminado.`);
-      }
+      if (!confirm(`¿Estás seguro de eliminar el cupón "${code}"? Esta acción no se puede deshacer.`)) return;
+      saveServerCoupons(serverCoupons.filter(c => c.code !== code), `🗑️ Cupón "${code}" eliminado.`);
     }
 
     let couponsFilterDebounceTimer = null;
@@ -544,6 +559,7 @@
     // Push Simulator Logic
 
 window.renderCoupons = renderCoupons;
+window.loadServerCoupons = loadServerCoupons;
 window.renderWeekPromos = renderWeekPromos;
 window.updateLivePreview = updateLivePreview;
 window.handleBenefitTypeChange = handleBenefitTypeChange;

@@ -197,12 +197,13 @@ try {
 }
 
 let COUPONS = (Array.isArray(savedCoupons) && savedCoupons.length > 0) ? savedCoupons : DEFAULT_COUPONS;
-let DETAILED_COUPONS = (Array.isArray(savedDetailedCoupons) && savedDetailedCoupons.length > 0) ? savedDetailedCoupons : DEFAULT_DETAILED_COUPONS;
+// Los cupones reales los carga el panel desde el servidor (loadServerCoupons); no hay ejemplos ni copia local
+let DETAILED_COUPONS = [];
+try { localStorage.removeItem('RTQ_ADMIN_DETAILED_COUPONS'); } catch (e) {}
 
 function saveCouponsData() {
   try {
     localStorage.setItem('RTQ_ADMIN_COUPONS', JSON.stringify(COUPONS));
-    localStorage.setItem('RTQ_ADMIN_DETAILED_COUPONS', JSON.stringify(DETAILED_COUPONS));
   } catch (e) {
     console.error('[Coupons Data] Error al guardar en localStorage:', e);
   }
