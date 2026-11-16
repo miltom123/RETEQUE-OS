@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { staffChanges } = require('./backend/staff-rules');
 
 const normalizeUsername = value => String(value || '').trim().toLowerCase();
 function publicUser(user) {
@@ -42,6 +43,17 @@ class UsersRepository {
     const user = { username, name: name.trim(), role, active: true, salt, passwordHash: passwordHash(password, salt), createdAt: new Date().toISOString() };
     this.users.push(user);
     try { this.save(); } catch (e) { this.users.pop(); throw e; }
+    return publicUser(user);
+  }
+  /** Cambia nombre y/o contraseña. Sirve para cualquier cuenta, también la del administrador. */
+  update(username, changes) {
+    const user = this.find(username);
+    if (!user) throw new Error('Ese usuario no existe.');
+    const { name, password } = staffChanges(changes);
+    const previous = { name: user.name, salt: user.salt, passwordHash: user.passwordHash };
+    if (name !== undefined) user.name = name;
+    if (password !== undefined) { user.salt = crypto.randomBytes(16).toString('hex'); user.passwordHash = passwordHash(password, user.salt); }
+    try { this.save(); } catch (e) { Object.assign(user, previous); throw e; }
     return publicUser(user);
   }
   setActive(username, active) {

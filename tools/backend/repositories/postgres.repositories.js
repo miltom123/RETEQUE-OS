@@ -5,6 +5,7 @@ const { normalizeProduct } = require('./catalog.repository');
 const { cleanId } = require('../sanitize');
 const { ORDER_STATUSES } = require('../order-status');
 const { publicUser } = require('../../users.repository');
+const { staffChanges } = require('../staff-rules');
 
 // Mismos métodos públicos de los repositorios JSON; en PostgreSQL devuelven promesas.
 class OrderRepository {
@@ -67,6 +68,18 @@ class UsersRepository {
     const user = { username, name: name.trim(), role, active: true, salt,
       passwordHash: crypto.scryptSync(password, salt, 64).toString('hex'), createdAt: new Date().toISOString() };
     return publicUser(await this.db.operation('users.add', { user }));
+  }
+  async update(username, changes) {
+    username = String(username || '').trim().toLowerCase();
+    if (!(await this.find(username))) throw new Error('Ese usuario no existe.');
+    const { name, password } = staffChanges(changes);
+    const patch = {};
+    if (name !== undefined) patch.name = name;
+    if (password !== undefined) {
+      patch.salt = crypto.randomBytes(16).toString('hex');
+      patch.passwordHash = crypto.scryptSync(password, patch.salt, 64).toString('hex');
+    }
+    return publicUser(await this.db.operation('users.update', { username, patch }));
   }
   async setActive(username, active) {
     if (typeof active !== 'boolean') throw new Error('Estado inválido.');

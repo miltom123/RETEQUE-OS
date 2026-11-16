@@ -108,12 +108,27 @@ async function run() {
   assert.equal((await login({username:'caja_test',password:'5678'})).status,401);
   assert.equal((await mutate('/api/users/administrador', adminHeaders, {active:false}, 'PATCH')).status,400);
   assert.equal((await mutate('/api/users/caja_test', adminHeaders, {active:true}, 'PATCH')).status,200);
+  // Editar nombre y contraseña: la contraseña nueva cierra las sesiones abiertas y la anterior deja de servir
+  const reLogin = await login({username:'caja_test',password:'5678'});
+  const reHeaders = {Cookie:reLogin.cookie.split(';')[0]};
+  const renamed = await mutate('/api/users/caja_test', adminHeaders, {name:'Caja de la tarde'}, 'PATCH');
+  assert.equal(renamed.status,200); assert.equal(renamed.body.user.name,'Caja de la tarde');
+  assert.equal((await request('/api/pedidos',{headers:reHeaders})).status,200,'Cambiar el nombre no cierra la sesión');
+  assert.equal((await mutate('/api/users/caja_test', adminHeaders, {password:'12'}, 'PATCH')).status,400);
+  assert.equal((await mutate('/api/users/caja_test', adminHeaders, {}, 'PATCH')).status,400);
+  assert.equal((await mutate('/api/users/no-existe', adminHeaders, {name:'X'}, 'PATCH')).status,400);
+  assert.equal((await mutate('/api/users/caja_test', cashHeaders, {password:'otra-clave'}, 'PATCH')).status,403,'Caja no cambia contraseñas');
+  assert.equal((await mutate('/api/users/caja_test', adminHeaders, {password:'nueva-clave'}, 'PATCH')).status,200);
+  assert.equal((await request('/api/pedidos',{headers:reHeaders})).status,401,'La contraseña nueva cierra la sesión abierta');
+  assert.equal((await login({username:'caja_test',password:'5678'})).status,401);
+  assert.equal((await login({username:'caja_test',password:'nueva-clave'})).status,200);
+  assert.ok(!JSON.stringify(await readStored(path.join(tempRoot,'data'), 'users')).includes('nueva-clave'),'La contraseña no se guarda en claro');
   const stopped = new Promise(resolve => server.once('exit', resolve)); server.kill(); await stopped;
   server = spawn(process.execPath, [path.join(tempRoot, 'tools', 'server.js'), '--port', '3099'], { env, stdio: 'ignore' });
   for (let attempt=0; attempt<30; attempt++) { try { await request('/api/auth/verify'); break; } catch(e) { await new Promise(resolve => setTimeout(resolve,100)); } }
-  assert.equal((await login({username:'caja_test',password:'5678'})).status,200,'Las nuevas cuentas sobreviven al reinicio');
+  assert.equal((await login({username:'caja_test',password:'nueva-clave'})).status,200,'Las nuevas cuentas y sus cambios sobreviven al reinicio');
   assert.equal((await login({username:'atención',password:'1234'})).status,401);
-  console.log('Acceso y caja: permisos, aislamiento del historial, precios, pagos, altas, bajas y persistencia: PASS');
+  console.log('Acceso y caja: permisos, aislamiento del historial, precios, pagos, altas, bajas, edición de cuentas y persistencia: PASS');
 }
 run().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (server) { server.kill(); await new Promise(resolve => server.once('exit', resolve)); }
