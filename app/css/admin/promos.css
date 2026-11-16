@@ -479,6 +479,11 @@
     .co-middle-grid {
       display: grid;
       grid-template-columns: 47fr 23fr 30fr;
+    }
+    .co-middle-grid.co-middle-grid--two {
+      grid-template-columns: 62fr 38fr;
+    }
+    .co-middle-grid {
       gap: 18px;
       margin-bottom: 22px;
       align-items: stretch;

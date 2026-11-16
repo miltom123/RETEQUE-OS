@@ -12,12 +12,14 @@
         .replace(/'/g, '&#39;');
     }
 
-    function renderCoupons(filterText = '') {
+    // only: filtro opcional de la tabla; los contadores siempre usan todos los cupones
+    function renderCoupons(filterText = '', only = null) {
       const tbody = document.getElementById('co-table-body');
       if (!tbody) return;
       if (window.saveCouponsData) window.saveCouponsData();
 
       const filtered = DETAILED_COUPONS.filter(c => {
+        if (only && !only(c)) return false;
         if (!filterText) return true;
         const q = filterText.toLowerCase();
         return c.code.toLowerCase().includes(q) ||
@@ -94,6 +96,13 @@
       if (activeEl) activeEl.textContent = activeCount;
       if (activeSub) activeSub.textContent = `de ${totalCreated} cupones creados`;
       if (schedEl) schedEl.textContent = scheduledCount;
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const inThree = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + 3 * 86400000));
+      const expiring = DETAILED_COUPONS.filter(c => c.server && c.server.active && c.server.endDate && c.server.endDate >= today && c.server.endDate <= inThree).length;
+      const expEl = document.getElementById('kpi-expiring-count');
+      if (expEl) expEl.textContent = expiring;
+      const usesEl = document.getElementById('kpi-uses-month');
+      if (usesEl) usesEl.textContent = DETAILED_COUPONS.reduce((sum, c) => sum + Number(c.uses || 0), 0);
     }
 
     // Render Weekly Promo Scheduler
@@ -425,11 +434,14 @@
       showToast(`Filtrando cupones con estado: ${status}`);
     }
 
+    // Muestra solo los cupones activos que vencen en los próximos 3 días
     function filterTableExpiring() {
-      document.getElementById('co-search-table').value = 'Oct';
-      renderCoupons('Oct');
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+      const inThree = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + 3 * 86400000));
+      document.getElementById('co-search-table').value = '';
+      renderCoupons('', c => c.server && c.server.active && c.server.endDate && c.server.endDate >= today && c.server.endDate <= inThree);
       document.getElementById('co-table-body').scrollIntoView({ behavior: 'smooth' });
-      showToast('Mostrando cupones que expiran este mes');
+      showToast('Mostrando cupones que vencen en los próximos 3 días');
     }
 
     function applyRuleTemplate(template) {

@@ -14,10 +14,10 @@
   <link rel="icon" type="image/png" href="assets/logo-retequenos.png">
   
   <!-- Master Admin Stylesheet (Modular Architecture) -->
-  <link rel="stylesheet" href="css/admin.css?v=crud-servidor4">
+  <link rel="stylesheet" href="css/admin.css?v=crud-servidor5">
   
   <!-- Chart.js (Local Vendor + CDN Fallback) -->
-  <script src="js/admin/vendor/chart.umd.min.js?v=crud-servidor4"></script>
+  <script src="js/admin/vendor/chart.umd.min.js?v=crud-servidor5"></script>
   <script>
     if (typeof Chart === 'undefined') {
       document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"><\/script>');
@@ -94,7 +94,7 @@
         <button class="nav-btn" data-tab="tab-promos">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
           <span>Cupones & Ofertas</span>
-          <span class="nav-badge" style="background:#F59E0B; color:#1F2937; font-weight:800; font-size:10px; padding:2px 7px; border-radius:10px;">Martes</span>
+          
         </button>
       </li>
       <li class="nav-item">
@@ -557,8 +557,8 @@
 
         </div>
 
-        <!-- Fila 5: ¿Cómo nos conocieron? & Reseñas y Recomendaciones Recientes -->
-        <div class="dash-grid-38-62">
+        <!-- Fila 5: ¿Cómo nos conocieron? & Reseñas. Oculta hasta que las encuestas se guarden en el servidor -->
+        <div class="dash-grid-38-62" hidden>
 
           <!-- ¿Cómo nos conocieron? -->
           <div class="card" style="padding:16px 20px;">
@@ -934,8 +934,7 @@
             <div class="co-kpi-body">
               <div class="co-kpi-label">Cupones activos</div>
               <div class="co-kpi-value-row">
-                <span class="co-kpi-value" id="kpi-active-count">12</span>
-                <span class="co-kpi-badge">↑ +20%</span>
+                <span class="co-kpi-value" id="kpi-active-count">0</span>
               </div>
               <div class="co-kpi-sub" id="kpi-active-sub">de 28 cupones creados</div>
             </div>
@@ -950,7 +949,7 @@
             <div class="co-kpi-body">
               <div class="co-kpi-label">Programados hoy</div>
               <div class="co-kpi-value-row">
-                <span class="co-kpi-value" id="kpi-scheduled-count">3</span>
+                <span class="co-kpi-value" id="kpi-scheduled-count">0</span>
               </div>
               <div class="co-kpi-sub">Se activarán automáticamente</div>
             </div>
@@ -965,7 +964,7 @@
             <div class="co-kpi-body">
               <div class="co-kpi-label">Próximos a vencer</div>
               <div class="co-kpi-value-row">
-                <span class="co-kpi-value" id="kpi-expiring-count">2</span>
+                <span class="co-kpi-value" id="kpi-expiring-count">0</span>
               </div>
               <div class="co-kpi-sub">Expiran en los próximos 3 días</div>
             </div>
@@ -973,24 +972,23 @@
           </div>
 
           <!-- Card 4: Tasa de canje -->
-          <div class="co-kpi-card" onclick="document.getElementById('section-performance').scrollIntoView({behavior:'smooth'})" title="Ver análisis de canjes">
+          <div class="co-kpi-card" title="Pedidos de la web que usaron un cupón este mes">
             <div class="co-kpi-icon-wrap" style="background:#FCE7F3; color:#EC4899;">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
             </div>
             <div class="co-kpi-body">
-              <div class="co-kpi-label">Tasa de canje</div>
+              <div class="co-kpi-label">Usos del mes</div>
               <div class="co-kpi-value-row">
-                <span class="co-kpi-value">28.5%</span>
-                <span class="co-kpi-badge">↑ +5.2%</span>
+                <span class="co-kpi-value" id="kpi-uses-month">0</span>
               </div>
-              <div class="co-kpi-sub">1,429 de 5,020 usos</div>
+              <div class="co-kpi-sub">Usos de cupones este mes</div>
             </div>
             <div class="co-kpi-arrow">›</div>
           </div>
         </div>
 
-        <!-- Planificador Semanal de Ofertas -->
-        <div class="co-planner-card">
+        <!-- Planificador Semanal de Ofertas. Oculto: todavía no guarda ni activa ofertas -->
+        <div class="co-planner-card" hidden>
           <div class="co-planner-header">
             <div class="co-planner-title-wrap">
               <div class="co-planner-icon">
@@ -1023,7 +1021,7 @@
         </div>
 
         <!-- Middle 3-Column Layout: Form (47%) + Phone Preview (23%) + Right Stack (30%) -->
-        <div class="co-middle-grid">
+        <div class="co-middle-grid co-middle-grid--two">
           
           <!-- COL 1: Crear / Editar cupón -->
           <div class="co-card" id="form-card-container">
@@ -1248,15 +1246,15 @@
                     <span id="preview-expires">📅 Válido hasta 30 oct 2025</span>
                     <span id="preview-min">🛒 Pedido mínimo: S/ 20.00</span>
                   </div>
-                  <button class="co-ticket-btn" type="button" onclick="showToast('Simulando canje de cupón en la App...')">Usar cupón</button>
+                  <button class="co-ticket-btn" type="button" tabindex="-1" aria-hidden="true">Usar cupón</button>
                   <div class="co-ticket-terms">Ver términos y condiciones</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- COL 3: Right Stacked Column (Rendimiento + Automatizaciones) -->
-          <div class="co-right-stack">
+          <!-- COL 3: Rendimiento + Automatizaciones. Oculta: muestra cifras de ejemplo -->
+          <div class="co-right-stack" hidden>
             
             <!-- Card B: Rendimiento de cupones -->
             <div class="co-card" id="section-performance">
@@ -1884,30 +1882,30 @@
 
 
   <!-- Modular Data Stores -->
-  <script src="js/admin/data/catalog.data.js?v=crud-servidor4"></script>
-  <script src="js/admin/data/coupons.data.js?v=crud-servidor4"></script>
-  <script src="js/admin/data/orders.data.js?v=crud-servidor4"></script>
-  <script src="js/admin/data/analytics.data.js?v=crud-servidor4"></script>
+  <script src="js/admin/data/catalog.data.js?v=crud-servidor5"></script>
+  <script src="js/admin/data/coupons.data.js?v=crud-servidor5"></script>
+  <script src="js/admin/data/orders.data.js?v=crud-servidor5"></script>
+  <script src="js/admin/data/analytics.data.js?v=crud-servidor5"></script>
 
   <!-- Services -->
-  <script src="js/admin/services/audio.service.js?v=crud-servidor4"></script>
-  <script src="js/admin/services/toast.service.js?v=crud-servidor4"></script>
-  <script src="js/admin/services/sync.service.js?v=crud-servidor4"></script>
+  <script src="js/admin/services/audio.service.js?v=crud-servidor5"></script>
+  <script src="js/admin/services/toast.service.js?v=crud-servidor5"></script>
+  <script src="js/admin/services/sync.service.js?v=crud-servidor5"></script>
 
   <!-- Feature Modules -->
-  <script src="js/admin/modules/dashboard.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/kanban.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/catalog.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/promos.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/customers.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/surveys.module.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/dashboard.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/kanban.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/catalog.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/promos.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/customers.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/surveys.module.js?v=crud-servidor5"></script>
 
   <!-- App Bootstrap & Orchestration -->
-  <script src="js/admin/modules/history.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/services/auth.service.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/users.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/cash.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/modules/reports.module.js?v=crud-servidor4"></script>
-  <script src="js/admin/app.js?v=crud-servidor4"></script>
+  <script src="js/admin/modules/history.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/services/auth.service.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/users.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/cash.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/modules/reports.module.js?v=crud-servidor5"></script>
+  <script src="js/admin/app.js?v=crud-servidor5"></script>
 </body>
 </html>

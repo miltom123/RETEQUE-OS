@@ -2,7 +2,9 @@
   'use strict';
   window.adminAuthenticated = false;
   window.currentUser = null;
-  window.canAccessTab = tab => window.currentUser && (window.currentUser.role === 'admin' || ['tab-cash', 'tab-kanban'].includes(tab));
+  // Push y encuestas son de demostración (no guardan en el servidor): ocultas hasta que funcionen
+  const HIDDEN_TABS = ['tab-customers', 'tab-surveys'];
+  window.canAccessTab = tab => Boolean(window.currentUser) && !HIDDEN_TABS.includes(tab) && (window.currentUser.role === 'admin' || ['tab-cash', 'tab-kanban'].includes(tab));
   function lockAdminApp() {
     window.adminAuthenticated = false;
     window.currentUser = null;
