@@ -505,7 +505,9 @@
         footerBtn = `<button class="btn btn-primary" style="background:var(--success)" onclick="moveOrderStatus('${cleanId}', 'delivered'); closeOrderModal();">Confirmar Entregado</button>`;
       }
 
-      const cleanPhoneDigits = String(ord.phone || '').replace(/[^0-9]/g, '');
+      // wa.me exige el número con código de país: un celular peruano de 9 dígitos lleva 51 delante
+      const phoneDigits = String(ord.phone || '').replace(/[^0-9]/g, '');
+      const cleanPhoneDigits = /^9\d{8}$/.test(phoneDigits) ? '51' + phoneDigits : phoneDigits;
 
       document.getElementById('mod-order-footer').innerHTML = `
         <button class="btn btn-outline" onclick="printOrderTicket('${cleanId}')" title="Imprimir comanda térmica 58mm/80mm">
